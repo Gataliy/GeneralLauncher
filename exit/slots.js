@@ -303,6 +303,13 @@ function removeSlot(index) {
   renderSlots();
 }
 
+// Level slots: the text marks ♨ (heat) and ❄ (vent) are replaced by the StreletS27 seat icons (currentColor, follows the theme).
+function levelIconSvg(icon) {
+  if (icon === "♨") return CLIMATE_SVG.heat;
+  if (icon === "❄") return CLIMATE_SVG.vent;
+  return icon;
+}
+
 function renderSlot(slot, index) {
   const element = document.createElement("div");
   element.className = "action-slot";
@@ -324,7 +331,7 @@ function renderSlot(slot, index) {
     if (!group) return renderSlot({ type: "empty" }, index);
     element.classList.add("has-level", group.tone === "cool" ? "cool" : "warm");
     element.innerHTML = `
-      <div class="action-icon">${group.icon}</div>
+      <div class="action-icon">${levelIconSvg(group.icon)}</div>
       <div class="action-main"><strong>${group.label}</strong><span>${Number(slot.level) ? `Уровень ${Number(slot.level)}` : ""}</span></div>
       <div class="level-lamps" aria-label="Уровень ${Number(slot.level) || 0}">
         ${[1, 2, 3].map(level => `<i class="${Number(slot.level) >= level ? "on" : ""}"></i>`).join("")}

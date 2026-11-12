@@ -864,3 +864,25 @@ body.trip-sheet-open #trip-sheet { display: block; }
 .ts-chart { flex: 1; min-height: 240px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; }
 .ts-chart svg { width: 100%; height: 100%; display: block; }
 .ts-note { color: var(--muted); font-size: 12px; }
+
+/* Значки слотов: в светлой теме чёрные, в тёмной белые. Цветными остаются только полоски уровней (подогрев, вентиляция). */
+:root[data-theme="light"] .action-slot:not(.empty-slot) .action-icon, :root[data-theme="light"] .action-slot:not(.empty-slot) .action-icon svg { color: #111827 !important; }
+:root[data-theme="dark"] .action-slot:not(.empty-slot) .action-icon, :root[data-theme="dark"] .action-slot:not(.empty-slot) .action-icon svg { color: #ffffff !important; }
+
+/* Уровни подогрева — оранжевые, уровни вентиляции — синие (в обеих темах). */
+:root .action-slot.has-level.warm .level-lamps i.on { background: #ff8e5c; box-shadow: 0 0 11px rgba(255, 142, 92, .8); }
+:root .action-slot.has-level.cool .level-lamps i.on { background: #79dcff; box-shadow: 0 0 11px rgba(121, 220, 255, .8); }
+:root[data-theme="light"] .action-slot.has-level.warm .level-lamps i.on { background: #ff7a3d; box-shadow: none; }
+:root[data-theme="light"] .action-slot.has-level.cool .level-lamps i.on { background: #2f9fd8; box-shadow: none; }
+
+/* Режим обложки: без кнопки «Настройки» и чуть выше виджеты, чтобы полоса прогресса умещалась в плеере. */
+body.player-expanded .page-controls { display: none !important; }
+body.player-expanded .hero-bottom.in-stage > .hero-clock, body.player-expanded .hero-bottom.in-stage > #weather-widget, body.player-expanded .hero-bottom.in-stage > .player-widget { min-height: 172px !important; }
+body.player-expanded #open-settings { display: none !important; }
+
+/* Главный экран: названия карточек «Состояние автомобиля», «Навигация» и «Компас» по центру. */
+.hw-state > .hw-eb, .hw-nav > .hw-eb, .hw-compass > .hw-eb { text-align: center; width: 100%; }
+
+/* Значки слотов: аккуратные, без цветной плашки и крупнее самого знака (как в прошлой сборке). Полоски уровней сохраняют свои цвета. */
+.action-slot:not(.empty-slot) .action-icon { background: transparent !important; }
+.action-slot:not(.empty-slot) .action-icon svg { width: 40px; height: 40px; }
