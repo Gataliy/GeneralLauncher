@@ -396,7 +396,7 @@ function bindSlotPress(element, index, clickAction) {
     }
     timer = setTimeout(() => {
       longPressed = true;
-      enterSlotOrder();
+      openSlotMenu(index, element);
       // The click that follows the release of this long press must not open the picker.
       slotSuppressClick = true;
     }, 650);

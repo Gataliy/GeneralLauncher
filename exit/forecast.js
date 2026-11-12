@@ -1,4 +1,4 @@
-// Long press on the weather opens a 10-day forecast from Open-Meteo (no key needed). A tap still refreshes the weather.
+// Long press on the weather opens the 10-day forecast: the car's own forecast when it has one, otherwise Open-Meteo (no key needed). A tap still refreshes the weather.
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
 const FORECAST_DAYS = 10;
 const FORECAST_HOLD_MS = 600;
@@ -35,16 +35,42 @@ function ensureForecastSheet() {
   return sheet;
 }
 
+function escapeHtml(text) {
+  return String(text ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch]);
+}
+
+// The car's forecast (getWeather → forecast): per day a label and four periods with temp and condition.
+// Max and min are taken over the periods that have a temperature.
+function renderCarForecast(list, note, days) {
+  list.innerHTML = days.slice(0, FORECAST_DAYS).map(day => {
+    const parts = day && typeof day.parts === "object" ? Object.values(day.parts) : [];
+    const temps = parts.map(part => Number(part && part.temp)).filter(Number.isFinite);
+    const sample = parts.find(part => part && part.condition) || {};
+    const max = temps.length ? Math.round(Math.max(...temps)) : "—";
+    const min = temps.length ? Math.round(Math.min(...temps)) : "—";
+    return `<div class="forecast-row"><span class="forecast-day">${escapeHtml(day && day.label)}</span>` +
+      `<span class="forecast-icon">${weatherSymbol(sample.condition)}</span>` +
+      `<span class="forecast-temp"><b>${max}°</b> ${min}°</span></div>`;
+  }).join("");
+  note.textContent = "Автомобиль";
+}
+
 async function openForecastSheet() {
+  const sheet = ensureForecastSheet();
+  const list = sheet.querySelector(".forecast-list");
+  const note = sheet.querySelector(".forecast-note");
+  list.innerHTML = "";
+  // Prefer the car's own forecast: it needs no network. Open-Meteo is the fallback.
+  if (Array.isArray(window.carForecast) && window.carForecast.length) {
+    renderCarForecast(list, note, window.carForecast);
+    sheet.hidden = false;
+    return;
+  }
   const location = state.weatherLocation;
   if (!location) {
     showToast("Ожидаю GPS от Android");
     return;
   }
-  const sheet = ensureForecastSheet();
-  const list = sheet.querySelector(".forecast-list");
-  const note = sheet.querySelector(".forecast-note");
-  list.innerHTML = "";
   note.textContent = "Загружаю прогноз…";
   sheet.hidden = false;
   const url = `${FORECAST_URL}?latitude=${location.lat.toFixed(4)}&longitude=${location.lon.toFixed(4)}` +

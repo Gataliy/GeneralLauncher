@@ -55,6 +55,8 @@ button { color: inherit; }
 .track-info { min-width: 0; flex: 1; }
 .track-info .eyebrow { white-space: nowrap; }
 .track-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 11px; font-size: 29px; line-height: 1.12; overflow: hidden; word-break: break-word; }
+.track-source { display: block; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 15px; opacity: 0.8; }
+.track-source[hidden] { display: none; }
 .track-artist { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 21px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player-controls { display: flex; align-items: center; gap: 8px; }
 .player-controls button { width: 69px; height: 69px; border: 0; border-radius: 50%; background: transparent; font-size: 41px; cursor: pointer; }
@@ -886,3 +888,213 @@ body.player-expanded #open-settings { display: none !important; }
 /* Значки слотов: аккуратные, без цветной плашки и крупнее самого знака (как в прошлой сборке). Полоски уровней сохраняют свои цвета. */
 .action-slot:not(.empty-slot) .action-icon { background: transparent !important; }
 .action-slot:not(.empty-slot) .action-icon svg { width: 40px; height: 40px; }
+
+/* Меню слота (slotmenu.js) */
+.slot-menu-backdrop { position: fixed; inset: 0; z-index: 70; background: transparent; }
+.slot-menu { position: fixed; width: 200px; box-sizing: border-box; padding: 8px; border-radius: 26px; border: 1px solid var(--line); background: var(--surface); backdrop-filter: blur(18px); box-shadow: 0 12px 32px rgba(0, 0, 0, .35); display: grid; gap: 6px; }
+.slot-menu button { height: 48px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); font-size: 17px; text-align: left; padding: 0 16px; cursor: pointer; }
+.slot-menu button.danger { color: #ff8a9a; }
+
+/* Уведомление о смене песни и полоса радара сверху (tracktoast.js) */
+#track-toast { position: fixed; left: 50%; top: 18px; z-index: 1000; width: min(520px, calc(100vw - 32px)); height: 72px; display: flex; align-items: center; gap: 14px; padding: 0 22px 0 10px; border-radius: 999px; background: #000; color: #fff; box-shadow: 0 10px 30px rgba(0, 0, 0, .45); cursor: pointer; transform: translate(-50%, -140%); opacity: 0; pointer-events: none; transition: transform .35s ease, opacity .35s ease; box-sizing: border-box; }
+#track-toast.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+#track-toast .tt-art { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 14px; background: linear-gradient(135deg, #ff7a59, #8a3ffc) center / cover no-repeat; }
+#track-toast .tt-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+#track-toast .tt-title { font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#track-toast .tt-artist { font-size: 14px; opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-theme="light"] #track-toast { background: #fff; color: #111827; box-shadow: 0 10px 30px rgba(20, 40, 70, .18); border: 1px solid rgba(20, 40, 70, .12); }
+:root[data-theme="light"] #track-toast .tt-artist { opacity: .6; }
+#radar-strip { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); z-index: 1000; height: 52px; min-width: 240px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 0 22px; border-radius: 22px; background: rgba(2, 6, 12, .78); border: 1px solid rgba(255, 255, 255, .22); color: #eaf2ff; font-size: 20px; pointer-events: none; }
+#radar-strip[hidden] { display: none; }
+#radar-strip .ns-radar { color: #ff9d4d; border: 1px solid #ff9d4d; border-radius: 12px; padding: 4px 12px; white-space: nowrap; }
+:root[data-theme="light"] #radar-strip { background: rgba(255, 255, 255, .95); color: #13243a; border-color: rgba(31, 116, 184, .25); }
+body.radar-only #track-toast { opacity: 0; transform: translate(-50%, -140%); pointer-events: none; }
+body.radar-only .car-anim { top: 86px; }
+
+/* Состояние автомобиля: заголовки групп */
+.state-group { margin: 14px 0 4px; font-size: 12px; letter-spacing: .14em; color: #8aa0bd; text-transform: uppercase; font-weight: 600; }
+
+/* Кольца топлива и АКБ (rings.js) */
+.hw-rings { display: flex; gap: 14px; justify-content: space-around; align-items: flex-start; margin-bottom: 8px; }
+.hw-ring { width: 110px; display: flex; flex-direction: column; align-items: center; position: relative; }
+.hw-ring svg { width: 84px; height: 84px; transform: rotate(-90deg); }
+.hw-ring-bg { fill: none; stroke: var(--line); stroke-width: 6; }
+.hw-ring-fg { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; }
+.hw-ring-val { position: absolute; top: 22px; left: 0; width: 110px; text-align: center; display: flex; flex-direction: column; line-height: 1.05; }
+.hw-ring-val b { font-size: 20px; font-weight: 650; }
+.hw-ring-val small { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hw-ring-sub { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+
+/* Волновая полоса плеера (waveform.js) */
+.player-tl-line { height: 26px !important; background: transparent !important; display: flex; align-items: center; gap: 2px; overflow: visible !important; }
+.player-tl-line #track-line-fill { display: none; }
+.player-tl-line .wv { flex: 1 1 0; display: block; position: static; width: auto; height: 60%; min-width: 1px; border-radius: 2px; background: var(--surface-soft); box-shadow: none; }
+.player-tl-line .wv.on { background: var(--accent); }
+
+/* Медиаплеер: кнопка «Воспроизведение» обведённая акцентом, как в сборке Андрея Грачева. */
+.player-controls .play { background: transparent !important; border: 2px solid var(--accent) !important; color: var(--accent) !important; box-shadow: none !important; }
+
+/* ===== Cover mode, as in the mock: wallpaper full screen, clock top left, weather top right, player at the bottom. ===== */
+/* Drive mode pill (ECO / NORMAL / SPORT), read from the car. */
+.drive-pill { display: inline-flex; align-items: center; font-size: 12px; font-weight: 700; letter-spacing: .14em; color: #fff; background: rgba(79, 140, 255, .55); border: 1px solid #9fd4ff; border-radius: 12px; padding: 4px 12px; box-shadow: 0 0 14px rgba(79, 140, 255, .45); white-space: nowrap; }
+.drive-pill[hidden] { display: none; }
+.date-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+:root[data-theme="light"] .drive-pill { background: #1f6fd6; border-color: #7fb5ff; box-shadow: 0 0 12px rgba(31, 111, 214, .35); }
+
+/* Full-screen overlay: the row is taken out of the slot area and laid over the wallpaper. */
+body.player-expanded #player-stage { position: fixed; inset: 0; z-index: 30; padding: 0; background: transparent; }
+body.player-expanded #player-stage .hero-bottom.in-stage { position: absolute; inset: 0; width: auto; height: auto; display: block; background: transparent !important; box-shadow: none !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > * { height: auto !important; min-height: 0 !important; }
+
+/* Clock: no card, big numerals, weight 500, tight spacing; date with a rule above it and the drive pill. */
+body.player-expanded .hero-clock { position: absolute !important; left: clamp(16px, 3.4vw, 44px); top: clamp(12px, 4vh, 30px); width: auto !important; padding: 0 !important; background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
+body.player-expanded .hero-clock .clock { font-size: clamp(90px, 11.7vw, 150px) !important; font-weight: 500 !important; line-height: .92 !important; letter-spacing: -.065em !important; text-shadow: 0 2px 14px rgba(0, 0, 0, .35) !important; color: var(--text); }
+body.player-expanded .hero-clock .clock .colon, body.player-expanded .hero-clock .clock .mm { color: var(--accent); }
+body.player-expanded .date-row { flex-direction: row; align-items: center; gap: 12px; width: clamp(260px, 28vw, 360px); margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .35); justify-content: space-between; }
+body.player-expanded .date { margin: 0; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 2px 12px rgba(0, 0, 0, .45); }
+body.player-expanded .date > span { display: inline; }
+body.player-expanded .date > span + span { margin: 0 0 0 .4em; }
+:root[data-theme="light"] body.player-expanded .hero-clock .clock { text-shadow: none !important; }
+:root[data-theme="light"] body.player-expanded .date { text-shadow: none; }
+:root[data-theme="light"] body.player-expanded .date-row { border-top-color: rgba(27, 34, 48, .35); }
+
+/* Weather: glass chip top right, cloud icon, temperature, condition and city. */
+body.player-expanded .weather-widget { position: absolute !important; right: clamp(16px, 3.4vw, 44px); top: clamp(12px, 4vh, 40px); flex: none !important; width: auto !important; min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: 14px 22px !important; border-radius: 22px !important; gap: 16px !important; background: rgba(10, 14, 22, .38) !important; backdrop-filter: blur(12px) !important; border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: none !important; }
+body.player-expanded .weather-icon { width: auto; height: auto; background: none; font-size: 44px; color: var(--accent); border-radius: 0; }
+body.player-expanded .weather-refresh { display: none; }
+body.player-expanded .weather-copy { display: grid; grid-template-columns: auto auto; column-gap: 14px; row-gap: 2px; align-items: center; }
+body.player-expanded .weather-copy strong { grid-column: 1; grid-row: 1 / span 2; font-size: 72px; font-weight: 300; line-height: 1; }
+body.player-expanded .weather-copy > span:last-child { grid-column: 2; grid-row: 1; max-width: none; font-size: 18px; color: var(--text); }
+body.player-expanded .weather-copy .eyebrow { grid-column: 2; grid-row: 2; font-size: 15px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+:root[data-theme="light"] body.player-expanded .weather-widget { background: rgba(246, 248, 252, .58) !important; border-color: rgba(20, 40, 70, .12) !important; }
+:root[data-theme="light"] body.player-expanded .weather-copy > span:last-child { color: #1b2230; }
+
+/* Player: the cover fills the card's height on the left; title and controls, then volume and the waveform on the right. */
+body.player-expanded .player-widget.expanded { position: absolute !important; left: clamp(16px, 3.4vw, 44px); right: clamp(16px, 3.4vw, 44px); bottom: clamp(12px, 4vh, 28px); top: auto !important; width: auto !important; max-width: none !important; height: clamp(200px, 36vh, 256px) !important; min-height: 0 !important; display: grid !important; grid-template-columns: minmax(150px, 30%) minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr; column-gap: 24px; row-gap: 12px; padding: 16px 22px 16px 16px !important; border-radius: 26px !important; background: rgba(10, 14, 22, .38) !important; backdrop-filter: blur(14px) !important; border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: 0 10px 30px rgba(0, 0, 0, .35) !important; }
+body.player-expanded .player-widget.expanded .album-art { grid-column: 1; grid-row: 1 / span 3; width: 100% !important; height: 100% !important; min-height: 0; border-radius: 20px !important; }
+body.player-expanded .player-widget.expanded .track-info { grid-column: 2; grid-row: 1; align-self: center; min-width: 0; }
+body.player-expanded .player-widget.expanded .player-controls { grid-column: 3; grid-row: 1; display: flex; align-items: center; gap: 18px; }
+body.player-expanded .player-widget.expanded .player-controls button { width: 56px !important; height: 56px !important; display: grid; place-items: center; padding: 0; background: none !important; border: 0 !important; color: var(--text); }
+body.player-expanded .player-widget.expanded .player-controls button svg { width: 46px; height: 46px; fill: currentColor; }
+body.player-expanded .player-widget.expanded .player-controls .play { width: 96px !important; height: 96px !important; border: 3px solid var(--accent) !important; border-radius: 50% !important; background: rgba(111, 195, 250, .12) !important; color: var(--accent) !important; }
+body.player-expanded .player-widget.expanded .player-controls .play svg { width: 44px; height: 44px; }
+body.player-expanded .player-widget.expanded .player-extra { display: contents; }
+body.player-expanded .player-widget.expanded .player-vol { display: flex !important; grid-column: 2 / 4; grid-row: 2; align-items: center; gap: 14px; padding: 0; }
+body.player-expanded .player-widget.expanded .player-vol .ic { width: auto; opacity: 1; color: var(--text); }
+body.player-expanded .player-widget.expanded .player-vol .ic svg { width: 26px; height: 26px; fill: currentColor; display: block; }
+body.player-expanded .player-widget.expanded .player-vol-line { height: 12px; background: rgba(255, 255, 255, .22); }
+body.player-expanded .player-widget.expanded .player-vol-line i { background: var(--accent); }
+body.player-expanded .player-widget.expanded .player-vol-val { color: var(--text); font-size: 17px; }
+body.player-expanded .player-widget.expanded .player-timeline { display: flex !important; grid-column: 2 / 4; grid-row: 3; align-items: stretch; min-height: 34px; }
+body.player-expanded .player-widget.expanded .player-time { display: none !important; }
+body.player-expanded .player-widget.expanded .player-tl-line { display: flex; align-items: center; gap: 3px; height: 34px; background: none; overflow: visible; }
+body.player-expanded .player-widget.expanded .player-tl-line .wv { height: 60%; background: rgba(255, 255, 255, .25); }
+body.player-expanded .player-widget.expanded .player-tl-line .wv.on { background: var(--accent); }
+body.player-expanded .player-widget.expanded .track-title { font-size: 30px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.player-expanded .player-widget.expanded .track-artist { font-size: 15px; color: var(--muted); }
+body.player-expanded .player-widget.expanded .eyebrow { font-size: 12px; letter-spacing: .14em; color: var(--muted); }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded { background: rgba(246, 248, 252, .58) !important; border-color: rgba(20, 40, 70, .12) !important; box-shadow: 0 10px 30px rgba(27, 38,64, .18) !important; color: #1b2230; }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded .player-vol-line { background: rgba(20, 40, 70, .14); }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded .player-tl-line .wv { background: rgba(20, 40, 70, .2); }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded .player-controls .play { background: rgba(31, 111, 214, .10) !important; border-color: #1f6fd6 !important; color: #1f6fd6 !important; }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded .player-controls button { color: #1b2230; }
+:root[data-theme="light"] body.player-expanded .player-widget.expanded .player-vol .ic { color: #1b2230; }
+/* Cover mode: wallpaper to the edges, no shade, no inset frame, no focus ring on the weather chip. */
+body.player-expanded .dashboard { padding: 0 !important; }
+body.player-expanded .hero-shade { display: none !important; }
+body.player-expanded .weather-widget, body.player-expanded .weather-widget:focus, body.player-expanded .weather-widget:focus-visible { outline: none !important; }
+:root[data-theme="light"] body.player-expanded .hero-clock { background: none !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; }
+body.player-expanded .player-widget.expanded { grid-template-columns: clamp(150px, 17.3vw, 222px) minmax(0, 1fr) auto !important; }
+
+/* ===== Home screen, as in the port of the mock: row 1 clock, weather, last trip; row 2 player; row 3 navigation, rings, car state. ===== */
+.hero { display: flex; flex-direction: column; gap: 14px; }
+.hero-bottom:not(.in-stage) { position: static !important; display: grid !important; grid-template-columns: 360px 300px minmax(0, 1fr); grid-template-rows: 112px 112px; gap: 14px; overflow: visible; padding: 0; order: 1; width: 100%; }
+.hero-bottom:not(.in-stage) > .hero-clock { grid-column: 1; grid-row: 1; height: 112px !important; min-height: 0 !important; width: auto !important; flex: none !important; padding: 14px 18px !important; justify-content: center; }
+.hero-bottom:not(.in-stage) > .hero-clock .clock { font-size: 66px; font-weight: 300; letter-spacing: -.04em; line-height: 1; }
+.hero-bottom:not(.in-stage) > .hero-clock .date-row { display: block; margin-top: 4px; }
+.hero-bottom:not(.in-stage) > .hero-clock .date { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.hero-bottom:not(.in-stage) > .hero-clock .drive-pill { margin-top: 6px; font-size: 10px; padding: 1px 8px; }
+.hero-bottom:not(.in-stage) > #weather-widget { grid-column: 2; grid-row: 1; height: 112px !important; min-height: 0 !important; width: auto !important; flex: none !important; padding: 14px 18px !important; }
+.hero-bottom:not(.in-stage) > .hw-trip { grid-column: 3; grid-row: 1; height: 112px; min-height: 0; width: auto; padding: 14px 18px; }
+.hero-bottom:not(.in-stage) > .player-widget { grid-column: 1 / span 3; grid-row: 2; height: 112px !important; min-height: 0 !important; width: auto !important; max-width: none !important; flex: none !important; padding: 12px 18px !important; }
+.hero-bottom:not(.in-stage) .player-widget .album-art { width: 88px !important; height: 88px !important; flex: 0 0 88px; border-radius: 16px; }
+.hero-bottom:not(.in-stage) .player-widget .track-title { font-size: 20px; }
+body:not(.player-expanded) .player-widget .player-timeline { display: flex !important; flex: 1 1 260px; min-width: 0; }
+body:not(.player-expanded) .player-widget .player-tl-line { display: flex; align-items: center; gap: 3px; height: 30px; background: none; overflow: visible; }
+body:not(.player-expanded) .player-widget .player-tl-line .wv { height: 60%; background: rgba(255, 255, 255, .25); }
+body:not(.player-expanded) .player-widget .player-tl-line .wv.on { background: var(--accent); }
+body:not(.player-expanded) .player-widget .player-time, body:not(.player-expanded) .player-widget .player-vol { display: none !important; }
+body:not(.player-expanded) .player-widget .player-controls { flex: 0 0 auto; }
+
+/* Trip card, the same glass as the other cards. */
+.hw-trip { pointer-events: auto; }
+.hw-trip .hw-eb { text-align: center; cursor: pointer; }
+.hw-trip .hw-body { display: flex; flex-direction: column; justify-content: center; flex: 1; gap: 6px; min-height: 0; }
+.hw-trip-main { display: flex; align-items: baseline; gap: 6px; }
+.hw-trip-main strong { font-size: 34px; font-weight: 500; line-height: 1; }
+.hw-trip-main small { font-size: 14px; color: var(--muted); }
+.hw-trip-stats { display: flex; justify-content: space-between; gap: 6px; }
+.hw-trip-stats b { display: block; font-size: 17px; font-weight: 600; }
+.hw-trip-stats span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.hw-trip-empty { color: var(--muted); font-size: 14px; margin: auto; }
+
+/* Middle column: fuel and battery, each in its own card. */
+.hw-rings-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; min-height: 0; pointer-events: auto; }
+.hw-ring-card { flex: 1 1 0; min-height: 0; padding: 10px 14px; justify-content: center; }
+.hw-ring-card .hw-rings, .hw-ring-card > .hw-ring { display: block; }
+.hw-ring-card .hw-ring { display: grid; grid-template-columns: 76px minmax(0, 1fr); column-gap: 12px; align-items: center; width: 100%; }
+.hw-ring-card .hw-ring svg { width: 76px; height: 76px; grid-column: 1; grid-row: 1; }
+.hw-ring-card .hw-ring-val { top: 0; left: 0; width: 76px; height: 76px; justify-content: center; align-items: center; text-align: center; }
+.hw-ring-card .hw-ring-val b { font-size: 17px; }
+.hw-ring-card .hw-ring-sub { grid-column: 2; grid-row: 1; text-align: left; font-size: 13px; color: var(--muted); margin: 0; }
+
+/* Navigation and car state cards: titles centred. Radar and speed live as before. */
+.hero-widgets { position: static !important; display: grid !important; grid-template-columns: 560px 262px minmax(0, 1fr); grid-auto-rows: 166px; gap: 14px; height: auto !important; bottom: auto !important; left: auto !important; right: auto !important; order: 2; z-index: auto; pointer-events: none; }
+.hero-widgets > .hw-nav { grid-column: 1; grid-row: 1; }
+.hero-widgets > .hw-rings-col { grid-column: 2; grid-row: 1; }
+.hero-widgets > .hw-state { grid-column: 3; grid-row: 1; }
+.hero-widgets > .hw-compass { display: none !important; }
+.hero-widgets > .hw-state { pointer-events: auto; }
+
+/* Car-state tiles: icon, label and state word; no boxes. Tapping runs the action (home-tiles.js). */
+.hw-state .hw-body { margin-top: 0; }
+.hw-state .hw-chips { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; height: 100%; align-items: start; padding-top: 6px; }
+.hw-state .hw-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; min-width: 0; min-height: 0; border: 0; border-radius: 14px; background: transparent; color: var(--text); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.hw-state .hw-tile:active { background: rgba(255, 255, 255, .06); }
+.hw-tile-icon { width: 26px; height: 26px; display: grid; place-items: center; color: var(--muted); }
+.hw-tile-icon svg { width: 26px; height: 26px; }
+.hw-tile-label { font-size: 13px; white-space: nowrap; color: var(--text); }
+.hw-tile-value { font-style: normal; font-size: 11px; min-height: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.hw-tile.open .hw-tile-icon, .hw-tile.open .hw-tile-value { color: #ff9d4d; }
+.hw-tile.sent { background: rgba(111, 195, 250, .12); border-radius: 14px; }
+.hw-tile.blocked { animation: tile-shake .35s linear 2; }
+@keyframes tile-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+:root[data-theme="light"] .hw-tile-label { color: #1b2230; }
+:root[data-theme="light"] .hw-tile.open .hw-tile-icon, :root[data-theme="light"] .hw-tile.open .hw-tile-value { color: #d9642b; }
+/* Home port: the waveform bars replace the progress line (the fill stays for the scrub and the count). */
+body:not(.player-expanded) .player-widget .player-tl-line > #track-line-fill { display: none; }
+body:not(.player-expanded) .player-widget .player-tl-line .wv { position: static; display: block; flex: 1 1 0; width: auto; min-width: 1px; border-radius: 2px; box-shadow: none; }
+.weather-widget:focus, .weather-widget:focus-visible { outline: none; }
+body:not(.player-expanded) .player-widget .player-tl-line { height: 34px !important; align-items: center; }
+body:not(.player-expanded) .player-widget .player-tl-line .wv { height: auto; align-self: center; }
+body:not(.player-expanded) .player-widget .player-extra { display: flex !important; flex: 1 1 260px; min-width: 0; align-items: center; }
+body:not(.player-expanded) .player-widget .player-timeline { flex: 1 1 0; min-width: 0; }
+/* Home port player: cover, title, waveform in the middle, controls on the right. */
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { gap: 18px; }
+body:not(.player-expanded) .player-widget .track-info { order: 1; flex: 0 1 auto; max-width: 300px; min-width: 0; }
+body:not(.player-expanded) .player-widget .player-extra { order: 2; }
+body:not(.player-expanded) .player-widget .player-controls { order: 3; margin-left: auto; }
+body:not(.player-expanded) .player-widget .track-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body:not(.player-expanded) .player-widget .track-progress { display: none; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock { justify-content: flex-start; padding-top: 16px !important; }
+/* Top row: track pill, radar pill, in one centred row at the top edge (above the cards). */
+#top-pills { position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 12px; align-items: flex-start; pointer-events: none; }
+#top-pills > * { position: static !important; transform: none !important; left: auto !important; top: auto !important; margin: 0; }
+#top-pills #track-toast:not(.show) { display: none; }
+#top-pills #track-toast.show { pointer-events: auto; }
+#top-pills #track-toast, #top-pills #radar-strip { border-top: 0; border-radius: 0 0 14px 14px; }
+#top-pills #track-toast { height: 60px; width: auto; max-width: min(460px, 44vw); }
+#top-pills #radar-strip:not([hidden]) { display: inline-flex; align-items: center; }
+body.radar-only #track-toast { opacity: 1 !important; }
+/* Cover mode hides the home-port cards (navigation, rings, car state, trip); the cover has its own layout. */
+body.player-expanded .hero-widgets, body.player-expanded .hw-trip, body.player-expanded .hw-rings-col { display: none !important; }

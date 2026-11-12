@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0a0a0c">
   <title>Generic Launcher</title>
-  <link rel="stylesheet" href="styles.css?v=1.2.439">
+  <link rel="stylesheet" href="styles.css?v=1.2.440">
 </head>
-<body>
+<body class="home-port">
   <main class="dashboard" aria-label="Generic Launcher">
     <section class="hero" id="hero" aria-label="Главный экран">
       <div class="hero-shade" aria-hidden="true"></div>
@@ -30,6 +30,7 @@
             </div>
           </div>
         </section>
+        <div class="hw-rings-col" id="hw-rings-col" aria-label="Топливо и АКБ"></div>
         <section class="hw-card hw-compass">
           <div class="hw-eb">Компас</div>
           <div class="hw-body">
@@ -41,7 +42,7 @@
       <div class="hero-bottom">
         <div class="hero-clock">
           <div class="clock" id="clock">10:30</div>
-          <div class="date" id="date">25 августа</div>
+          <div class="date-row"><div class="date" id="date">25 августа</div><span class="drive-pill" id="drive-mode" hidden>ECO</span></div>
         </div>
         <button type="button" class="weather-widget" id="weather-widget" aria-label="Обновить погоду">
           <span class="weather-icon" id="weather-icon" aria-hidden="true">☁</span>
@@ -53,22 +54,27 @@
           <span class="weather-refresh" aria-hidden="true">↻</span>
         </button>
 
+        <section class="hw-card hw-trip" id="hw-trip" aria-label="Последняя поездка">
+          <div class="hw-eb" id="hw-trip-title">Последняя поездка</div>
+          <div class="hw-body" id="hw-trip-body"><span class="hw-trip-empty">Поездок пока нет</span></div>
+        </section>
         <article class="player-widget">
           <div class="album-art" id="album-art" aria-hidden="true"><span>♪</span></div>
           <div class="track-info">
             <div class="eyebrow">СЕЙЧАС ИГРАЕТ</div>
             <strong class="track-title" id="track-title">Музыка не выбрана</strong>
             <span class="track-artist" id="track-artist">Исполнитель не указан</span>
+            <span class="track-source" id="track-source" hidden></span>
             <div class="track-progress" id="track-progress" aria-hidden="true"><span id="track-progress-fill"></span></div>
           </div>
           <div class="player-controls" aria-label="Управление музыкой">
-            <button type="button" data-media="MEDIA_BLACK" aria-label="Предыдущий трек">‹</button>
-            <button type="button" class="play" data-media="TOGGLE_MEDIA_PLAY" aria-label="Воспроизведение">▶</button>
-            <button type="button" data-media="MEDIA_NEXT" aria-label="Следующий трек">›</button>
+            <button type="button" data-media="MEDIA_BLACK" aria-label="Предыдущий трек"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="2.6" height="14" rx="1"/><path d="M19 5.5v13L8.5 12z"/></svg></button>
+            <button type="button" class="play" data-media="TOGGLE_MEDIA_PLAY" aria-label="Воспроизведение"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13L19 12z"/></svg></button>
+            <button type="button" data-media="MEDIA_NEXT" aria-label="Следующий трек"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="17.4" y="5" width="2.6" height="14" rx="1"/><path d="M5 5.5v13L15.5 12z"/></svg></button>
           </div>
           <div class="player-extra" aria-label="Громкость и время трека">
             <div class="player-vol">
-              <span class="ic" aria-hidden="true">🔈</span>
+              <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 4V5L7 9H3z"/><path d="M16.5 12a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg></span>
               <div class="player-vol-line" id="player-vol-line" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="100">
                 <i id="player-vol-fill"></i><b id="player-vol-thumb"></b>
               </div>
@@ -248,35 +254,41 @@
     <span class="car-anim-text" id="car-anim-text"></span>
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="bridge.js?v=1.2.439"></script>
-  <script src="config.js?v=1.2.439"></script>
-  <script src="state.js?v=1.2.439"></script>
-  <script src="commands.js?v=1.2.439"></script>
-  <script src="slots.js?v=1.2.439"></script>
-  <script src="picker.js?v=1.2.439"></script>
-  <script src="icons-climate.js?v=1.2.439"></script>
-  <script src="catalog.js?v=1.2.439"></script>
-  <script src="clock.js?v=1.2.439"></script>
-  <script src="wallpaper.js?v=1.2.439"></script>
-  <script src="player.js?v=1.2.439"></script>
-  <script src="weather.js?v=1.2.439"></script>
-  <script src="car.js?v=1.2.439"></script>
-  <script src="climate.js?v=1.2.439"></script>
-  <script src="drawer.js?v=1.2.439"></script>
-  <script src="data/cameras.js?v=1.2.439"></script>
-  <script src="camera-alerts.js?v=1.2.439"></script>
-  <script src="events.js?v=1.2.439"></script>
-  <script src="diag.js?v=1.2.439"></script>
-  <script src="tiggo.js?v=1.2.439"></script>
-  <script src="hero-widgets.js?v=1.2.439"></script>
-  <script src="settings.js?v=1.2.439"></script>
-  <script src="tutorial.js?v=1.2.439"></script>
-  <script src="hw-labels.js?v=1.2.439"></script>
-  <script src="trips.js?v=1.2.439"></script>
-  <script src="turn-icons.js?v=1.2.439"></script>
-  <script src="scrub.js?v=1.2.439"></script>
-  <script src="forecast.js?v=1.2.439"></script>
-  <script src="nightmode.js?v=1.2.439"></script>
-  <script src="app.js?v=1.2.439"></script>
+  <script src="bridge.js?v=1.2.440"></script>
+  <script src="config.js?v=1.2.440"></script>
+  <script src="state.js?v=1.2.440"></script>
+  <script src="commands.js?v=1.2.440"></script>
+  <script src="slots.js?v=1.2.440"></script>
+  <script src="picker.js?v=1.2.440"></script>
+  <script src="icons-climate.js?v=1.2.440"></script>
+  <script src="catalog.js?v=1.2.440"></script>
+  <script src="clock.js?v=1.2.440"></script>
+  <script src="wallpaper.js?v=1.2.440"></script>
+  <script src="player.js?v=1.2.440"></script>
+  <script src="weather.js?v=1.2.440"></script>
+  <script src="car.js?v=1.2.440"></script>
+  <script src="climate.js?v=1.2.440"></script>
+  <script src="drawer.js?v=1.2.440"></script>
+  <script src="data/cameras.js?v=1.2.440"></script>
+  <script src="camera-alerts.js?v=1.2.440"></script>
+  <script src="events.js?v=1.2.440"></script>
+  <script src="diag.js?v=1.2.440"></script>
+  <script src="tiggo.js?v=1.2.440"></script>
+  <script src="hero-widgets.js?v=1.2.440"></script>
+  <script src="settings.js?v=1.2.440"></script>
+  <script src="tutorial.js?v=1.2.440"></script>
+  <script src="hw-labels.js?v=1.2.440"></script>
+  <script src="trips.js?v=1.2.440"></script>
+  <script src="slotmenu.js?v=1.2.440"></script>
+  <script src="tracktoast.js?v=1.2.440"></script>
+  <script src="rings.js?v=1.2.440"></script>
+  <script src="waveform.js?v=1.2.440"></script>
+  <script src="drivemode.js?v=1.2.440"></script>
+  <script src="home-tiles.js?v=1.2.440"></script>
+  <script src="turn-icons.js?v=1.2.440"></script>
+  <script src="scrub.js?v=1.2.440"></script>
+  <script src="forecast.js?v=1.2.440"></script>
+  <script src="nightmode.js?v=1.2.440"></script>
+  <script src="app.js?v=1.2.440"></script>
 </body>
 </html>

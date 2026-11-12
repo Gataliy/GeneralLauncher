@@ -14,10 +14,13 @@ function parsePlayStat(value) {
   return null;
 }
 
+const PLAY_ICON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13L19 12z"/></svg>';
+const PAUSE_ICON_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4.2" height="14" rx="1.2"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.2"/></svg>';
+
 function renderPlayButton() {
   const playing = state.isPlaying === true;
   document.querySelectorAll('.player-controls .play').forEach(button => {
-    button.textContent = playing ? "❚❚" : "▶";
+    button.innerHTML = playing ? PAUSE_ICON_SVG : PLAY_ICON_SVG;
     button.setAttribute("aria-label", playing ? "Пауза" : "Воспроизвести");
   });
 }
@@ -79,6 +82,25 @@ function applyTrackProgress(data) {
   document.getElementById("track-end").textContent = formatTrackTime(toSeconds(duration));
 }
 
+// Name of the app that plays the track (JCarTools getAppInfo, cached per package). Empty when unknown.
+const appNameCache = new Map();
+function appNameFor(packageName) {
+  if (!packageName) return "";
+  if (appNameCache.has(packageName)) return appNameCache.get(packageName);
+  const info = parseJson(bridge.call("getAppInfo", TOKEN, packageName), null);
+  const name = info && typeof info.name === "string" ? info.name.trim() : "";
+  appNameCache.set(packageName, name);
+  return name;
+}
+
+function applySource(packageName) {
+  const element = document.getElementById("track-source");
+  if (!element) return;
+  const name = appNameFor(packageName);
+  element.textContent = name;
+  element.hidden = !name;
+}
+
 function applyMusicInfo(raw) {
   const data = parseJson(raw, raw) || {};
   state.lastMusicRaw = raw;
@@ -86,6 +108,7 @@ function applyMusicInfo(raw) {
   applyTrackProgress(data);
   document.getElementById("track-title").textContent = data.SongName || data.title || "Музыка не выбрана";
   document.getElementById("track-artist").textContent = data.SongArtist || data.artist || "Исполнитель не указан";
+  applySource(typeof data.packageName === "string" ? data.packageName : "");
   const art = document.getElementById("album-art");
   if (Object.prototype.hasOwnProperty.call(data, "SongAlbumPicture") ||
       Object.prototype.hasOwnProperty.call(data, "albumArt")) {
@@ -98,6 +121,7 @@ function applyMusicInfo(raw) {
       art.classList.remove("has-image");
     }
   }
+  if (typeof noteTrackChange === "function") noteTrackChange(data.SongName || data.title || "", data.SongArtist || data.artist || "", data.SongAlbumPicture || data.albumArt);
 }
 
 // Tapping the cover moves the whole top row (clock, weather, player) down into the slot area;
@@ -157,8 +181,8 @@ function bindPlayerTap() {
   // Tapping the empty dark area around the player closes it; the controls and the text do not.
 }
 
-// Expanded player: track start / end time and a volume slider. The slider uses the car's absolute volume
-// when the bridge provides setVolume / getVolume; otherwise it steps with the car's own Volume_Up / Volume_Down.
+// Expanded player: track start / end time and a volume slider. The slider uses the media volume (setvol / getvol, 0..100 %)
+// when the bridge provides them; otherwise it steps with the car's own Volume_Up / Volume_Down.
 function formatTrackTime(seconds) {
   const total = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
@@ -177,17 +201,17 @@ function setVolumeView(value) {
 }
 
 function readVolume() {
-  if (!bridge.has("getVolume")) return;
-  const value = Number(parseJson(bridge.call("getVolume", TOKEN), null));
+  if (!bridge.has("getvol")) return;
+  const value = Number(bridge.call("getvol", TOKEN));
   if (!Number.isFinite(value)) return;
   volumeSentLevel = value;
   setVolumeView(value);
 }
 
 function sendVolume(target) {
-  if (bridge.has("setVolume")) {
+  if (bridge.has("setvol")) {
     volumeSentLevel = target;
-    bridge.call("setVolume", TOKEN, target);
+    bridge.call("setvol", TOKEN, target);
     return;
   }
   // Volume_Up / Volume_Down change the level by 1 % each (core_manifest). At most 30 presses per move; the rest follows on the next move.

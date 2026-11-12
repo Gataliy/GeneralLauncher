@@ -18,6 +18,8 @@ function applyWeather(raw, persist = true) {
     if (data.error !== "location_unavailable") showToast("Погода временно недоступна");
     return false;
   }
+  // The car's own 10-day forecast (getWeather / weather event). Kept in memory and in the saved weather.
+  if (Array.isArray(data.forecast) && data.forecast.length) window.carForecast = data.forecast;
   const value = String(data.temp ?? data.temperature ?? "").trim();
   if (!value) return false;
   const temperature = value.endsWith("°") ? value : `${value}°`;
@@ -32,7 +34,8 @@ function applyWeather(raw, persist = true) {
   if (persist) localStorage.setItem(WEATHER_STORAGE_KEY, JSON.stringify({
     temp: temperature,
     city: city || document.getElementById("weather-city").textContent,
-    condition: condition || document.getElementById("weather-condition").textContent
+    condition: condition || document.getElementById("weather-condition").textContent,
+    forecast: Array.isArray(window.carForecast) ? window.carForecast : undefined
   }));
   return true;
 }

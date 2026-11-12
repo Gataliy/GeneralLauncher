@@ -18,8 +18,16 @@ function ensureStateSheet() {
 
 function renderStateSheet() {
   const sheet = document.getElementById("state-sheet");
-  const chips = document.querySelectorAll("#hw-chips .hw-chip");
   const list = sheet.querySelector(".state-list");
+  const esc = value => String(value).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  if (typeof window.carDetailGroups === "function") {
+    // The full list: Кузов, Шины, Двигатель и питание (the same groups as in the earlier build).
+    list.innerHTML = window.carDetailGroups().map(group =>
+      `<h5 class="state-group">${esc(group.title)}</h5>` + group.rows.map(row =>
+        `<div class="state-row${row.open ? " open" : ""}"><span>${esc(row.label)}</span><b>${esc(row.value)}</b></div>`).join("")).join("");
+    return;
+  }
+  const chips = document.querySelectorAll("#hw-chips .hw-chip");
   if (!chips.length) {
     list.innerHTML = '<div class="state-row"><span>Данных от машины пока нет</span></div>';
     return;

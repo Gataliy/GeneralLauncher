@@ -202,5 +202,8 @@
 
   setInterval(tick, TICK_MS);
   window.tripsLog = () => trips.slice();
+  // Home card "Последняя поездка": the last finished or current trip, and the screen opener.
+  window.tripsLastSummary = () => (trips.length ? trips[trips.length - 1] : null);
+  window.openTripsScreen = () => openTrips();
   window.tripsTick = tick;
 })();

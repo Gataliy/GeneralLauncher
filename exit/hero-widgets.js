@@ -82,10 +82,22 @@
     chips.splice(6);
     const box = byId("hw-chips");
     if (!box) return;
-    box.replaceChildren(...chips.map(c => {
-      const div = document.createElement("div");
-      div.className = "hw-chip" + (c.open ? " open" : "");
-      div.innerHTML = `<span>${escapeHtml(c.label)}</span><b>${escapeHtml(c.value)}</b>`;
+    // Home screen: five tiles with an icon, the label and the state word under it. Tapping a tile runs its action (home-tiles.js).
+    const TILES = [
+      { key: "lock", label: "Двери", match: null },
+      { key: "roof", label: "Люк", match: "Люк" },
+      { key: "window", label: "Окна", match: "Окна" },
+      { key: "trunk", label: "Багаж.", match: "Багажник" },
+      { key: "wheel", label: "Шины", match: "Шины" }
+    ];
+    box.replaceChildren(...TILES.map(t => {
+      const chip = t.match ? chips.find(c => c.label === t.match) : null;
+      const div = document.createElement("button");
+      div.type = "button";
+      div.className = "hw-chip hw-tile" + (chip && chip.open ? " open" : "");
+      div.dataset.tile = t.key;
+      div.dataset.open = chip && chip.open ? "1" : "0";
+      div.innerHTML = `<i class="hw-tile-icon" aria-hidden="true">${(window.TILE_ICON_SVG && window.TILE_ICON_SVG[t.key]) || ""}</i><span class="hw-tile-label">${escapeHtml(t.label)}</span><em class="hw-tile-value">${chip ? escapeHtml(chip.value.replace(/\s*\[raw.*$/, "")) : ""}</em>`;
       return div;
     }));
   }
@@ -136,6 +148,57 @@
     if (speed) speed.textContent = sp == null ? "—" : sp;
     paintSpeedBar(sp);
   }
+
+  const SHEET_STATE_WORDS = { closed: "закрыт", open: "открыт", partial: "частично открыт", tilted: "наклон" };
+  const SHEET_OPEN_STATES = ["open", "partial", "tilted"];
+  const SHEET_WINDOW_NAMES = ["водитель", "пассажир", "сзади слева", "сзади справа"];
+  const SHEET_WHEELS = [["flWarning", "Переднее левое"], ["frWarning", "Переднее правое"], ["rlWarning", "Заднее левое"], ["rrWarning", "Заднее правое"]];
+  const sheetRow = (label, value, open) => ({ label, value, open: !!open });
+  function carDetailGroups() {
+    const groups = [];
+    const body = [];
+    const sunCar = carStates.get_sunroof_state;
+    if (sunCar && sunCar.available && SHEET_STATE_WORDS[sunCar.state]) body.push(sheetRow("Люк", SHEET_STATE_WORDS[sunCar.state], SHEET_OPEN_STATES.includes(sunCar.state)));
+    else if (state.sunroofOpen != null) body.push(sheetRow("Люк", state.sunroofOpen ? "открыт" : "закрыт", state.sunroofOpen === true));
+    else body.push(sheetRow("Люк", "нет данных"));
+    const trunkCar = carStates.get_trunk_state;
+    if (trunkCar && trunkCar.available && SHEET_STATE_WORDS[trunkCar.state]) body.push(sheetRow("Багажник", SHEET_STATE_WORDS[trunkCar.state], SHEET_OPEN_STATES.includes(trunkCar.state)));
+    else if (carOpen.trunk != null) body.push(sheetRow("Багажник", carOpen.trunk ? "открыт" : "закрыт", carOpen.trunk === true));
+    else body.push(sheetRow("Багажник", "нет данных"));
+    const windowsCar = carStates.get_windows_state;
+    const windowList = windowsCar && Array.isArray(windowsCar.windows) ? windowsCar.windows : [];
+    if (windowList.length) {
+      windowList.forEach((w, i) => {
+        const index = w && typeof w.window === "number" ? w.window : i;
+        const name = SHEET_WINDOW_NAMES[index] || ("окно " + index);
+        const value = !w || !w.available || !SHEET_STATE_WORDS[w.state] ? "нет данных" : SHEET_STATE_WORDS[w.state];
+        body.push(sheetRow("Окно: " + name, value, w && w.available && SHEET_OPEN_STATES.includes(w.state)));
+      });
+    } else if (carOpen.windows != null) body.push(sheetRow("Окна", carOpen.windows ? "открыты" : "закрыты", carOpen.windows === true));
+    else body.push(sheetRow("Окна", "нет данных"));
+    groups.push({ title: "Кузов", rows: body });
+
+    const tpms = carStates.get_tpms;
+    const tyres = SHEET_WHEELS.map(([key, label]) => {
+      const v = tpms ? tpms[key] : null;
+      if (v === 1 || v === true) return sheetRow(label, "внимание", true);
+      if (v === 0 || v === false) return sheetRow(label, "в норме");
+      return sheetRow(label, "нет данных");
+    });
+    groups.push({ title: "Шины", rows: tyres });
+
+    const engine = [];
+    engine.push(sheetRow("Топливо", typeof tiggoState.fuel === "number" ? `${Math.round(tiggoState.fuel)} %` : "нет данных"));
+    engine.push(sheetRow("АКБ", typeof tiggoState.voltage === "number" ? `${tiggoState.voltage.toFixed(1).replace(".", ",")} В` : "нет данных"));
+    engine.push(sheetRow("Обороты", typeof tiggoState.rpm === "number" ? `${Math.round(tiggoState.rpm)}` : "нет данных"));
+    engine.push(sheetRow("За бортом", typeof tiggoState.outTemp === "number" ? `${tiggoState.outTemp} °C` : "нет данных"));
+    engine.push(sheetRow("Скорость", typeof state.speedKmh === "number" ? `${Math.round(state.speedKmh)} км/ч` : "нет данных"));
+    groups.push({ title: "Двигатель и питание", rows: engine });
+
+    return groups;
+  }
+  window.carDetailGroups = carDetailGroups;
+  window.renderChips = renderChips;
 
   function renderAll() {
     if (!byId("hero-widgets")) return;
@@ -320,8 +383,15 @@
   }
 
   function applyLayout() {
-    placeCards();
+    // In the home port the cards stay where the markup puts them (navigation and car state on the bottom row).
+    if (!document.body.classList.contains("home-port")) placeCards();
     ALL.forEach(id => { elOf(id).style.display = layout.hidden.includes(id) ? "none" : ""; });
+    // The home port (body.home-port) sets the sizes and places in CSS, so the saved sizes do not override it.
+    if (document.body.classList.contains("home-port")) {
+      topBox.style.gridTemplateColumns = "";
+      ALL.forEach(id => { const el = elOf(id); el.style.gridColumn = ""; el.style.order = ""; el.style.flex = ""; el.style.width = ""; el.style.height = ""; });
+      return;
+    }
     const fill = fillId("top");
     layout.top.forEach((id, index) => {
       const el = elOf(id);
