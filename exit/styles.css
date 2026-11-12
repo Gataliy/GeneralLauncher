@@ -1,0 +1,866 @@
+:root {
+  color-scheme: dark;
+  --safe-left: 0px;
+  --safe-top: 0px;
+  --safe-right: 0px;
+  --safe-bottom: 0px;
+  --bg: #071322;
+  --wallpaper: none;
+  --surface: rgba(11, 22, 39, .92);
+  --surface-soft: rgba(150, 190, 240, .07);
+  --line: rgba(150, 190, 240, .16);
+  --text: #eaf2ff;
+  --muted: #8aa0bd;
+  --accent: #6fc3fa;
+  --blue: #6fc3fa;
+  --hero-image: linear-gradient(135deg, #0b1d33 0%, #071322 50%, #0a1a2e 100%);
+}
+
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; }
+body { background-color: var(--bg); background-image: var(--hero-image); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; color: var(--text); font-family: Inter, "Roboto", "Segoe UI", Arial, sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; position: relative; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .2), transparent 42%), linear-gradient(0deg, rgba(6, 6, 8, .9), rgba(6, 6, 8, .18) 43%, transparent 68%); }
+button, input { font: inherit; }
+button { color: inherit; }
+
+.dashboard { width: min(100%, 1920px); min-height: 100vh; margin: 0 auto; padding: calc(clamp(16px, 1.8vw, 30px) + var(--safe-top)) calc(clamp(16px, 1.8vw, 30px) + var(--safe-right)) calc(clamp(16px, 1.8vw, 30px) + var(--safe-bottom)) calc(clamp(16px, 1.8vw, 30px) + var(--safe-left)); display: grid; grid-template-rows: minmax(360px, 1fr) auto; gap: 12px; position: relative; }
+.hero { min-height: 0; position: relative; overflow: visible; isolation: isolate; }
+.hero-shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 0, 0, .18), transparent 30%), linear-gradient(0deg, transparent 0%, rgba(0, 0, 0, .4) 26%, transparent 50%); }
+.hero-clock { flex: 0 0 auto; min-width: 0; min-height: 168px; padding: 23px 26px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid rgba(255, 255, 255, .16); border-radius: 33px; background: rgba(17, 17, 20, .74); backdrop-filter: blur(22px); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); }
+.clock { font-size: clamp(48px, 5vw, 82px); font-weight: 350; line-height: .92; letter-spacing: -.065em; text-shadow: 0 3px 24px rgba(0, 0, 0, .45); }
+.date { margin-top: 12px; font-size: 18px; text-shadow: 0 2px 12px rgba(0, 0, 0, .65); }
+.date > span { display: block; }
+.date > span + span { margin-top: 2px; }
+.hero-bottom { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 15px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.hero-bottom::-webkit-scrollbar { display: none; }
+.weather-widget, .player-widget { border: 1px solid rgba(255, 255, 255, .16); border-radius: 33px; background: rgba(17, 17, 20, .74); backdrop-filter: blur(22px); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); }
+.eyebrow { color: var(--muted); font-size: 11px; font-weight: 760; letter-spacing: .15em; }
+.hero-bottom .eyebrow { font-size: 17px; }
+
+.weather-widget { flex: 0 0 250px; min-width: 0; min-height: 168px; padding: 23px 26px; display: flex; align-items: center; gap: 18px; position: relative; border: 1px solid rgba(255, 255, 255, .16); color: var(--text); cursor: pointer; text-align: left; }
+.weather-widget:active { transform: scale(.97); }
+.weather-icon { width: 69px; height: 69px; flex: 0 0 auto; border-radius: 21px; display: grid; place-items: center; background: rgba(121, 220, 255, .12); color: var(--blue); font-size: 38px; }
+.weather-copy { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.weather-copy strong { font-size: 38px; font-weight: 560; line-height: 1; }
+.weather-copy > span:last-child { max-width: 180px; color: var(--muted); font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.weather-refresh { position: absolute; right: 15px; top: 14px; color: var(--muted); font-size: 20px; }
+.weather-widget.loading .weather-refresh { color: var(--accent); animation: weather-spin .9s linear infinite; }
+@keyframes weather-spin { to { transform: rotate(360deg); } }
+
+.player-widget { flex: 1 0 480px; min-width: 0; width: auto; max-width: 930px; min-height: 168px; padding: 21px; display: flex; align-items: center; gap: 24px; }
+.album-art { width: 126px; height: 126px; flex: 0 0 auto; border-radius: 23px; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 68% 28%, var(--accent), transparent 28%), linear-gradient(145deg, #4c5045, #151517 68%); }
+.album-art span { font-size: 33px; font-weight: 850; }
+.album-art.has-image { background-size: cover; background-position: center; }
+.album-art.has-image span { display: none; }
+.track-info { min-width: 0; flex: 1; }
+.track-info .eyebrow { white-space: nowrap; }
+.track-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-top: 11px; font-size: 29px; line-height: 1.12; overflow: hidden; word-break: break-word; }
+.track-artist { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 21px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-controls { display: flex; align-items: center; gap: 8px; }
+.player-controls button { width: 69px; height: 69px; border: 0; border-radius: 50%; background: transparent; font-size: 41px; cursor: pointer; }
+.player-controls button:active { background: var(--surface-soft); transform: scale(.94); }
+.player-controls .play { background: var(--text); color: #111; font-size: 23px; }
+
+.actions-section { min-width: 0; }
+.actions-header { display: flex; align-items: end; justify-content: space-between; padding: 0 4px 10px; }
+.actions-header h1 { margin: 3px 0 0; font-size: 24px; font-weight: 570; letter-spacing: -.02em; }
+.actions-header p { margin: 0 0 3px; color: var(--muted); font-size: 15px; }
+.actions-title-row { width: 100%; display: flex; justify-content: center; align-items: center; min-width: 0; }
+.page-controls { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.page-tabs, .add-slot-button { flex: 0 0 auto; }
+.page-tabs { display: flex; gap: 8px; margin: 0 0 3px; }
+.page-tabs button { padding: 8px 16px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.page-tabs button.active { border-color: var(--accent); background: rgba(216, 255, 69, .13); color: var(--text); }
+.action-slots { display: grid; grid-auto-flow: column; grid-auto-columns: 190px; justify-content: safe center; gap: 15px; overflow-x: auto; padding: 2px 1px 5px; scrollbar-width: none; }
+.action-slots::-webkit-scrollbar { display: none; }
+.action-slot { min-width: 190px; width: 190px; height: 171px; border: 1px solid var(--line); border-radius: 26px; padding: 18px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; position: relative; overflow: hidden; background: rgba(11, 22, 39, .92); backdrop-filter: blur(18px); box-shadow: 0 10px 28px rgba(0, 0, 0, .22); cursor: pointer; text-align: left; user-select: none; touch-action: manipulation; transition: transform .13s ease, border-color .18s ease, background .18s ease; }
+.action-slot:active { transform: scale(.97); }
+.action-slot.running { border-color: rgba(216, 255, 69, .58); background: linear-gradient(145deg, rgba(216, 255, 69, .14), var(--surface) 58%); }
+.action-icon { width: 63px; height: 63px; border-radius: 18px; display: grid; place-items: center; overflow: hidden; background: var(--surface-soft); font-size: 29px; font-weight: 750; }
+.action-icon img { width: 72%; height: 72%; object-fit: contain; }
+/* Coloured icons: each kind of control has its own tint */
+.action-icon[data-tone="sun"] { color: #ffd84a; background: rgba(255, 216, 74, .15); }
+.action-icon[data-tone="heat"] { color: #ff8a5c; background: rgba(255, 138, 92, .16); }
+.action-icon[data-tone="cool"] { color: #79dcff; background: rgba(121, 220, 255, .15); }
+.action-icon[data-tone="car"] { color: #7ee89a; background: rgba(126, 232, 154, .15); }
+.action-icon[data-tone="media"] { color: #ff7ac8; background: rgba(255, 122, 200, .15); }
+.action-icon[data-tone="app"] { color: #b08cff; background: rgba(176, 140, 255, .16); }
+.action-icon[data-tone="split"] { color: #4fe3c1; background: rgba(79, 227, 193, .15); }
+.action-icon[data-tone="screen"] { color: var(--accent); background: rgba(111, 195, 250, .14); }
+.action-icon[data-tone="temp"], .temp-top[data-tone="temp"] .temp-halves i { color: #ff6b8a; }
+.action-icon[data-tone="temp"] { background: rgba(255, 107, 138, .15); }
+.action-main { width: 100%; min-width: 0; height: 70px; flex: 0 0 auto; }
+.action-main strong { display: -webkit-box; min-height: 2.32em; font-size: 20px; font-weight: 570; line-height: 1.16; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.action-main span:empty { display: none; }
+.action-main span { display: block; margin-top: 7px; color: var(--muted); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.level-lamps { display: flex; gap: 7px; position: absolute; right: 17px; top: 17px; }
+.level-lamps i, .single-lamp { width: 11px; height: 11px; border-radius: 50%; background: #3d3d43; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45); }
+.level-lamps i.on { background: var(--accent); box-shadow: 0 0 11px rgba(216, 255, 69, .8); }
+.action-slot.cool .level-lamps i.on { background: var(--blue); box-shadow: 0 0 11px rgba(121, 220, 255, .8); }
+.action-slot.has-level.warm .action-icon { color: #ffad7c; background: rgba(255, 142, 92, .12); }
+.action-slot.has-level.cool .action-icon { color: var(--blue); background: rgba(121, 220, 255, .12); }
+.single-lamp { position: absolute; right: 18px; top: 18px; }
+.action-slot.running .single-lamp { background: var(--accent); box-shadow: 0 0 11px rgba(216, 255, 69, .8); }
+.action-slot.state-on { border-color: rgba(216, 255, 69, .46); background: linear-gradient(145deg, rgba(216, 255, 69, .11), var(--surface) 62%); }
+.action-slot.state-on .single-lamp { background: var(--accent); box-shadow: 0 0 11px rgba(216, 255, 69, .8); }
+.empty-slot { border-style: dashed; background: rgba(255, 255, 255, .025); }
+.empty-slot .action-icon { color: var(--muted); font-size: 30px; }
+
+.sheet-backdrop { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; padding: 24px; background: rgba(0, 0, 0, .7); backdrop-filter: blur(10px); }
+.sheet-backdrop[hidden] { display: none; }
+.picker-sheet { width: min(1180px, 100%); max-height: min(790px, calc(100vh - 48px)); border: 1px solid var(--line); border-radius: 28px; padding: 24px; background: #1a1a1e; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); overflow: auto; }
+.picker-header { display: flex; justify-content: space-between; align-items: center; }
+.picker-header h2 { margin: 5px 0 0; font-size: 27px; font-weight: 560; }
+.picker-header-actions { display: flex; align-items: center; gap: 10px; }
+.picker-remove { height: 48px; padding: 0 20px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface-soft); color: var(--text); font-size: 18px; cursor: pointer; }
+.picker-remove[hidden] { display: none; }
+.add-slot-button { white-space: nowrap; height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--muted); font-size: 16px; cursor: pointer; }
+.add-slot-button:disabled { opacity: .35; cursor: default; }
+.picker-close { width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--surface-soft); font-size: 28px; cursor: pointer; }
+.search-field { height: 58px; margin-top: 19px; padding: 0 18px; border: 1px solid var(--line); border-radius: 17px; display: flex; align-items: center; gap: 12px; background: rgba(0, 0, 0, .22); }
+.search-field span { color: var(--muted); font-size: 25px; }
+.search-field input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 17px; }
+.picker-tabs { display: flex; gap: 8px; margin: 16px 0; overflow-x: auto; }
+.picker-tabs button { padding: 11px 17px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.picker-tabs button.active { border-color: var(--accent); background: rgba(111, 195, 250, .14); color: var(--text); }
+.picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.picker-item { min-height: 80px; padding: 11px; border: 1px solid var(--line); border-radius: 17px; background: rgba(255, 255, 255, .025); display: flex; align-items: center; gap: 13px; cursor: pointer; text-align: left; }
+.picker-item:hover, .picker-item:focus-visible { border-color: rgba(216, 255, 69, .5); background: rgba(216, 255, 69, .1); outline: 0; }
+.picker-item-icon { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 14px; background: var(--surface-soft); display: grid; place-items: center; overflow: hidden; font-size: 21px; font-weight: 700; }
+.picker-item-icon img { width: 72%; height: 72%; object-fit: contain; }
+.picker-item-copy { min-width: 0; }
+.picker-item-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-item-copy span { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-empty { grid-column: 1 / -1; padding: 48px 20px; color: var(--muted); text-align: center; }
+.toast { position: fixed; z-index: 50; left: 50%; bottom: 24px; max-width: min(520px, calc(100vw - 40px)); padding: 13px 20px; border: 1px solid var(--line); border-radius: 999px; background: rgba(36, 36, 41, .96); box-shadow: 0 14px 40px rgba(0, 0, 0, .36); opacity: 0; pointer-events: none; transform: translate(-50%, 14px); transition: .2s ease; }
+.toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+@media (max-height: 780px) { .dashboard { grid-template-rows: minmax(250px, 1fr) auto; } .hero-bottom { bottom: 0; } }
+@media (max-width: 1180px) { .hero-bottom { gap: 15px; } .weather-widget { flex-basis: 250px; } .player-widget { flex: 1 1 320px; } .album-art { display: none; } }
+@media (max-width: 920px) { .dashboard { padding: calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left)); } .weather-widget { min-width: 170px; } .player-widget { min-width: 280px; } .picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .dashboard { grid-template-rows: minmax(300px, 1fr) auto; } .clock { font-size: 52px; } .hero-bottom { left: 16px; right: 16px; bottom: 16px; } .weather-widget { display: none; } .player-widget { width: 100%; } .album-art { width: 72px; height: 72px; } .actions-header p { display: none; } .picker-grid { grid-template-columns: 1fr; } .sheet-backdrop { padding: 9px; } .picker-sheet { padding: 18px; border-radius: 23px; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+
+/* Temperature slot: icon row with the +/- strip on the right, value and zone name below */
+.temp-top { display: flex; align-items: flex-start; justify-content: space-between; width: 100%; }
+.temp-top .temp-value { align-self: center; font-size: 28px; line-height: 1; }
+.temp-slot .action-main strong { min-height: 2.32em; }
+.temp-value { font-weight: 750; letter-spacing: -.02em; color: var(--text, #f4f4f6); white-space: nowrap; }
+.temp-halves { width: 44px; height: 63px; display: flex; flex-direction: column; gap: 10px; }
+.temp-halves i { flex: 1; display: grid; place-items: center; font-style: normal; font-size: 22px; font-weight: 750; color: var(--text); border-radius: 14px; background: var(--surface-soft); }
+
+/* Section headers in the recommended picker tab */
+.picker-section { grid-column: 1 / -1; padding: 12px 4px 2px; }
+.picker-section:first-child { padding-top: 2px; }
+
+/* Climate page: wider slots, same height as the home row */
+.action-slots.climate-page { grid-auto-columns: 190px; }
+.action-slots.climate-page .action-slot { min-width: 190px; width: 190px; aspect-ratio: auto; height: 171px; }
+
+/* Clock, weather and player share one height on the home screen */
+.hero-clock, .weather-widget, .player-widget { height: 171px; min-height: 171px; }
+
+/* Clock is as wide as the weather card on the home screen */
+.hero-clock { flex: 0 0 250px; width: 250px; }
+@media (max-width: 1180px) { .hero-clock { flex-basis: 250px; width: 250px; } }
+@media (max-width: 680px) { .hero-clock { flex: 0 0 auto; width: auto; } }
+
+/* Tabs that do not apply to the current page are hidden in the picker */
+.picker-tabs button[hidden] { display: none; }
+
+/* App drawer: the third page, tiles like the slots */
+/* A hidden element stays hidden even when a class sets its display */
+[hidden] { display: none !important; }
+/* App drawer: one horizontal strip of tiles, like the slots; section names are vertical labels */
+.app-drawer { display: flex; align-items: stretch; gap: 15px; height: 178px; overflow-x: auto; overflow-y: hidden; padding: 2px 1px 5px; scrollbar-width: none; }
+.app-drawer::-webkit-scrollbar { display: none; }
+.app-drawer .picker-section { flex: 0 0 auto; width: 28px; padding: 0; align-self: center; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+.app-drawer .picker-empty { flex: 0 0 auto; align-self: center; padding: 0 10px; }
+.app-tile { width: 200px; height: 171px; border: 1px solid var(--line); border-radius: 26px; padding: 18px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; background: rgba(11, 22, 39, .92); color: var(--text); cursor: pointer; text-align: left; transition: transform .13s ease; }
+.app-tile:active { transform: scale(.97); }
+.app-tile-icon { width: 63px; height: 63px; border-radius: 18px; display: grid; place-items: center; overflow: hidden; background: var(--surface-soft); font-size: 29px; font-weight: 750; }
+.app-tile-icon img { width: 72%; height: 72%; object-fit: contain; }
+.app-tile-name { font-size: 18px; font-weight: 570; line-height: 1.16; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.app-debug { width: 100%; margin: 0; white-space: pre-wrap; font-size: 13px; color: var(--muted); max-height: 260px; overflow: auto; }
+
+/* Top row opened from the player: it moves into the slot area and grows taller.
+   The tabs rise with it, because the hero above takes the space it gives up. */
+.player-stage { padding: 2px 1px 5px; }
+.hero-bottom.in-stage { position: static; left: auto; right: auto; bottom: auto; width: 100%; height: 260px; align-items: stretch; }
+.hero-bottom.in-stage > * { height: auto; min-height: 0; }
+.player-widget.expanded { flex: 1 1 auto; width: auto; max-width: none; }
+.player-widget.expanded .album-art { width: 170px; height: 170px; border-radius: 28px; }
+.player-widget.expanded .album-art span { font-size: 52px; }
+.player-widget.expanded .track-title { font-size: 32px; margin-top: 12px; }
+.player-widget.expanded .track-artist { font-size: 20px; }
+
+/* Transitions: the cover grows and shrinks; the top row fades and slides in and out */
+.album-art { cursor: pointer; transition: width .28s ease, height .28s ease, border-radius .28s ease; }
+@keyframes row-in { from { opacity: 0; transform: translateY(28px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes row-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(28px) scale(.98); } }
+.hero-bottom.in-stage { animation: row-in .32s cubic-bezier(.2, .8, .2, 1); }
+.hero-bottom.in-stage.leaving { animation: row-out .22s ease-in forwards; }
+
+/* Track progress: shown only in the opened player and only when the head unit sends position and length */
+.track-progress { display: none; height: 4px; margin-top: 14px; border-radius: 2px; background: var(--surface-soft); overflow: hidden; }
+.player-widget.expanded .track-progress.has-data { display: block; }
+.track-progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 1s linear; }
+/* Page switch: the slot row slides out and in, following the tab order. */
+@keyframes page-out-next { to { opacity: 0; transform: translateX(-24px); } }
+@keyframes page-out-prev { to { opacity: 0; transform: translateX(24px); } }
+@keyframes page-in-next { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+@keyframes page-in-prev { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+.action-slots.leaving-next { animation: page-out-next .09s ease-in forwards; }
+.action-slots.leaving-prev { animation: page-out-prev .09s ease-in forwards; }
+.action-slots.entering-next { animation: page-in-next .17s cubic-bezier(.2, .8, .2, 1); }
+.action-slots.entering-prev { animation: page-in-prev .17s cubic-bezier(.2, .8, .2, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .action-slots.leaving-next, .action-slots.leaving-prev, .action-slots.entering-next, .action-slots.entering-prev { animation: none; }
+}
+
+/* Light theme: the head unit sends a "theme" event (dark / light); the dashboard follows it. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e4ebf7;
+  --surface: rgba(255, 255, 255, .8);
+  --surface-soft: rgba(27, 38, 64, .05);
+  --line: rgba(27, 38, 64, .12);
+  --text: #1b2640;
+  --muted: #5f6b84;
+  --accent: #2f6fd1;
+  --blue: #2f6fd1;
+  --hero-image: linear-gradient(135deg, #e9effa 0%, #dbe4f5 50%, #e6ecf8 100%);
+}
+:root[data-theme="light"] body::before { background: linear-gradient(180deg, rgba(255, 255, 255, .12), transparent 42%); }
+:root[data-theme="light"] .hero-shade { background: none; }
+:root[data-theme="light"] * { text-shadow: none !important; }
+:root[data-theme="light"] .weather-widget, :root[data-theme="light"] .player-widget { background: rgba(255, 255, 255, .86); border-color: var(--line); }
+:root[data-theme="light"] .action-slot, :root[data-theme="light"] .app-tile { background: var(--surface); }
+:root[data-theme="light"] .action-slot.running, :root[data-theme="light"] .action-slot.state-on { background: linear-gradient(145deg, rgba(47, 111, 209, .10), var(--surface) 62%); }
+:root[data-theme="light"] .empty-slot, :root[data-theme="light"] .picker-item { background: rgba(255, 255, 255, .6); }
+:root[data-theme="light"] .level-lamps i, :root[data-theme="light"] .single-lamp { background: #c5cad1; }
+:root[data-theme="light"] .level-lamps i.on, :root[data-theme="light"] .action-slot.running .single-lamp, :root[data-theme="light"] .action-slot.state-on .single-lamp { background: var(--accent); }
+:root[data-theme="light"] .picker-sheet { background: #f5f6f8; }
+:root[data-theme="light"] .sheet-backdrop { background: rgba(20, 24, 30, .4); }
+:root[data-theme="light"] .search-field { background: #ffffff; }
+:root[data-theme="light"] .toast { background: rgba(255, 255, 255, .97); box-shadow: 0 14px 40px rgba(0, 0, 0, .18); }
+:root[data-theme="light"] .page-tabs button.active, :root[data-theme="light"] .picker-tabs button.active { background: rgba(47, 111, 209, .12); }
+:root[data-theme="light"] .action-slot, :root[data-theme="light"] .app-tile, :root[data-theme="light"] .picker-item { box-shadow: 0 6px 18px rgba(27, 38, 64, .09); }
+/* Light theme: clock card matches the weather and player cards; play button uses the accent. */
+:root[data-theme="light"] .hero-clock { background: rgba(255, 255, 255, .84); border-color: var(--line); color: var(--text); box-shadow: 0 18px 50px rgba(27, 38, 64, .12); }
+:root[data-theme="light"] .hero-clock .date, :root[data-theme="light"] .hero-clock .date span { color: var(--muted); }
+:root[data-theme="light"] .player-controls .play { background: var(--accent); color: #ffffff; }
+
+/* Saved combinations in the picker: a row with the item and a remove button. */
+.picker-split-row { display: flex; align-items: stretch; gap: 8px; }
+.picker-split-row .picker-item { flex: 1; min-width: 0; }
+.picker-split-delete { width: 56px; border: 1px solid var(--line); border-radius: 16px; background: transparent; color: var(--muted); font-size: 26px; cursor: pointer; }
+.picker-restore { margin-top: 12px; padding: 12px 18px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--text); cursor: pointer; }
+
+/* Full-screen player (opened by tapping the cover). */
+
+/* Diagnostics panel (long press on the clock). */
+.diag-sheet { width: min(1100px, 100%); }
+.diag-log { margin: 0 0 14px; max-height: 32vh; overflow: auto; padding: 12px; border-radius: 14px; background: var(--surface-soft); color: var(--text); font: 12px/1.45 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+.diag-tests { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.diag-tests button { padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: transparent; color: var(--text); font-size: 13px; cursor: pointer; }
+.diag-group { width: 100%; margin-top: 8px; font-weight: 700; color: var(--muted); }
+
+/* Tiggo 9 home (separate layout, switched on in the diagnostics panel). */
+.go-home { width: 56px; height: 56px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-soft); color: var(--text); font-size: 26px; cursor: pointer; }
+.go-home[hidden] { display: none; }
+body.tg-on .dashboard, body.tg-on .actions-section { display: none; }
+.tg-home { display: none; position: fixed; inset: 0; z-index: 5; grid-template-columns: 110px 1fr; gap: 14px; grid-template-rows: minmax(0, 1fr); padding: 14px; background: var(--hero-image), var(--bg); color: var(--text); }
+body.tg-on .tg-home { display: grid; }
+.tg-side { min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 6px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); }
+.tg-side button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border: 0; border-radius: 16px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; }
+.tg-side button.active, .tg-side button:hover { color: var(--text); background: var(--surface-soft); }
+.tg-ico { width: 28px; height: 28px; display: grid; place-items: center; }
+.tg-ico svg { width: 28px; height: 28px; }
+.tg-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: minmax(0, 1.05fr) minmax(0, 1fr); gap: 14px; min-width: 0; min-height: 0; }
+.tg-card { min-width: 0; min-height: 0; padding: 16px; border-radius: 33px; background: rgba(2, 6, 12, .94); backdrop-filter: blur(22px); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); border: 1px solid rgba(255, 255, 255, .16); display: flex; flex-direction: column; overflow: hidden; }
+.tg-card h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.tg-hero { grid-row: 1; grid-column: 1 / span 3; position: relative; border-radius: 33px; overflow: hidden; background: linear-gradient(180deg, rgba(8, 10, 14, .7) 0%, rgba(8, 10, 14, .25) 40%, rgba(8, 10, 14, .55) 100%), url("images/tiggo/bg-mountains.jpg") center / cover no-repeat, rgba(2, 6, 12, .94); backdrop-filter: blur(22px); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); border: 1px solid rgba(255, 255, 255, .16); }
+.tg-car { position: absolute; left: 50%; top: 38px; transform: translateX(-50%); width: 58%; max-height: 46%; object-fit: contain; }
+.tg-clock { position: absolute; left: 22px; top: 16px; }
+.tg-clock strong { display: block; font-size: 64px; font-weight: 300; line-height: 1; }
+.tg-clock span { color: var(--muted); font-size: 16px; }
+.tg-weather { position: absolute; right: 22px; top: 18px; text-align: right; }
+.tg-weather span { display: block; color: var(--muted); font-size: 14px; }
+.tg-weather strong { font-size: 40px; font-weight: 300; }
+.tg-side-stack { grid-row: 2; grid-column: 4; min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.tg-side-stack .tg-music { flex: 1.15 1 0; min-height: 0; justify-content: space-between; gap: 10px; }
+.tg-side-stack .tg-apps-card { flex: 1 1 0; min-height: 0; }
+.tg-side-stack .tg-art { display: none; }
+.tg-side-stack .tg-controls button { width: 50px; height: 50px; font-size: 20px; }
+.tg-side-stack .tg-track strong { font-size: 22px; }
+.tg-top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.tg-art { flex: 0 0 auto; width: 110px; height: 110px; border-radius: 22px; background: var(--surface-soft) center / cover no-repeat; display: grid; place-items: center; font-size: 46px; color: var(--muted); }
+.tg-art.has-image span { display: none; }
+.tg-track { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.tg-track strong { font-size: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tg-track span { color: var(--muted); font-size: 15px; }
+.tg-eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tg-controls { display: flex; flex-direction: row; justify-content: center; gap: 12px; }
+.tg-controls button { width: 60px; height: 60px; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--text); font-size: 24px; cursor: pointer; }
+.tg-car-card { grid-row: 2; grid-column: 2; align-items: center; }
+.tg-nav { grid-row: 1; grid-column: 4; cursor: pointer; }
+.tg-nav-map { position: relative; overflow: hidden; flex: 1; border-radius: 16px; background: repeating-linear-gradient(90deg, rgba(111,195,250,.10) 0 2px, transparent 2px 36px), repeating-linear-gradient(0deg, rgba(111,195,250,.10) 0 2px, transparent 2px 36px), var(--surface-soft); display: grid; place-items: center; font-size: 64px; color: var(--accent); }
+.tg-nav-foot { position: absolute; left: 10px; right: 10px; bottom: 10px; height: 44px; z-index: 2; border: 0; padding: 0 14px; border-radius: 14px; background: rgba(17, 17, 20, .84); color: var(--text); font: inherit; display: flex; justify-content: space-between; align-items: center; cursor: pointer; text-align: left; }
+.tg-nav-foot span { font-size: 26px; color: var(--muted); }
+.tg-nav-foot strong { font-size: 16px; }
+.tg-car-card img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.tg-car-info { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.tg-quick { grid-row: 2; grid-column: 3; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.tg-quick h4 { grid-column: 1 / span 2; }
+.tg-quick button { min-height: 0; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 10px; border: 1px solid var(--line); border-radius: 26px; background: rgba(11, 22, 39, .92); color: var(--text); font-size: 14px; text-align: left; cursor: pointer; }
+.tg-quick button .tg-ico { width: 30px; height: 30px; }
+.tg-quick button .tg-ico svg { width: 30px; height: 30px; }
+.tg-data-card { grid-row: 2; grid-column: 1; }
+.tg-apps { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; min-height: 0; }
+.tg-app { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-soft); color: var(--text); font-size: 13px; cursor: pointer; padding: 8px; min-width: 0; }
+.tg-app:disabled { color: var(--muted); cursor: default; }
+.tg-app-icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: rgba(111, 195, 250, .16); color: var(--accent); font-size: 20px; font-weight: 700; }
+
+.tg-drive { position: absolute; left: 22px; top: 124px; display: flex; gap: 26px; }
+.tg-drive strong { display: block; font-size: 44px; font-weight: 300; line-height: 1; }
+.tg-drive span { color: var(--muted); font-size: 14px; }
+
+/* Car animation: a small strip at the top with the car thumbnail and the part that opens or closes. */
+.car-anim { position: fixed; top: max(12px, env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 36; width: min(560px, calc(100vw - 32px)); display: flex; align-items: center; gap: 14px; padding: 10px 18px 10px 10px; border-radius: 23px; background: rgba(2, 6, 12, .94); border: 1px solid rgba(255, 255, 255, .14); color: #eaf2ff; box-shadow: 0 10px 30px rgba(0, 0, 0, .35); pointer-events: none; }
+.car-anim[hidden] { display: none; }
+.car-anim.show { animation: caDrop .3s ease-out; }
+@keyframes caDrop { from { opacity: 0; transform: translate(-50%, -24px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.car-anim-box { position: relative; flex: 0 0 auto; width: min(180px, 34vw); aspect-ratio: 900 / 287; }
+.car-anim-box img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.car-anim-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.ca-part { display: none; }
+.ca-part.on { display: inline; }
+.ca-hole { fill: #02060c; opacity: .9; }
+.ca-lid { fill: rgba(190, 205, 220, .28); stroke: var(--accent); stroke-width: 12; }
+.ca-glass { fill: rgba(111, 195, 250, .30); stroke: var(--accent); stroke-width: 12; }
+.ca-part.on .ca-lid { transform-box: fill-box; }
+.ca-part[data-kind="trunk"] .ca-lid { transform-origin: left center; }
+.ca-part[data-kind="roof"] .ca-lid { animation: caRoof var(--ca-dur, 1.6s) ease-in-out both; }
+.ca-part[data-kind="trunk"] .ca-lid { animation: caTrunk var(--ca-dur, 1.6s) ease-in-out both; }
+.ca-part[data-kind="windows"] .ca-glass { transform-box: fill-box; transform-origin: center; animation: caWin var(--ca-dur, 1.6s) ease-in-out both; }
+.ca-part.closing .ca-lid, .ca-part.closing .ca-glass { animation-direction: reverse; }
+@keyframes caTrunk { 0% { transform: scaleX(1); } 45%, 100% { transform: scaleX(.3); } }
+@keyframes caRoof { 0% { transform: translateX(0); } 45%, 100% { transform: translateX(90px); } }
+@keyframes caWin { 0% { transform: scaleY(1); } 45%, 100% { transform: scaleY(.2); } }
+.car-anim-text { min-width: 0; font-size: 20px; font-weight: 600; line-height: 1.2; color: inherit; }
+:root[data-theme="light"] .car-anim { background: rgba(255, 255, 255, .95); border-color: rgba(31, 116, 184, .25); color: #13243a; }
+
+#tg-map-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tg-nav-turn { position: absolute; left: 10px; right: 10px; top: 10px; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; background: rgba(17, 17, 20, .84); color: var(--text); }
+.tg-nav-turn b { font-size: 34px; line-height: 1; color: var(--accent); min-width: 36px; text-align: center; }
+.tg-nav-turn > span { display: flex; flex-direction: column; min-width: 0; }
+.tg-nav-turn strong { font-size: 22px; }
+.tg-nav-turn small { font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tg-data-card { display: flex; flex-direction: column; }
+.tg-data { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1.3fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+.tg-tile { min-width: 0; min-height: 0; padding: 8px 10px; overflow: hidden; border-radius: 18px; border: 1px solid var(--line); background: rgba(11, 22, 39, .92); display: flex; flex-direction: column; justify-content: space-between; }
+.tg-tile-wide { grid-column: 1 / span 2; }
+.tg-tile > span { color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tg-tile p { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 5px; min-width: 0; }
+.tg-tile strong { font-size: 26px; font-weight: 600; line-height: 1; color: var(--text); white-space: nowrap; }
+.tg-tile em { font-style: normal; color: var(--muted); font-size: 13px; white-space: nowrap; }
+.tg-tile-wide strong { font-size: 42px; }
+
+.tg-apps-card { display: flex; flex-direction: column; }
+.tg-side-stack .tg-apps-card { padding: 12px; }
+.tg-side-stack .tg-apps-card h4 { margin-bottom: 4px; }
+.tg-side-stack .tg-apps { grid-auto-rows: minmax(0, 1fr); }
+.tg-side-stack .tg-apps > * { min-height: 0; overflow: hidden; }
+
+.tg-car-wrap { position: relative; flex: 1; min-height: 0; width: 100%; }
+.tg-car-wrap img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.tg-tyre { position: absolute; display: flex; flex-direction: column; align-items: flex-start; padding: 5px 9px; border-radius: 12px; border: 1px solid var(--line); background: rgba(11, 22, 39, .92); font-weight: 600; font-size: 15px; line-height: 1.15; white-space: nowrap; }
+.tg-tyre small { color: var(--muted); font-size: 12px; font-weight: 400; }
+.tg-tyre.fl { left: 0; top: 4%; }
+.tg-tyre.fr { right: 0; top: 4%; align-items: flex-end; }
+.tg-tyre.rl { left: 0; bottom: 4%; }
+.tg-tyre.rr { right: 0; bottom: 4%; align-items: flex-end; }
+
+.tg-car-states { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.tg-st { fill: transparent; stroke: transparent; stroke-width: 4; }
+.tg-st.on { fill: rgba(111, 195, 250, .28); stroke: var(--accent); }
+
+/* Tiggo layout with a classic page inside: the slots fill the area to the right of the sidebar. */
+body.tg-on.tg-section .dashboard { display: block; position: fixed; left: 150px; top: 14px; right: 14px; bottom: 14px; z-index: 6; min-height: 0; padding: 0; margin: 0; width: auto; background: transparent; }
+body.tg-on.tg-section .dashboard > .hero { display: none; }
+body.tg-on.tg-section .actions-section { display: block; height: 100%; overflow: auto; }
+body.tg-on.tg-section .tg-grid { display: none; }
+body.tg-on.tg-section .action-slots { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); justify-content: stretch; overflow: visible; padding: 4px 2px 10px; }
+body.tg-on.tg-section .action-slots > * { min-height: 171px; }
+/* The sidebar already lists these pages, so the tab row is hidden in the Tiggo layout. */
+body.tg-on.tg-section .page-tabs { display: none; }
+.tg-side button[hidden] { display: none; }
+.tg-nav-radar { position: absolute; left: 10px; bottom: 10px; display: flex; flex-direction: column; padding: 6px 10px; border-radius: 12px; background: rgba(17, 17, 20, .84); border: 1px solid var(--line); }
+.tg-nav-radar[hidden] { display: none; }
+.tg-nav-radar span { font-size: 12px; color: var(--muted); }
+.tg-nav-radar strong { font-size: 20px; }
+.tg-nav-radar.urgent { border-color: #ff5a5a; }
+.tg-nav-radar.urgent strong { color: #ff5a5a; }
+.tg-nav-limit { position: absolute; right: 10px; bottom: 10px; width: 52px; height: 52px; border-radius: 50%; border: 4px solid #ff5a5a; background: #fff; color: #111; display: grid; place-items: center; }
+.tg-nav-limit[hidden] { display: none; }
+.tg-nav-limit strong { font-size: 20px; color: #111; }
+
+/* Предупреждение о камере контроля и радаре (camera-alerts.js) */
+.tg-nav-cam { position: absolute; right: 78px; bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 128px; max-width: calc(100% - 150px); padding: 8px 12px 10px; border-radius: 14px; background: rgba(17, 17, 20, .86); border: 1px solid rgba(255, 184, 77, .55); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.tg-nav-cam[hidden] { display: none; }
+.tg-nav-cam span { font-size: 12px; color: var(--muted); line-height: 1.2; text-transform: uppercase; letter-spacing: .04em; }
+.tg-nav-cam strong { font-size: 22px; line-height: 1.1; color: #ffb84d; font-variant-numeric: tabular-nums; }
+.tg-cam-bar { display: block; width: 100%; height: 4px; margin-top: 6px; border-radius: 2px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.tg-cam-bar b { display: block; height: 100%; width: 0; background: #ffb84d; border-radius: 2px; transition: width .4s ease; }
+.tg-nav-cam.urgent { border-color: rgba(255, 90, 90, .8); }
+.tg-nav-cam.urgent strong { color: #ff5a5a; }
+.tg-nav-cam.urgent .tg-cam-bar b { background: #ff5a5a; }
+
+/* Медиаплеер под машиной, внутри большой карточки */
+.tg-hero .tg-music-hero { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(2, 6, 12, .94); border-radius: 22px 22px 33px 33px; padding: 14px 24px; flex-direction: row; align-items: center; gap: 14px; }
+.tg-hero .tg-music-hero .tg-top { flex: 1; min-width: 0; }
+.tg-hero .tg-music-hero .tg-art { width: 72px; height: 72px; border-radius: 16px; }
+.tg-hero .tg-music-hero .tg-controls { flex: 0 0 auto; }
+
+/* Состояние автомобиля в правой карточке: только известные значения */
+.tg-state-list { list-style: none; margin: 4px 0 8px; padding: 0; display: grid; gap: 6px; }
+.tg-state-list[hidden] { display: none; }
+.tg-state-list li { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line); font-size: 15px; }
+.tg-state-list span { color: var(--muted); }
+.tg-state-list b { font-weight: 600; color: var(--muted); }
+.tg-state-list li.open { border-color: var(--accent); }
+.tg-state-list li.open b { color: var(--accent); }
+.tg-side-stack .tg-state-list + .tg-apps { flex: 1 1 auto; }
+.tg-state-list li.summary { border-style: dashed; }
+.tg-state-list li.summary b { color: #7fd38a; }
+.tg-side-stack .tg-apps-card h4.tg-state-title[hidden] { display: none; }
+.tg-side-stack .tg-apps-card h4.tg-state-title { margin-bottom: 6px; }
+.tg-side-stack .tg-state-list { gap: 4px; margin: 0 0 6px; }
+.tg-side-stack .tg-state-list li { padding: 6px 10px; font-size: 14px; border-radius: 12px; }
+.tg-side-stack .tg-apps-card h4 { margin: 4px 0; }
+.tg-side-stack .tg-apps { grid-auto-rows: minmax(0, 1fr); min-height: 0; flex: 1 1 0; }
+.tg-nav-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tg-nav-head h4 { margin: 0; }
+.tg-nav-open { border: 1px solid var(--line); background: var(--surface-soft); color: var(--accent); font: inherit; font-size: 14px; padding: 4px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.tg-nav-title { cursor: pointer; }
+.tg-nav-title span { color: var(--accent); font-size: 20px; margin-left: 6px; }
+
+
+/* ===== Доводка: дуги, компактные плитки, схема, подсветка ===== */
+.tg-arcs { display:grid; grid-template-columns:1fr 1fr; gap:8px; flex:0 0 auto; height:148px; margin-bottom:8px; }
+.tg-arc { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:4px; border-radius:16px; background:var(--surface-soft); border:1px solid var(--line); min-height:0; }
+.tg-arc svg { width:100%; max-width:132px; height:auto; }
+.tg-arc-track { fill:none; stroke:rgba(255,255,255,.16); stroke-width:9; stroke-linecap:round; }
+.tg-arc-fill { fill:none; stroke:#6fc3fa; stroke-width:9; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:100; }
+.tg-arc strong { font-size:24px; margin-top:-22px; line-height:1; font-variant-numeric:tabular-nums; color:#ffffff; }
+.tg-arc span { font-size:12px; color:#cdd6e2; }
+.tg-data-card { display:flex; flex-direction:column; }
+.tg-data-card .tg-data { grid-template-columns:1fr 1fr 1fr; gap:6px; flex:0 0 auto; }
+.tg-data-card .tg-tile { min-height:72px; display:flex; flex-direction:column; justify-content:space-between; padding:8px; }
+.tg-data-card .tg-tile span { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#cdd6e2; }
+.tg-data-card .tg-tile strong { font-size:20px; color:#ffffff; }
+.tg-car-card { display:flex; flex-direction:column; }
+.tg-car-card .tg-car-wrap { flex:1 1 0; min-height:0; position:relative; }
+.tg-car-card .tg-car-wrap > img:not(.tg-waves) { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); height:92%; width:auto; max-width:84%; }
+.tg-waves { position:absolute; left:50%; top:50%; width:72%; height:auto; transform:translate(-50%,-50%); pointer-events:none; }
+.tg-waves ellipse { fill:none; stroke:rgba(59,208,255,.35); stroke-width:1.2; }
+.tg-car-card .tg-tyre { min-width:0; padding:4px 8px; }
+.tg-car-card .tg-tyre span, .tg-car-card .tg-tyre b { font-size:14px; }
+.tg-car-card .tg-tyre small { font-size:12px; }
+.tg-tyre span { color:#ffffff; }
+.tg-tyre small { color:#c3ccd8; }
+.tg-tyre.low { border-color:#ff5a5a; box-shadow:0 0 14px rgba(255,90,90,.45); }
+.tg-tyre.low span, .tg-tyre.low b { color:#ff5a5a; }
+.tg-avg { display:flex; justify-content:center; align-items:baseline; gap:8px; font-size:11px; color:#c3ccd8; }
+.tg-avg[hidden] { display:none; }
+.tg-avg b { color:var(--text); font-weight:600; font-size:13px; }
+.tg-quick button.on { border-color:#3bd0ff; box-shadow:0 0 18px rgba(59,208,255,.35), inset 0 0 14px rgba(59,208,255,.12); }
+.tg-hero { box-shadow:inset 0 2px 0 rgba(59,208,255,.6); }
+
+/* ===== Состояние авто вместо избранного, компас вместо быстрых действий ===== */
+.tg-state-card { grid-row:2; grid-column:4; display:flex; flex-direction:column; min-height:0; }
+.tg-state-card .tg-state-list { display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
+.tg-state-card .tg-state-list li { color:#eef3f8; }
+.tg-state-card .tg-state-list li span { color:#c3ccd8; }
+.tg-state-card .tg-state-list li.open b { color:var(--accent); }
+.tg-state-card .tg-state-list li.summary b { color:#7fd38a; }
+.tg-compass-card { grid-row:2; grid-column:3; display:flex; flex-direction:column; align-items:center; min-height:0; }
+.tg-compass { flex:1 1 0; min-height:0; width:100%; display:grid; place-items:center; }
+.tg-compass svg { height:100%; max-height:200px; width:auto; aspect-ratio:1; }
+.tg-compass-face { fill:rgba(11,22,39,.6); stroke:rgba(150,190,240,.22); stroke-width:2; }
+#tg-compass-ring { transform-origin:100px 100px; transition:transform .4s ease; }
+#tg-compass-ring text { fill:#cdd6e2; font-size:17px; font-weight:600; dominant-baseline:middle; }
+#tg-compass-ring .tg-compass-n { fill:#ff6b6b; }
+.tg-compass-tick { stroke:rgba(150,190,240,.4); stroke-width:2; fill:none; }
+.tg-compass-needle { fill:#6fc3fa; }
+.tg-compass-hub { fill:#eaf2ff; }
+.tg-compass-val { display:flex; align-items:baseline; gap:8px; margin-top:6px; }
+.tg-compass-val strong { font-size:22px; color:#ffffff; font-variant-numeric:tabular-nums; }
+.tg-compass-val span { font-size:14px; color:#cdd6e2; }
+
+/* Фон экрана Tiggo всегда синий, не зависит от светлой/тёмной темы */
+.tg-home { background: linear-gradient(135deg, #0b1d33 0%, #071322 50%, #0a1a2e 100%); }
+
+/* Боковая панель Tiggo: тёмно-синяя независимо от темы */
+.tg-side { background: rgba(7, 19, 36, .94); border-color: rgba(150, 190, 240, .16); }
+.tg-side button, .tg-side button span { color: #cfe0f5; }
+.tg-side button.active, .tg-side button.active span { color: #ffffff; }
+.tg-side button svg, .tg-side button .tg-ico svg { stroke: #cfe0f5; }
+
+/* Карточки Tiggo-экрана чёрные; плитки внутри остаются тёмно-синими для глубины */
+.tg-card { background: rgba(2, 6, 12, .94); }
+
+/* Медиаплеер под машиной: тот же стиль, что у карточек (почти чёрный, тонкая обводка) */
+.tg-hero .tg-music-hero { background: rgba(2, 6, 12, .94); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 -6px 24px rgba(0, 0, 0, .35); }
+.tg-hero .tg-music-hero .tg-song, .tg-hero .tg-music-hero strong { color: #ffffff; }
+.tg-hero .tg-music-hero .tg-artist, .tg-hero .tg-music-hero small, .tg-hero .tg-music-hero span { color: #c3ccd8; }
+.tg-hero .tg-music-hero button { color: #eef3f8; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); }
+.tg-hero .tg-music-hero button:disabled { opacity: .45; }
+.tg-hero .tg-music-hero .tg-art { background: rgba(255, 255, 255, .06); }
+
+/* Медиаплеер в стиле остальных карточек: тот же фон, обводка и приглушённые кнопки */
+.tg-hero .tg-music-hero { background: rgba(2, 6, 12, .94); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); }
+.tg-hero .tg-music-hero .tg-song, .tg-hero .tg-music-hero strong { color: var(--text); }
+.tg-hero .tg-music-hero .tg-artist, .tg-hero .tg-music-hero small, .tg-hero .tg-music-hero span { color: var(--muted); }
+.tg-hero .tg-music-hero button { color: var(--text); background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); }
+.tg-hero .tg-music-hero .tg-art { background: rgba(255, 255, 255, .05); }
+
+/* Классика: карточки климата, плеер, погода и часы одного чёрного тона */
+.action-slot, .app-tile { background: rgba(2, 6, 12, .94); }
+.weather-widget, .player-widget, .hero-clock { background: rgba(2, 6, 12, .94); }
+
+
+/* ===== Классика: три виджета над часами, погодой и плеером ===== */
+.hero-widgets { position:absolute; left:0; right:0; bottom:188px; height:170px; display:grid; grid-template-columns:515px 1fr 206px; gap:15px; z-index:2; pointer-events:none; }
+.hw-card { background:rgba(2, 6, 12, .94); border:1px solid rgba(255, 255, 255, .14); border-radius:33px; padding:14px 20px; min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; color:#eaf2ff; }
+.hw-eb { font-size:11px; letter-spacing:.14em; color:#8aa0bd; text-transform:uppercase; white-space:nowrap; }
+.hw-body { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
+.hw-chips { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+.hw-chip { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; border-radius:16px; border:1px solid rgba(255, 255, 255, .14); font-size:15px; white-space:nowrap; }
+.hw-chip span { color:#8aa0bd; }
+.hw-chip b { font-weight:600; color:#eaf2ff; }
+.hw-chip.open b { color:#6fc3fa; }
+.hw-turn-row { display:flex; align-items:center; gap:14px; }
+.hw-turn { width:64px; height:64px; border-radius:18px; background:rgba(111, 195, 250, .12); display:grid; place-items:center; font-size:32px; color:#6fc3fa; flex:0 0 auto; }
+.hw-dist strong { font-size:30px; display:block; }
+.hw-dist span { color:#8aa0bd; font-size:14px; }
+.hw-cam { margin-left:auto; padding:8px 12px; border-radius:16px; border:1px solid rgba(255, 159, 67, .5); text-align:right; }
+.hw-cam span { font-size:11px; color:#8aa0bd; text-transform:uppercase; letter-spacing:.06em; display:block; }
+.hw-cam strong { font-size:24px; color:#ff9f43; }
+.hw-compass .hw-body { flex-direction:row; align-items:center; justify-content:space-between; gap:10px; position:relative; }
+.hw-dial { width:46px; height:46px; border-radius:50%; border:1px solid rgba(255, 255, 255, .14); position:relative; flex:0 0 auto; }
+.hw-needle { position:absolute; inset:0; transition:transform .4s ease; }
+.hw-needle::before { content:""; position:absolute; left:50%; top:5px; margin-left:-5px; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:16px solid #6fc3fa; }
+.hw-gauge { position:relative; width:108px; height:62px; flex:0 0 auto; }
+.hw-gauge svg { width:108px; height:62px; display:block; }
+.hw-track { fill:none; stroke:rgba(255, 255, 255, .14); stroke-width:9; stroke-linecap:round; }
+.hw-fill { fill:none; stroke:#6fc3fa; stroke-width:9; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:100; transition:stroke-dashoffset .4s ease; }
+.hw-num { position:absolute; left:0; right:0; bottom:0; text-align:center; }
+.hw-num strong { font-size:26px; font-weight:300; line-height:1; display:block; }
+.hw-num small { color:#8aa0bd; font-size:12px; }
+.hw-dir { position:absolute; left:20px; bottom:0; font-size:13px; color:#8aa0bd; }
+
+/* Diagnostics: screen and sound sliders */
+.diag-screen { display:flex; flex-direction:column; gap:12px; padding:12px 0; }
+.diag-slider { display:flex; flex-direction:column; gap:6px; font-size:14px; color:var(--text, #eaf2ff); }
+.diag-slider span { display:flex; justify-content:space-between; }
+.diag-slider b { font-weight:600; font-variant-numeric:tabular-nums; }
+.diag-slider input[type="range"] { width:100%; accent-color:#6fc3fa; }
+
+/* Wallpaper shows only behind the expanded media player */
+
+/* While the player is open, only the clock, weather and player are on screen */
+body.player-expanded #hero-widgets { display: none; }
+
+/* While the player is open: the page tabs go away, and the wallpaper fills the whole area above the player row (clock, weather, player) */
+body.player-expanded .page-tabs { display: none; }
+body.player-expanded .hero { flex: 1 1 auto; height: auto; margin-bottom: 14px; border-radius: 33px; border: 1px solid rgba(255, 255, 255, .16); overflow: hidden; background: linear-gradient(rgba(8, 10, 14, .35), rgba(8, 10, 14, .35)), var(--wallpaper) center / cover no-repeat; }
+
+/* Светлая тема: плитки и карточки Tiggo-главной следуют теме, а не остаются тёмными. */
+:root[data-theme="light"] .tg-card, :root[data-theme="light"] .tg-side, :root[data-theme="light"] .tg-tile, :root[data-theme="light"] .tg-quick button, :root[data-theme="light"] .tg-tyre, :root[data-theme="light"] .tg-nav-foot { background: var(--surface); border-color: var(--line); box-shadow: 0 6px 18px rgba(27, 38, 64, .09); }
+:root[data-theme="light"] .tg-nav-turn { background: rgba(255, 255, 255, .92); color: var(--text); }
+
+/* Плеер в ряду: обложка крупнее и заполняет высоту карточки, текст сдвинут, чтобы не наезжать на обложку. Полоса прогресса видна и без развёрнутого плеера. */
+.player-widget { padding: 10px 26px 10px 10px; gap: 30px; }
+.player-widget .album-art { width: 151px; height: 151px; border-radius: 26px; box-shadow: 0 10px 28px rgba(0, 0, 0, .35); }
+.player-widget .track-info { padding-left: 6px; }
+.track-progress.has-data { display: block; margin-top: 12px; }
+/* Развёрнутый плеер: обложка отступает от левого края, как и в ряду. */
+.player-widget.expanded { padding: 21px 26px 21px 36px; }
+/* Иконка погоды крупнее: занимает левую часть карточки, текст остаётся справа. */
+.weather-widget .weather-icon { width: 92px; height: 92px; border-radius: 28px; font-size: 52px; }
+
+/* Перестановка верхних карточек: карточки принимают нажатия, в режиме редактирования видны рамки ячеек. */
+.hw-card { pointer-events: auto; }
+.hw-edit-bar { display: none; position: absolute; top: 14px; right: 22px; z-index: 6; align-items: center; gap: 10px; }
+body.hw-edit .hw-edit-bar { display: flex; }
+.hw-edit-hint { font-size: 14px; color: #ffe9a6; margin-right: 6px; text-shadow: 0 2px 8px #000; }
+.hw-edit-bar button { height: 44px; padding: 0 20px; border: 1px solid #ffffff75; border-radius: 22px; background: #14243ee8; color: #fff; font-size: 14px; font-weight: 700; }
+.hw-edit-bar button[data-act="done"] { background: #d9e9fd; color: #202e40; border-color: #d9e9fd; }
+body.hw-edit .hw-card { outline: 2px dashed #ffd84a; outline-offset: 4px; cursor: grab; }
+body.hw-edit .hw-card.hw-dragging { outline: 3px solid #ffd84a; box-shadow: 0 18px 50px rgba(0, 0, 0, .5); opacity: .9; }
+
+/* Режим редактирования главной: часы и погода тоже обводятся, у карточек появляется уголок изменения ширины. */
+.hero-clock { position: relative; }
+.hw-resize { display: none; position: absolute; right: 9px; bottom: 9px; width: 26px; height: 26px; border-right: 3px solid #ffd84a; border-bottom: 3px solid #ffd84a; border-radius: 0 0 9px 0; cursor: ew-resize; z-index: 4; }
+body.hw-edit .hw-resize { display: block; }
+body.hw-edit .hero-clock, body.hw-edit #weather-widget { outline: 2px dashed #ffd84a; outline-offset: 4px; cursor: grab; }
+body.hw-edit .hw-dragging, body.hw-edit #weather-widget.hw-dragging, body.hw-edit .hero-clock.hw-dragging { outline: 3px solid #ffd84a; box-shadow: 0 18px 50px rgba(0, 0, 0, .5); opacity: .9; }
+body.hw-edit .hw-resizing { outline: 3px solid #ffd84a; }
+
+/* Режим редактирования v3: верхний ряд по высоте содержимого, карточки можно переносить вниз, в развёрнутом плеере карточки ряда скрыты. */
+#hero-widgets { height: auto; min-height: 0; }
+.hw-card { position: relative; }
+body.player-expanded .hero-bottom > .hw-card { display: none; }
+
+/* Порядок слотов и избранные обои. */
+#slots-order-toggle { margin-left: 10px; }
+body.slots-order .action-slot { outline: 2px dashed #ffd84a; outline-offset: 4px; cursor: grab; }
+body.slots-order .action-slot.slot-dragging { outline: 3px solid #ffd84a; opacity: .85; }
+
+/* Скрытие карточек в режиме редактирования и список карточек. */
+.hw-hide { display: none; position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: #14243ee8; color: #fff; font-size: 22px; line-height: 32px; text-align: center; z-index: 5; }
+body.hw-edit .hw-hide { display: block; }
+.hw-panel { display: none; position: absolute; top: 62px; right: 22px; z-index: 7; min-width: 300px; padding: 12px; border-radius: 20px; background: #0b1a26f2; border: 1px solid #ffffff30; box-shadow: 0 12px 30px #0008; }
+.hw-panel.open { display: block; }
+.hw-panel button { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 6px 0; padding: 12px 14px; border-radius: 14px; border: 1px solid #ffffff20; background: #ffffff0d; color: #fff; font-size: 15px; }
+.hw-panel button b { color: #8aa0bd; font-weight: 500; font-size: 13px; }
+.hw-edit-bar button[data-act=\"cards\"] { background: #14243ee8; }
+
+/* Настройки: окно с вкладками поверх главного экрана. */
+#open-settings { margin-left: 10px; }
+.set-sheet { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .6); }
+.set-sheet[hidden] { display: none; }
+.set-card { width: min(980px, 92vw); max-height: 88vh; display: flex; flex-direction: column; padding: 22px 26px; border-radius: 28px; border: 1px solid rgba(255, 255, 255, .14); background: #0b1622; box-shadow: 0 24px 80px #000a; }
+.set-head { display: flex; align-items: center; justify-content: space-between; }
+.set-head h2 { margin: 0; font-size: 26px; font-weight: 600; }
+.set-close { width: 44px; height: 44px; border: 0; border-radius: 50%; background: #ffffff10; color: #cfd8e3; font-size: 26px; }
+.set-tabs { display: flex; gap: 10px; margin: 16px 0; }
+.set-tabs button { padding: 10px 16px; border-radius: 999px; border: 1px solid #ffffff22; background: transparent; color: #aab6c6; font-size: 15px; }
+.set-tabs button.active { background: rgba(111, 195, 250, .16); color: #fff; border-color: #6fc3fa; }
+.set-body { overflow: auto; display: flex; flex-direction: column; gap: 10px; min-height: 260px; }
+.set-note { margin: 0; font-size: 14px; color: #8aa0bd; line-height: 1.45; }
+.set-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.set-body button { min-height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid #ffffff22; background: #ffffff0d; color: #eaf2ff; font-size: 15px; }
+.set-body button.on { background: #d9e9fd; color: #202e40; border-color: #d9e9fd; }
+.set-switch { display: flex !important; justify-content: space-between; align-items: center; width: 100%; }
+.set-switch b { color: #8aa0bd; font-weight: 500; font-size: 13px; }
+.set-fav { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 14px; background: #ffffff08; font-size: 15px; }
+
+/* Карточки обогрева руля и стекла. */
+.hw-heat .hw-body { display: flex; align-items: center; justify-content: center; flex: 1; }
+.hw-heat-btn { width: 100%; min-height: 64px; border-radius: 18px; border: 1px solid #ffffff22; background: #ffffff0d; color: #eaf2ff; font-size: 18px; font-weight: 600; }
+.hw-heat-btn:active { background: #ffffff1f; }
+body.hw-edit .hw-heat-btn { pointer-events: none; }
+
+/* Обучение: подсветка элемента и карточка с текстом. */
+.tour { position: fixed; inset: 0; z-index: 90; background: rgba(0, 0, 0, .55); }
+.tour[hidden] { display: none; }
+.tour-focus { position: relative; z-index: 91; outline: 3px solid #6fc3fa !important; outline-offset: 6px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, .55); border-radius: 26px; }
+.tour-edge { position: absolute; top: 0; bottom: 0; width: 26px; background: rgba(111, 195, 250, .35); border: 2px dashed #6fc3fa; z-index: 91; }
+.tour-edge[hidden] { display: none; }
+.tour-edge-left { left: 0; }
+.tour-edge-right { right: 0; }
+.tour-card { position: absolute; z-index: 92; width: 420px; padding: 18px 20px; border-radius: 22px; background: #0b1622; border: 1px solid #ffffff22; box-shadow: 0 16px 50px #000b; }
+.tour-count { font-size: 12px; color: #8aa0bd; letter-spacing: .08em; }
+.tour-text { margin: 8px 0 14px; font-size: 17px; line-height: 1.4; color: #eaf2ff; }
+.tour-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.tour-actions button { min-height: 44px; padding: 0 18px; border-radius: 14px; border: 1px solid #ffffff22; background: #ffffff0d; color: #eaf2ff; font-size: 15px; }
+.tour-actions button[data-act="next"] { background: #d9e9fd; color: #202e40; border-color: #d9e9fd; font-weight: 600; }
+
+/* Светлая тема: карточки главного экрана (состояние, навигация, компас, обогревы) как слоты и погода. */
+:root[data-theme="light"] .hw-card { background: var(--surface); border-color: var(--line); color: var(--text); box-shadow: 0 6px 18px rgba(27, 38, 64, .09); }
+:root[data-theme="light"] .hw-turn { background: rgba(47, 111, 209, .10); color: var(--accent); }
+:root[data-theme="light"] .hw-heat-btn { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
+:root[data-theme="light"] .hw-heat-btn:active { background: rgba(47, 111, 209, .14); }
+:root[data-theme="light"] .hw-panel { background: #ffffff; border-color: var(--line); }
+:root[data-theme="light"] .hw-panel button { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
+
+/* Развёрнутый плеер: громкость и время начала / конца трека под обложкой и текстом. */
+.player-extra { display: none; }
+.player-widget.expanded { flex-wrap: wrap; row-gap: 18px; }
+.player-widget.expanded .track-progress { display: none; }
+.player-widget.expanded .player-extra { display: flex; flex-direction: column; gap: 14px; flex-basis: 100%; width: 100%; }
+.player-vol { display: flex; align-items: center; gap: 14px; }
+.player-vol .ic { width: 30px; text-align: center; font-size: 22px; opacity: .8; }
+.player-vol-line { position: relative; flex: 1; height: 12px; border-radius: 6px; background: var(--surface-soft); touch-action: none; cursor: pointer; }
+.player-vol-line i { position: absolute; left: 0; top: 0; bottom: 0; width: 50%; border-radius: 6px; background: var(--accent); }
+.player-vol-line b { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); left: 50%; }
+.player-vol-val { min-width: 56px; text-align: right; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.player-timeline { display: flex; align-items: center; gap: 14px; }
+.player-time { min-width: 58px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.player-time.end { text-align: right; }
+.player-tl-line { position: relative; flex: 1; height: 8px; border-radius: 4px; background: var(--surface-soft); overflow: hidden; }
+.player-tl-line i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; border-radius: 4px; background: var(--accent); transition: width 1s linear; }
+.player-widget.expanded { height: auto; min-height: 171px; }
+.player-widget.expanded .track-progress, .player-widget.expanded .track-progress.has-data { display: none; }
+body.player-expanded .hero-bottom.in-stage { height: auto; }
+/* Громкость над обложкой и названием, время начала и конца трека остаётся под обложкой. */
+.player-widget.expanded .player-extra { display: contents; }
+.player-widget.expanded .player-vol { order: -1; flex-basis: 100%; width: 100%; padding-bottom: 6px; }
+.player-widget.expanded .player-timeline { flex-basis: 100%; width: 100%; }
+
+/* Плашка у края при свайпе температуры водителя / пассажира. */
+.temp-pill { position: fixed; top: 50%; transform: translateY(-50%); z-index: 60; width: 96px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 10px; border-radius: 22px; background: rgba(2, 6, 12, .94); border: 1px solid rgba(255, 255, 255, .16); color: #eaf2ff; box-shadow: 0 14px 40px rgba(0, 0, 0, .3); pointer-events: none; }
+.temp-pill[hidden] { display: none; }
+.temp-pill.left { left: 14px; }
+.temp-pill.right { right: 14px; }
+.temp-pill .tp-who { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #8aa0bd; }
+.temp-pill .tp-arr { font-size: 22px; color: #6fc3fa; line-height: 1; }
+.temp-pill .tp-val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.temp-pill .tp-bar { position: relative; width: 6px; height: 120px; border-radius: 3px; background: #ffffff22; overflow: hidden; }
+.temp-pill .tp-bar i { position: absolute; left: 0; right: 0; bottom: 0; background: #6fc3fa; }
+:root[data-theme="light"] .temp-pill { background: #fffffff5; color: #1b2640; border-color: #d5dbe5; box-shadow: 0 14px 40px rgba(0, 0, 0, .18); }
+:root[data-theme="light"] .temp-pill .tp-who { color: #5f6f88; }
+:root[data-theme="light"] .temp-pill .tp-arr { color: #2f6fd1; }
+:root[data-theme="light"] .temp-pill .tp-bar { background: #d5dbe5; }
+:root[data-theme="light"] .temp-pill .tp-bar i { background: #2f6fd1; }
+
+/* Карточка вентилятора: значение 1–10 и ряд из 10 нажимаемых сегментов с номерами. */
+.hw-fan-value { font-size: 44px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; margin-top: 4px; }
+.hw-fan-bar { display: flex; gap: 3px; margin-top: auto; }
+.hw-fan-bar i { flex: 1; height: 26px; border-radius: 6px; background: #ffffff1c; color: #8aa0bd; font: 600 10px system-ui, sans-serif; font-style: normal; display: grid; place-items: center; cursor: pointer; }
+.hw-fan-bar i.on { background: #6fc3fa; color: #0b1622; }
+:root[data-theme="light"] .hw-fan-bar i { background: #d5dbe5; color: #5f6f88; }
+:root[data-theme="light"] .hw-fan-bar i.on { background: #2f6fd1; color: #ffffff; }
+.hw-card.hw-fan { padding: 14px 10px; }
+.hw-fan-bar { gap: 2px; }
+.hw-fan-bar i { font-size: 9px; border-radius: 5px; height: 28px; }
+.hw-state .hw-body { margin-top: 22px; }
+.hw-state .hw-body { margin-top: 16px; }
+.hw-state .hw-chips { gap: 6px; }
+.hw-state .hw-chip { min-height: 34px; padding: 5px 12px; }
+
+/* Окно настроек в светлой теме. */
+:root[data-theme="light"] .set-card { background: #f5f6f8; color: #1b2640; border-color: #d5dbe5; box-shadow: 0 16px 50px rgba(27, 38, 64, .18); }
+:root[data-theme="light"] .set-head h2 { color: #1b2640; }
+:root[data-theme="light"] .set-close { background: #ffffff; color: #1b2640; border: 1px solid #d5dbe5; }
+:root[data-theme="light"] .set-tabs button { background: #ffffff; color: #5f6f88; border-color: #d5dbe5; }
+:root[data-theme="light"] .set-tabs button.active { background: rgba(47, 111, 209, .12); color: #1b2640; border-color: #2f6fd1; }
+:root[data-theme="light"] .set-body button { background: #ffffff; color: #1b2640; border-color: #d5dbe5; }
+:root[data-theme="light"] .set-body button.on { background: #d9e9fd; color: #202e40; border-color: #2f6fd1; }
+:root[data-theme="light"] .set-note { color: #5f6f88; }
+:root[data-theme="light"] .set-switch b { color: #5f6f88; }
+:root[data-theme="light"] .set-fav { background: #ffffff; color: #1b2640; border: 1px solid #d5dbe5; }
+/* Развёрнутый плеер: часы и погода той же высоты, что и плеер. */
+body.player-expanded .hero-bottom.in-stage > .hero-clock, body.player-expanded .hero-bottom.in-stage > #weather-widget { align-self: stretch; height: auto !important; min-height: 0 !important; }
+
+/* Night mode: only the big clock on a black screen. Entered by a tap on the classic clock, left by any tap. */
+body.night-mode { background: #05070c !important; }
+body.night-mode::before, body.night-mode::after,
+body.night-mode #hero::before, body.night-mode #hero::after,
+body.night-mode .dashboard::before, body.night-mode .dashboard::after,
+body.night-mode .hero-shade { display: none !important; }
+body.night-mode .dashboard { background: #05070c !important; background-image: none !important; }
+body.night-mode #hero { position: fixed !important; inset: 0 !important; background: #05070c !important; background-image: none !important; }
+body.night-mode #hero > *:not(.hero-bottom) { display: none !important; }
+body.night-mode .dashboard > *:not(#hero) { display: none !important; }
+body.night-mode .hero-bottom { position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: auto !important; }
+body.night-mode .hero-bottom > *:not(.hero-clock) { display: none !important; }
+body.night-mode .hero-clock { background: transparent !important; border: 0 !important; box-shadow: none !important; min-height: 0 !important; height: auto !important; width: auto !important; flex: none !important; padding: 0 !important; animation: nightIn .6s ease-out both; }
+body.night-mode .hero-clock .clock { font-size: clamp(120px, 26vw, 260px) !important; font-weight: 200 !important; color: rgba(200, 210, 225, .78) !important; text-shadow: 0 0 40px rgba(200, 210, 225, .25); line-height: 1 !important; font-variant-numeric: tabular-nums; }
+body.night-mode .toast, body.night-mode .car-anim { display: none !important; }
+@keyframes nightIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
+.night-hint { position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%) translateY(8px); z-index: 101; padding: 9px 20px; border-radius: 999px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: rgba(220, 225, 235, .6); font-size: 13px; letter-spacing: .04em; white-space: nowrap; pointer-events: none; opacity: 0; display: none; }
+body.night-mode .night-hint { display: block; }
+.night-hint.show { animation: nightHint 6s ease forwards; }
+@keyframes nightHint { 0% { opacity: 0; transform: translateX(-50%) translateY(8px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); } 80% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
+
+/* Speed gauge moved to the navigation card: bottom right corner of the card. */
+.hw-nav .hw-gauge-speed { position: absolute; right: 16px; bottom: 12px; width: 118px; height: 68px; }
+.hw-nav .hw-gauge-speed svg { width: 118px; height: 68px; }
+.hw-nav .hw-gauge-speed .hw-num { bottom: 4px; }
+
+/* Player: no volume row and no minutes/seconds labels. The progress line stays. */
+.player-vol, .player-time { display: none !important; }
+
+/* Clock, weather and player: smaller, and see-through so the wallpaper shows behind them. */
+.hero-clock, .weather-widget, .player-widget { height: 140px !important; min-height: 140px !important; }
+.hero-clock { flex: 0 0 210px !important; width: 210px !important; min-height: 140px; padding: 16px 20px !important; }
+.hero-clock .clock { font-size: clamp(40px, 4vw, 66px); }
+.weather-widget { flex-basis: 210px !important; padding: 14px 16px !important; gap: 12px !important; }
+.weather-widget .weather-icon { width: 64px; height: 64px; border-radius: 20px; font-size: 34px; }
+.player-widget { padding: 12px 20px !important; }
+.player-widget .album-art { width: 116px !important; height: 116px !important; border-radius: 22px; }
+.hero-clock, .weather-widget, .player-widget { background: rgba(2, 6, 12, .28) !important; backdrop-filter: none !important; }
+:root[data-theme="light"] .hero-clock, :root[data-theme="light"] .weather-widget, :root[data-theme="light"] .player-widget { background: rgba(255, 255, 255, .3) !important; }
+body.player-expanded .hero-bottom.in-stage > .hero-clock, body.player-expanded .hero-bottom.in-stage > #weather-widget { height: auto !important; }
+
+/* Expanded player: the wallpaper stays inside the top panel only; the page keeps its own background. */
+body.player-expanded .dashboard { background: transparent !important; }
+body.player-expanded .hero-bottom, body.player-expanded .hero-bottom.in-stage { background: transparent !important; box-shadow: none !important; }
+
+
+/* Navigation card: the camera block and the speed gauge do not overlap. The gauge is in the right corner, so the turn row keeps clear of it. */
+.hw-nav .hw-turn-row { padding-right: 136px; }
+.hw-nav .hw-cam { margin-left: 0; }
+
+/* Light theme: values in the state card were pale on white. */
+:root[data-theme="light"] .hw-card { color: #13243a; }
+:root[data-theme="light"] .hw-chip { border-color: rgba(31, 116, 184, .25); background: rgba(255, 255, 255, .6); }
+:root[data-theme="light"] .hw-chip span, :root[data-theme="light"] .hw-cam span, :root[data-theme="light"] .hw-num small { color: #5d7189; }
+:root[data-theme="light"] .hw-chip b { color: #13243a; }
+:root[data-theme="light"] .hw-chip.open b { color: #1f74b8; }
+:root[data-theme="light"] .hw-cam strong { color: #c4661a; }
+
+/* Light theme: the cards' shadow is soft and light, so no dark band shows under the bottom row. */
+:root[data-theme="light"] .hero-clock, :root[data-theme="light"] .weather-widget, :root[data-theme="light"] .player-widget { box-shadow: 0 10px 30px rgba(20, 40, 70, .12) !important; }
+
+/* Navigation card: SVG turn icon, speed as a segmented bar. */
+.hw-turn svg { width: 44px; height: 44px; display: block; color: var(--accent); fill: currentColor; }
+.hw-gauge-speed > svg { display: none !important; }
+.hw-gauge-speed { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; gap: 6px; }
+.hw-gauge-speed .hw-num strong { font-size: 44px; }
+.hw-speedbar { display: flex; gap: 3px; width: 150px; height: 8px; }
+.hw-speedbar i { flex: 1; border-radius: 3px; background: rgba(120, 135, 155, .25); }
+.hw-speedbar i.on { background: var(--accent); }
+.hw-speedbar i.on.over { background: #e53935; }
+
+/* Car readings sheet, opened by a tap on the "Состояние автомобиля" title. */
+.state-sheet { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; background: rgba(0, 0, 0, .45); backdrop-filter: blur(6px); }
+.state-sheet[hidden] { display: none; }
+.state-card { width: min(640px, 92vw); max-height: 88vh; overflow: auto; padding: 22px 26px; border-radius: 22px; background: rgba(20, 26, 36, .78); color: #eef2f8; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 18px 50px rgba(0, 0, 0, .4); }
+:root[data-theme="light"] .state-card { background: rgba(255, 255, 255, .86); color: #111; }
+.state-card h3 { margin: 0 0 12px; font-size: 22px; font-weight: 600; }
+.state-row { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px solid rgba(128, 140, 160, .25); font-size: 18px; }
+.state-row:last-child { border-bottom: 0; }
+.state-row b { font-weight: 600; text-align: right; }
+.state-row.open b { color: var(--accent); }
+.state-note { margin: 12px 0 0; font-size: 13px; opacity: .6; }
+
+/* Navigation card: the "На приборку" pill under the title. */
+.hw-nav-actions { width: 100%; display: flex; justify-content: center; margin: 2px 0 6px; }
+.hw-nav-btn { border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); border-radius: 12px; padding: 4px 12px; font-size: 15px; white-space: nowrap; }
+
+/* Cover mode: the wallpaper fills the whole screen; the top panel is transparent so it shows through. */
+body.player-expanded { background-image: var(--wallpaper); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; }
+body.player-expanded .hero { background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }
+
+/* Поездки: журнал из состояния автомобиля (trips.js). */
+#trips-open { height: 40px; padding: 0 16px; margin-right: 10px; border-radius: 20px; border: 1px solid var(--accent); background: transparent; color: var(--accent); font-size: 15px; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
+#trip-sheet { display: none; position: fixed; inset: 0; z-index: 51; }
+body.trip-sheet-open #trip-sheet { display: block; }
+.ts-backdrop { position: absolute; inset: 0; background: #000a; }
+.ts-panel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1040px, calc(100vw - 32px)); height: min(600px, calc(100vh - 40px)); display: flex; flex-direction: column; border-radius: 22px; background: var(--bg); border: 1px solid var(--line); color: var(--text); overflow: hidden; }
+.ts-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 10px 22px; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+.ts-close { width: 40px; height: 40px; border-radius: 50%; border: 1px solid currentColor; background: transparent; color: inherit; font-size: 22px; line-height: 1; cursor: pointer; }
+.ts-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 290px 1fr; }
+.ts-list { border-right: 1px solid var(--line); overflow-y: auto; padding: 8px 12px 12px; }
+.ts-day { color: var(--muted); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; margin: 12px 6px 6px; }
+.ts-trip { display: block; width: 100%; text-align: left; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; padding: 11px 13px; margin-bottom: 9px; color: var(--text); cursor: pointer; }
+.ts-trip.sel { border-color: var(--accent); }
+.ts-trip b { font-size: 16px; font-weight: 700; }
+.ts-trip span { display: block; color: var(--muted); font-size: 13px; margin-top: 3px; }
+.ts-empty { color: var(--muted); font-size: 15px; padding: 18px 8px; }
+.ts-detail { overflow-y: auto; padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ts-tiles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.ts-tile { background: var(--surface-soft); border: 1px solid var(--line); border-radius: 14px; padding: 9px 11px; min-width: 0; }
+.ts-tile small { display: block; color: var(--muted); font-size: 12px; }
+.ts-tile b { font-size: 21px; }
+.ts-tile em { font-style: normal; color: var(--muted); font-size: 12px; }
+.ts-chart { flex: 1; min-height: 240px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; }
+.ts-chart svg { width: 100%; height: 100%; display: block; }
+.ts-note { color: var(--muted); font-size: 12px; }

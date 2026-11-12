@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0c">
+  <title>Generic Launcher</title>
+  <link rel="stylesheet" href="styles.css?v=1.2.438">
+</head>
+<body>
+  <main class="dashboard" aria-label="Generic Launcher">
+    <section class="hero" id="hero" aria-label="Главный экран">
+      <div class="hero-shade" aria-hidden="true"></div>
+      <div class="hero-widgets" id="hero-widgets">
+        <section class="hw-card hw-state">
+          <div class="hw-eb">Состояние автомобиля</div>
+          <div class="hw-body"><div class="hw-chips" id="hw-chips"></div></div>
+        </section>
+        <section class="hw-card hw-nav">
+          <div class="hw-eb">Навигация</div>
+          <div class="hw-body">
+            <div class="hw-turn-row">
+              <div class="hw-turn" id="hw-turn-icon">↑</div>
+              <div class="hw-dist"><strong id="hw-turn-dist">—</strong><span id="hw-road">Маршрут не запущен</span></div>
+              <div class="hw-cam" id="hw-cam" hidden><span id="hw-cam-name">Камера</span><strong id="hw-cam-dist">—</strong></div>
+            </div>
+            <div class="hw-gauge hw-gauge-speed">
+              <svg viewBox="0 0 150 86" aria-hidden="true"><path class="hw-track" d="M12 78 A63 63 0 0 1 138 78"/><path class="hw-fill" id="hw-arc" pathLength="100" d="M12 78 A63 63 0 0 1 138 78"/></svg>
+              <div class="hw-num"><strong id="hw-speed">—</strong><small>км/ч</small></div>
+            </div>
+          </div>
+        </section>
+        <section class="hw-card hw-compass">
+          <div class="hw-eb">Компас</div>
+          <div class="hw-body">
+            <div class="hw-dial"><div class="hw-needle" id="hw-needle"></div></div>
+            <div class="hw-dir" id="hw-dir"></div>
+          </div>
+        </section>
+      </div>
+      <div class="hero-bottom">
+        <div class="hero-clock">
+          <div class="clock" id="clock">10:30</div>
+          <div class="date" id="date">25 августа</div>
+        </div>
+        <button type="button" class="weather-widget" id="weather-widget" aria-label="Обновить погоду">
+          <span class="weather-icon" id="weather-icon" aria-hidden="true">☁</span>
+          <span class="weather-copy">
+            <span class="eyebrow" id="weather-city">ПОГОДА</span>
+            <strong id="weather-temperature">—</strong>
+            <span id="weather-condition"></span>
+          </span>
+          <span class="weather-refresh" aria-hidden="true">↻</span>
+        </button>
+
+        <article class="player-widget">
+          <div class="album-art" id="album-art" aria-hidden="true"><span>♪</span></div>
+          <div class="track-info">
+            <div class="eyebrow">СЕЙЧАС ИГРАЕТ</div>
+            <strong class="track-title" id="track-title">Музыка не выбрана</strong>
+            <span class="track-artist" id="track-artist">Исполнитель не указан</span>
+            <div class="track-progress" id="track-progress" aria-hidden="true"><span id="track-progress-fill"></span></div>
+          </div>
+          <div class="player-controls" aria-label="Управление музыкой">
+            <button type="button" data-media="MEDIA_BLACK" aria-label="Предыдущий трек">‹</button>
+            <button type="button" class="play" data-media="TOGGLE_MEDIA_PLAY" aria-label="Воспроизведение">▶</button>
+            <button type="button" data-media="MEDIA_NEXT" aria-label="Следующий трек">›</button>
+          </div>
+          <div class="player-extra" aria-label="Громкость и время трека">
+            <div class="player-vol">
+              <span class="ic" aria-hidden="true">🔈</span>
+              <div class="player-vol-line" id="player-vol-line" role="slider" aria-label="Громкость" aria-valuemin="0" aria-valuemax="100">
+                <i id="player-vol-fill"></i><b id="player-vol-thumb"></b>
+              </div>
+              <span class="player-vol-val" id="player-vol-val">—</span>
+            </div>
+            <div class="player-timeline">
+              <span class="player-time" id="track-pos">--:--</span>
+              <div class="player-tl-line"><i id="track-line-fill"></i></div>
+              <span class="player-time end" id="track-end">--:--</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="actions-section" aria-label="Действия">
+      <header class="actions-header">
+        <div class="actions-title-row">
+          <div class="page-controls">
+            <button type="button" class="go-home" id="go-home" aria-label="Главная" hidden>⌂</button>
+            <nav class="page-tabs" aria-label="Страницы">
+              <button type="button" class="active" data-page="climate">Сиденья и климат</button>
+              <button type="button" data-page="windows">Окна и авто</button>
+              <button type="button" data-page="screen">Экран</button>
+              <button type="button" data-page="apps">Приложения</button>
+              <button type="button" data-page="combos">Комбинации</button>
+            </nav>
+            <button type="button" class="add-slot-button" id="add-slot">+ Слот</button>
+          </div>
+        </div>
+      </header>
+      <div class="player-stage" id="player-stage" hidden></div>
+      <div class="action-slots" id="action-slots" aria-live="polite"></div>
+      <div class="app-drawer" id="app-drawer" hidden></div>
+    </section>
+  </main>
+
+  <div class="sheet-backdrop" id="picker" hidden>
+    <section class="picker-sheet" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+      <header class="picker-header">
+        <div>
+          <div class="eyebrow">НАСТРОЙКА СЛОТА</div>
+          <h2 id="picker-title">Выберите действие</h2>
+        </div>
+        <div class="picker-header-actions">
+          <button type="button" class="picker-remove" id="picker-remove" hidden>Убрать слот</button>
+          <button type="button" class="picker-close" id="picker-close" aria-label="Закрыть">×</button>
+        </div>
+      </header>
+      <label class="search-field">
+        <span aria-hidden="true">⌕</span>
+        <input id="picker-search" type="search" placeholder="Найти действие или приложение" autocomplete="off">
+      </label>
+      <div class="picker-grid" id="picker-grid"></div>
+    </section>
+  </div>
+
+  <main class="tg-home" id="tg-home">
+    <aside class="tg-side">
+      <button type="button" class="active" data-tg-page="home"><span class="tg-ico" data-tg-icon="home"></span><span>Главная</span></button>
+      <button type="button" data-tg-page="classic"><span class="tg-ico" data-tg-icon="classic"></span><span>Классика</span></button>
+      <button type="button" data-tg-page="music"><span class="tg-ico" data-tg-icon="play"></span><span>Музыка</span></button>
+      <button type="button" data-tg-page="nav"><span class="tg-ico" data-tg-icon="pin"></span><span>Навигация</span></button>
+      <button type="button" data-tg-page="windows"><span class="tg-ico" data-tg-icon="car"></span><span>Автомобиль</span></button>
+      <button type="button" data-tg-page="climate"><span class="tg-ico" data-tg-icon="fan"></span><span>Климат</span></button>
+      <button type="button" data-tg-page="screen"><span class="tg-ico" data-tg-icon="screen"></span><span>Экран</span></button>
+      <button type="button" data-tg-page="apps"><span class="tg-ico" data-tg-icon="grid"></span><span>Приложения</span></button>
+      <button type="button" data-tg-page="combos"><span class="tg-ico" data-tg-icon="split"></span><span>Комбинации</span></button>
+      <button type="button" data-tg-page="diag"><span class="tg-ico" data-tg-icon="target"></span><span>Настройки</span></button>
+    </aside>
+    <div class="tg-grid">
+      <section class="tg-hero">
+        <img class="tg-car" src="images/tiggo/side.png" alt="Chery Tiggo 9">
+      <section class="tg-card tg-music tg-music-hero">
+        <div class="tg-top">
+          <div class="tg-art" id="tg-art"><span>♪</span></div>
+          <div class="tg-track">
+            <div class="tg-eyebrow">Сейчас играет</div>
+            <strong id="tg-title">Музыка не выбрана</strong>
+            <span id="tg-artist">Исполнитель не указан</span>
+          </div>
+        </div>
+        <div class="tg-controls">
+          <button type="button" data-media="MEDIA_BLACK" aria-label="Предыдущий трек">‹</button>
+          <button type="button" class="tg-play" data-media="TOGGLE_MEDIA_PLAY" aria-label="Воспроизведение">▶</button>
+          <button type="button" data-media="MEDIA_NEXT" aria-label="Следующий трек">›</button>
+        </div>
+      </section>
+        <div class="tg-clock"><strong id="tg-time">--:--</strong><span id="tg-date"></span></div>
+        <div class="tg-weather"><span>За бортом</span><strong id="tg-weather">—</strong></div>
+
+      </section>
+      <section class="tg-card tg-nav" data-tg-page="nav">
+        <div class="tg-nav-head"><h4 class="tg-nav-title" data-tg-page="nav">Навигация</h4></div>
+        <div class="tg-nav-map">
+          <img id="tg-map-img" alt="" hidden>
+          <span id="tg-map-placeholder"></span>
+          <div class="tg-nav-turn"><b id="tg-turn-icon">↑</b><span><strong id="tg-turn-dist">—</strong><small id="tg-next-road">Маршрут не запущен</small></span></div>
+          <div class="tg-nav-cam" id="tg-cam" hidden><span id="tg-cam-name">Камера</span><strong id="tg-cam-dist">—</strong><i class="tg-cam-bar"><b id="tg-cam-fill"></b></i></div>
+          <div class="tg-nav-limit" id="tg-limit" hidden><strong id="tg-limit-value">—</strong></div>
+        </div>
+      </section>
+      <section class="tg-card tg-state-card">
+        <h4>Состояние автомобиля</h4>
+        <ul class="tg-state-list" id="tg-state-list" hidden></ul>
+      </section>
+      <section class="tg-card tg-car-card">
+        <h4>Схема автомобиля</h4>
+        <div class="tg-car-wrap">
+          <svg class="tg-waves" viewBox="0 0 300 200" aria-hidden="true"><ellipse cx="150" cy="100" rx="120" ry="80"/><ellipse cx="150" cy="100" rx="100" ry="66"/><ellipse cx="150" cy="100" rx="80" ry="52"/></svg>
+          <img src="images/tiggo/top.png" alt="">
+          <svg class="tg-car-states" viewBox="0 0 900 300" aria-hidden="true">
+            <rect class="tg-st" data-st="roof" x="430" y="72" width="192" height="123" rx="8"/>
+            <rect class="tg-st" data-st="trunk" x="705" y="54" width="58" height="182" rx="8"/>
+            <rect class="tg-st" data-st="windows" x="300" y="20" width="380" height="30" rx="8"/>
+            <rect class="tg-st" data-st="windows" x="300" y="236" width="380" height="30" rx="8"/>
+          </svg>
+          <b class="tg-tyre fl"><span id="tg-tyre-fl-p">—</span><small id="tg-tyre-fl-t">—</small></b>
+          <b class="tg-tyre fr"><span id="tg-tyre-fr-p">—</span><small id="tg-tyre-fr-t">—</small></b>
+          <b class="tg-tyre rl"><span id="tg-tyre-rl-p">—</span><small id="tg-tyre-rl-t">—</small></b>
+          <b class="tg-tyre rr"><span id="tg-tyre-rr-p">—</span><small id="tg-tyre-rr-t">—</small></b>
+        </div>
+        <div class="tg-avg" id="tg-avg" hidden><span>Среднее давление</span><b id="tg-avg-v">—</b></div>
+        <div class="tg-car-info" id="tg-car-info" hidden></div>
+      </section>
+      <section class="tg-card tg-compass-card">
+        <h4>Компас</h4>
+        <div class="tg-compass">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <g id="tg-compass-ring">
+              <circle class="tg-compass-face" cx="100" cy="100" r="92"/>
+              <text class="tg-compass-n" x="100" y="30" text-anchor="middle">С</text>
+              <text x="100" y="182" text-anchor="middle">Ю</text>
+              <text x="178" y="105" text-anchor="middle">В</text>
+              <text x="22" y="105" text-anchor="middle">З</text>
+              <path class="tg-compass-tick" d="M100 10 V20 M190 100 H180 M100 190 V180 M10 100 H20"/>
+            </g>
+            <path class="tg-compass-needle" d="M100 46 L110 104 L100 96 L90 104 Z"/>
+            <circle class="tg-compass-hub" cx="100" cy="100" r="5"/>
+          </svg>
+        </div>
+        <div class="tg-compass-val"><strong id="tg-compass-deg">—</strong><span id="tg-compass-dir"></span></div>
+      </section>
+      <section class="tg-card tg-data-card">
+        <h4>Данные автомобиля</h4>
+        <div class="tg-arcs">
+          <div class="tg-arc"><svg viewBox="0 0 120 70" aria-hidden="true"><path class="tg-arc-track" d="M12 62 A48 48 0 0 1 108 62"/><path class="tg-arc-fill" id="tg-arc-speed" pathLength="100" d="M12 62 A48 48 0 0 1 108 62"/></svg><strong id="tg-d-speed">—</strong><span>Скорость, км/ч</span></div>
+          <div class="tg-arc"><svg viewBox="0 0 120 70" aria-hidden="true"><path class="tg-arc-track" d="M12 62 A48 48 0 0 1 108 62"/><path class="tg-arc-fill" id="tg-arc-rpm" pathLength="100" d="M12 62 A48 48 0 0 1 108 62"/></svg><strong id="tg-d-rpm">—</strong><span>Обороты</span></div>
+        </div>
+        <div class="tg-data">
+          <div class="tg-tile"><span>Топливо</span><p><strong id="tg-d-fuel">—</strong><em>%</em></p></div>
+          <div class="tg-tile"><span>Снаружи</span><p><strong id="tg-d-out">—</strong><em>°C</em></p></div>
+          <div class="tg-tile"><span>Напряжение</span><p><strong id="tg-d-volt">—</strong><em>В</em></p></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="car-anim" id="car-anim" hidden>
+    <div class="car-anim-box">
+      <img src="images/tiggo/top.png" alt="">
+      <svg class="car-anim-svg" viewBox="0 0 900 300" aria-hidden="true">
+        <g class="ca-part" data-kind="trunk">
+          <rect class="ca-hole" x="700" y="50" width="70" height="190" rx="10"/>
+          <rect class="ca-lid" x="705" y="54" width="58" height="182" rx="8"/>
+        </g>
+        <g class="ca-part" data-kind="roof">
+          <rect class="ca-hole" x="430" y="72" width="192" height="123" rx="8"/>
+          <rect class="ca-lid" x="430" y="72" width="192" height="123" rx="8"/>
+        </g>
+        <g class="ca-part" data-kind="windows">
+          <rect class="ca-glass" x="300" y="20" width="380" height="30" rx="8"/>
+          <rect class="ca-glass" x="300" y="236" width="380" height="30" rx="8"/>
+        </g>
+      </svg>
+    </div>
+    <span class="car-anim-text" id="car-anim-text"></span>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="bridge.js?v=1.2.438"></script>
+  <script src="config.js?v=1.2.438"></script>
+  <script src="state.js?v=1.2.438"></script>
+  <script src="commands.js?v=1.2.438"></script>
+  <script src="slots.js?v=1.2.438"></script>
+  <script src="picker.js?v=1.2.438"></script>
+  <script src="icons-climate.js?v=1.2.438"></script>
+  <script src="catalog.js?v=1.2.438"></script>
+  <script src="clock.js?v=1.2.438"></script>
+  <script src="wallpaper.js?v=1.2.438"></script>
+  <script src="player.js?v=1.2.438"></script>
+  <script src="weather.js?v=1.2.438"></script>
+  <script src="car.js?v=1.2.438"></script>
+  <script src="climate.js?v=1.2.438"></script>
+  <script src="drawer.js?v=1.2.438"></script>
+  <script src="data/cameras.js?v=1.2.438"></script>
+  <script src="camera-alerts.js?v=1.2.438"></script>
+  <script src="events.js?v=1.2.438"></script>
+  <script src="diag.js?v=1.2.438"></script>
+  <script src="tiggo.js?v=1.2.438"></script>
+  <script src="hero-widgets.js?v=1.2.438"></script>
+  <script src="settings.js?v=1.2.438"></script>
+  <script src="tutorial.js?v=1.2.438"></script>
+  <script src="hw-labels.js?v=1.2.438"></script>
+  <script src="trips.js?v=1.2.438"></script>
+  <script src="turn-icons.js?v=1.2.438"></script>
+  <script src="scrub.js?v=1.2.438"></script>
+  <script src="forecast.js?v=1.2.438"></script>
+  <script src="nightmode.js?v=1.2.438"></script>
+  <script src="app.js?v=1.2.438"></script>
+</body>
+</html>
