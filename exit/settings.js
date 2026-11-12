@@ -134,9 +134,15 @@
     body.innerHTML = `
       <p class="set-note">Скрытая карточка запоминает своё место и вернётся на него.</p>
       ${Object.keys(names).map(id => `<button type="button" class="set-switch" data-card="${id}">${names[id]}<b>${window.hwIsHidden && window.hwIsHidden(id) ? "скрыта" : "показана"}</b></button>`).join("")}
+      <p class="set-note">Плитки состояния автомобиля</p>
+      ${(window.hwTileDefs ? window.hwTileDefs() : []).map(t => `<button type="button" class="set-switch" data-tile="${t.key}">${t.title}<b>${window.hwTileEnabled && window.hwTileEnabled(t.key) ? "показана" : "скрыта"}</b></button>`).join("")}
       <div class="set-row"><button type="button" data-act="layout">Сбросить раскладку карточек</button></div>`;
     body.querySelectorAll("[data-card]").forEach(button => button.addEventListener("click", () => {
       window.hwToggleCard(button.dataset.card);
+      render();
+    }));
+    body.querySelectorAll("[data-tile]").forEach(button => button.addEventListener("click", () => {
+      window.hwToggleTile(button.dataset.tile);
       render();
     }));
     body.querySelector('[data-act="layout"]').addEventListener("click", () => {

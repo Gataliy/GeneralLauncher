@@ -1122,3 +1122,64 @@ body.player-expanded .hero-widgets, body.player-expanded .hw-trip, body.player-e
 .hero-bottom:not(.in-stage) .player-widget .album-art { width: 108px !important; height: 108px !important; flex: 0 0 108px; }
 .hero-bottom:not(.in-stage) .player-widget .track-title { font-size: 24px; }
 .hero-widgets { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 2fr) !important; grid-auto-rows: 150px !important; }
+
+/* Home port, reference screen: top row car state / navigation / compass; middle row clock / weather / player. Rings hidden. */
+body.home-port .hero-widgets { display: none !important; }
+body.home-port #hw-rings-col { display: none !important; }
+body.home-port .hw-trip { display: none !important; }
+.hero-bottom:not(.in-stage) { display: grid !important; grid-template-columns: repeat(20, minmax(0, 1fr)) !important; grid-template-rows: 208px 208px !important; gap: 14px !important; }
+.hero-bottom:not(.in-stage) > .hw-state { grid-column: 1 / span 10; grid-row: 1; height: 208px !important; }
+.hero-bottom:not(.in-stage) > .hw-nav { grid-column: 11 / span 8; grid-row: 1; height: 208px !important; }
+.hero-bottom:not(.in-stage) > .hw-compass { grid-column: 19 / span 2; grid-row: 1; height: 208px !important; }
+.hero-bottom:not(.in-stage) > .hero-clock { grid-column: 1 / span 5; grid-row: 2; height: 208px !important; }
+.hero-bottom:not(.in-stage) > #weather-widget { grid-column: 6 / span 5; grid-row: 2; height: 208px !important; }
+.hero-bottom:not(.in-stage) > .player-widget { grid-column: 11 / span 10; grid-row: 2; height: 208px !important; }
+
+/* Media player: a plain progress bar instead of the waveform bars (home and cover). */
+.player-tl-line .wv { display: none !important; }
+.player-tl-line { display: block !important; position: relative; height: 6px !important; min-height: 0 !important; align-self: center; margin: 0; background: rgba(255, 255, 255, .18) !important; border-radius: 3px; overflow: hidden; }
+.player-tl-line #track-line-fill { display: block !important; position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--accent) !important; border-radius: 3px; }
+:root[data-theme="light"] .player-tl-line { background: rgba(20, 40, 70, .16) !important; }
+
+
+/* Home port: car state and compass fill their cards; the media progress bar sits along the bottom of the player. */
+body.home-port .hw-state .hw-chips { align-items: center; padding-top: 0; }
+body.home-port .hw-state .hw-body { justify-content: center; }
+body.home-port .hw-state .hw-tile-icon, body.home-port .hw-state .hw-tile-icon svg { width: 34px; height: 34px; }
+body.home-port .hw-state .hw-tile-label { font-size: 15px; }
+body.home-port .hw-compass .hw-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+body.home-port .hw-compass .hw-dial { width: min(150px, 100%); aspect-ratio: 1; height: auto; border-radius: 50%; border: 1.5px solid rgba(150, 190, 240, .3); position: relative; }
+body.home-port .hw-compass .hw-dir { font-size: 22px; font-weight: 600; letter-spacing: .04em; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { position: relative; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-timeline { position: absolute !important; left: 22px; right: 22px; bottom: 14px; flex: none !important; width: auto !important; height: 4px; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line { height: 4px !important; border-radius: 2px; overflow: hidden; }
+
+/* Home port: the album cover in the media player is larger (fills the player height, above the progress bar). */
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 144px !important; height: 144px !important; flex: 0 0 144px; border-radius: 20px; }
+
+/* Home port: the speed gauge sits in the upper right of the navigation card, not at the bottom. */
+body.home-port .hero-bottom:not(.in-stage) > .hw-nav .hw-gauge-speed { top: 62px !important; bottom: auto !important; right: 18px !important; }
+
+/* Home port: the speed number and its segment bar form one block in the navigation card; the bar sits under the number. */
+body.home-port .hero-bottom:not(.in-stage) > .hw-nav .hw-gauge-speed { width: 150px !important; height: auto !important; display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: flex-start !important; gap: 6px !important; }
+body.home-port .hero-bottom:not(.in-stage) > .hw-nav .hw-gauge-speed .hw-num { position: static !important; bottom: auto !important; display: flex; align-items: baseline; gap: 4px; }
+
+/* Top pills: compact, hang from the top edge, as in the approved pill mockup (track, radar, state). */
+#top-pills { gap: 8px !important; }
+#top-pills #track-toast { height: 32px !important; max-width: min(420px, 40vw) !important; padding: 0 14px !important; gap: 0 !important; border-radius: 0 0 12px 12px !important; border: 1px solid rgba(111, 195, 250, .55) !important; border-top: 0 !important; background: rgba(2, 6, 12, .86) !important; box-shadow: none !important; color: #9fd4ff !important; }
+#top-pills #track-toast .tt-art, #top-pills #track-toast .tt-artist { display: none !important; }
+#top-pills #track-toast .tt-text { flex: 0 1 auto; min-width: 0; }
+#top-pills #track-toast .tt-title { font-size: 14px !important; font-weight: 500 !important; color: #9fd4ff; }
+#top-pills #radar-strip { height: 32px !important; min-width: 0 !important; padding: 0 12px !important; font-size: 14px !important; border-radius: 0 0 12px 12px !important; border: 1px solid rgba(255, 157, 77, .55) !important; border-top: 0 !important; background: rgba(2, 6, 12, .86) !important; color: #ff9d4d !important; }
+#top-pills #radar-strip .ns-radar { border: 0 !important; padding: 0 !important; font-size: 14px; }
+:root[data-theme="light"] #top-pills #track-toast { background: rgba(255, 255, 255, .95) !important; color: #1f6fd6 !important; border-color: rgba(31, 111, 214, .4) !important; box-shadow: none !important; }
+:root[data-theme="light"] #top-pills #track-toast .tt-title { color: #1f6fd6; }
+
+/* Top state pill (windows and trunk closed): green, compact, no animation. */
+#top-pills .state-pill { height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 0 0 12px 12px; border: 1px solid rgba(111, 227, 154, .6); border-top: 0; background: rgba(2, 6, 12, .86); color: #6fe39a; font-size: 14px; white-space: nowrap; pointer-events: none; animation: none; transition: none; }
+#top-pills .state-pill[hidden] { display: none; }
+:root[data-theme="light"] #top-pills .state-pill { background: rgba(255, 255, 255, .95); color: #1e8a4c; border-color: rgba(30, 138, 76, .45); }
+
+/* Cover mode: the track position and length are shown at the ends of the progress bar. */
+body.player-expanded .player-widget.expanded .player-time { display: inline-block !important; font-size: 15px; color: var(--muted); }
+body.player-expanded .player-widget.expanded .player-timeline { gap: 12px; }

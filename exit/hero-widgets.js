@@ -83,13 +83,7 @@
     const box = byId("hw-chips");
     if (!box) return;
     // Home screen: five tiles with an icon, the label and the state word under it. Tapping a tile runs its action (home-tiles.js).
-    const TILES = [
-      { key: "lock", label: "Двери", match: null },
-      { key: "roof", label: "Люк", match: "Люк" },
-      { key: "window", label: "Окна", match: "Окна" },
-      { key: "trunk", label: "Багаж.", match: "Багажник" },
-      { key: "wheel", label: "Шины", match: "Шины" }
-    ];
+    const TILES = window.hwTileDefs().filter(t => window.hwTileEnabled(t.key));
     box.replaceChildren(...TILES.map(t => {
       const chip = t.match ? chips.find(c => c.label === t.match) : null;
       const div = document.createElement("button");
@@ -199,6 +193,33 @@
   }
   window.carDetailGroups = carDetailGroups;
   window.renderChips = renderChips;
+  // Which car tiles are shown (the state card). Chosen in Settings > Карточки; all five by default.
+  const TILE_KEYS_STORAGE = "generic_launcher_tiles_v1";
+  window.hwTileDefs = () => [
+    { key: "lock", label: "Двери", match: null, title: "Двери" },
+    { key: "roof", label: "Люк", match: "Люк", title: "Люк" },
+    { key: "window", label: "Окна", match: "Окна", title: "Окна" },
+    { key: "trunk", label: "Багаж.", match: "Багажник", title: "Багажник" },
+    { key: "wheel", label: "Шины", match: "Шины", title: "Шины" }
+  ];
+  function savedTileKeys() {
+    try {
+      const raw = localStorage.getItem(TILE_KEYS_STORAGE);
+      const list = raw ? JSON.parse(raw) : null;
+      return Array.isArray(list) ? list : null;
+    } catch (error) { return null; }
+  }
+  window.hwTileEnabled = key => {
+    const list = savedTileKeys();
+    return list ? list.includes(key) : true;
+  };
+  window.hwToggleTile = key => {
+    const all = window.hwTileDefs().map(t => t.key);
+    const current = all.filter(k => window.hwTileEnabled(k));
+    const next = current.includes(key) ? current.filter(k => k !== key) : all.filter(k => current.includes(k) || k === key);
+    try { localStorage.setItem(TILE_KEYS_STORAGE, JSON.stringify(next)); } catch (error) { /* keep the choice for this session only */ }
+    renderChips();
+  };
 
   function renderAll() {
     if (!byId("hero-widgets")) return;
