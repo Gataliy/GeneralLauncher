@@ -970,7 +970,7 @@ body.player-expanded .weather-copy .eyebrow { grid-column: 2; grid-row: 2; font-
 :root[data-theme="light"] body.player-expanded .weather-copy > span:last-child { color: #1b2230; }
 
 /* Player: the cover fills the card's height on the left; title and controls, then volume and the waveform on the right. */
-body.player-expanded .player-widget.expanded { position: absolute !important; left: clamp(16px, 3.4vw, 44px); right: clamp(16px, 3.4vw, 44px); bottom: clamp(12px, 4vh, 28px); top: auto !important; width: auto !important; max-width: none !important; height: clamp(200px, 36vh, 256px) !important; min-height: 0 !important; display: grid !important; grid-template-columns: minmax(150px, 30%) minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr; column-gap: 24px; row-gap: 12px; padding: 16px 22px 16px 16px !important; border-radius: 26px !important; background: rgba(10, 14, 22, .38) !important; backdrop-filter: blur(14px) !important; border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: 0 10px 30px rgba(0, 0, 0, .35) !important; }
+body.player-expanded .player-widget.expanded { position: absolute !important; left: clamp(16px, 3.4vw, 44px); right: clamp(16px, 3.4vw, 44px); bottom: calc(clamp(12px, 4vh, 28px) + var(--car-bar-h, 72px)); top: auto !important; width: auto !important; max-width: none !important; height: clamp(200px, 36vh, 256px) !important; min-height: 0 !important; display: grid !important; grid-template-columns: minmax(150px, 30%) minmax(0, 1fr) auto; grid-template-rows: auto auto 1fr; column-gap: 24px; row-gap: 12px; padding: 16px 22px 16px 16px !important; border-radius: 26px !important; background: rgba(10, 14, 22, .38) !important; backdrop-filter: blur(14px) !important; border: 1px solid rgba(255, 255, 255, .14) !important; box-shadow: 0 10px 30px rgba(0, 0, 0, .35) !important; }
 body.player-expanded .player-widget.expanded .album-art { grid-column: 1; grid-row: 1 / span 3; width: 100% !important; height: 100% !important; min-height: 0; border-radius: 20px !important; }
 body.player-expanded .player-widget.expanded .track-info { grid-column: 2; grid-row: 1; align-self: center; min-width: 0; }
 body.player-expanded .player-widget.expanded .player-controls { grid-column: 3; grid-row: 1; display: flex; align-items: center; gap: 18px; }
@@ -1098,3 +1098,27 @@ body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock { justify-c
 body.radar-only #track-toast { opacity: 1 !important; }
 /* Cover mode hides the home-port cards (navigation, rings, car state, trip); the cover has its own layout. */
 body.player-expanded .hero-widgets, body.player-expanded .hw-trip, body.player-expanded .hw-rings-col { display: none !important; }
+
+/* 10-day forecast sheet (long press on the weather). It had no styles before: a card over a dim layer. */
+.forecast-sheet { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(0, 0, 0, .45); padding: 16px; }
+.forecast-sheet[hidden] { display: none; }
+.forecast-card { width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); color: var(--text); border: 1px solid rgba(255, 255, 255, .14); border-radius: 28px; padding: 18px 22px; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+.forecast-card h3 { margin: 0 0 10px; font-size: 20px; font-weight: 600; }
+.forecast-list { display: grid; gap: 6px; }
+.forecast-row { display: grid; grid-template-columns: minmax(0, 1fr) 40px auto; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid rgba(255, 255, 255, .08); font-size: 17px; }
+.forecast-row:last-child { border-bottom: 0; }
+.forecast-day { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.forecast-icon { text-align: center; font-size: 22px; color: var(--accent); }
+.forecast-temp { white-space: nowrap; color: var(--muted); }
+.forecast-temp b { color: var(--text); font-weight: 600; }
+.forecast-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+:root[data-theme="light"] .forecast-sheet { background: rgba(20, 30, 50, .3); }
+
+/* Home port, fitted to the car screen height (about 720 px): top row clock / weather / trip, the player under them, then navigation, fuel and battery, car state. */
+.hero-bottom:not(.in-stage) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.6fr) !important; grid-template-rows: 124px 132px !important; }
+.hero-bottom:not(.in-stage) > .hero-clock, .hero-bottom:not(.in-stage) > #weather-widget, .hero-bottom:not(.in-stage) > .hw-trip { height: 124px !important; }
+.hero-bottom:not(.in-stage) > .hero-clock .clock { font-size: 72px; }
+.hero-bottom:not(.in-stage) > .player-widget { height: 132px !important; grid-column: 1 / span 3; }
+.hero-bottom:not(.in-stage) .player-widget .album-art { width: 108px !important; height: 108px !important; flex: 0 0 108px; }
+.hero-bottom:not(.in-stage) .player-widget .track-title { font-size: 24px; }
+.hero-widgets { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 2fr) !important; grid-auto-rows: 150px !important; }
