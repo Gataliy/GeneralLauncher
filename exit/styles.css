@@ -1287,3 +1287,9 @@ body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-
 
 /* Home: the "Сейчас играет" label uses the same font, size and colour as the car-state and navigation headings. */
 .hero-bottom:not(.in-stage) .track-info > .eyebrow { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-size: 26px !important; font-weight: 600 !important; letter-spacing: .02em !important; color: #c4cbd4 !important; text-transform: none !important; margin-bottom: 4px !important; }
+
+/* Home: the native bottom bar covers the screen bottom; fit the dashboard above it. */
+body:not(.player-expanded) .dashboard { height: 100vh !important; min-height: 0 !important; grid-template-rows: minmax(0, 1fr) auto !important; padding-bottom: calc(clamp(16px, 1.8vw, 30px) + var(--safe-bottom) + 90px) !important; overflow: hidden; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hw-state, body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hw-nav { height: 150px !important; min-height: 0 !important; max-height: 150px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock, body:not(.player-expanded) .hero-bottom:not(.in-stage) > #weather-widget, body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { height: 183px !important; min-height: 0 !important; max-height: 183px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) { grid-template-rows: 150px 183px !important; align-content: start !important; }
