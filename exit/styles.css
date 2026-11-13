@@ -1214,7 +1214,7 @@ body.player-expanded .weather-widget .eyebrow { order: -1; font-size: 15px !impo
    smaller so the track title fits, and the track info keeps a minimum width. */
 .player-controls button { color: var(--text); }
 .player-controls svg { fill: currentColor; }
-body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 100px !important; height: 100px !important; flex: 0 0 100px; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 164px !important; height: 164px !important; flex: 0 0 164px; border-radius: 22px; }
 body:not(.player-expanded) .player-widget .player-controls { flex: 0 0 auto; }
 body:not(.player-expanded) .player-widget .player-controls button { width: 50px; height: 50px; font-size: 26px; }
 body:not(.player-expanded) .player-widget .player-controls svg { width: 26px; height: 26px; }
