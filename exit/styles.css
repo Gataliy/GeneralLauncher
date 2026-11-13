@@ -1220,8 +1220,14 @@ body:not(.player-expanded) .player-widget .player-controls button { width: 50px;
 body:not(.player-expanded) .player-widget .player-controls svg { width: 26px; height: 26px; }
 body:not(.player-expanded) .player-widget .track-info { min-width: 130px; }
 
-/* Home row: clock, weather and compass share one width, the media player takes the rest of the row. */
+/* Home: compass hidden again; the media player is wider. The top row (state, navigation) and the player share the same left edge. */
+.hero-bottom:not(.in-stage) > .hw-compass { display: none !important; }
+.hero-bottom:not(.in-stage) > .hw-state { grid-column: 1 / span 8; grid-row: 1; }
+.hero-bottom:not(.in-stage) > .hw-nav { grid-column: 9 / span 12; grid-row: 1; }
 .hero-bottom:not(.in-stage) > .hero-clock { grid-column: 1 / span 4; grid-row: 2; }
 .hero-bottom:not(.in-stage) > #weather-widget { grid-column: 5 / span 4; grid-row: 2; }
-.hero-bottom:not(.in-stage) > .hw-compass { display: block !important; grid-column: 9 / span 4; grid-row: 2; height: 208px !important; }
-.hero-bottom:not(.in-stage) > .player-widget { grid-column: 13 / span 8; grid-row: 2; }
+.hero-bottom:not(.in-stage) > .player-widget { grid-column: 9 / span 12; grid-row: 2; }
+
+/* Section titles of the state and navigation cards use a second typeface (DejaVu Sans Condensed). */
+@font-face { font-family: "Exit Title"; src: url("fonts/DejaVuSansCondensed-Bold.ttf") format("truetype"); font-weight: 600 900; font-style: normal; }
+.hero .hw-state > .hw-eb, .hero .hw-nav > .hw-eb { font-family: "Exit Title", "Exit Sans", sans-serif; }
