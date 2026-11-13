@@ -1153,7 +1153,7 @@ body.home-port .hw-compass .hw-body { flex: 1; display: flex; flex-direction: co
 body.home-port .hw-compass .hw-dial { width: min(150px, 100%); aspect-ratio: 1; height: auto; border-radius: 50%; border: 1.5px solid rgba(150, 190, 240, .3); position: relative; }
 body.home-port .hw-compass .hw-dir { font-size: 22px; font-weight: 600; letter-spacing: .04em; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { position: relative; }
-body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-timeline { position: absolute !important; left: 22px; right: 22px; bottom: 14px; flex: none !important; width: auto !important; height: 4px; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-timeline { position: absolute !important; left: 206px; right: 22px; bottom: 14px; flex: none !important; width: auto !important; height: 4px; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line { height: 4px !important; border-radius: 2px; overflow: hidden; }
 
 /* Home port: the album cover in the media player is larger (fills the player height, above the progress bar). */
@@ -1216,8 +1216,8 @@ body.player-expanded .weather-widget .eyebrow { order: -1; font-size: 15px !impo
 .player-controls svg { fill: currentColor; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 164px !important; height: 164px !important; flex: 0 0 164px; border-radius: 22px; }
 body:not(.player-expanded) .player-widget .player-controls { flex: 0 0 auto; }
-body:not(.player-expanded) .player-widget .player-controls button { width: 50px; height: 50px; font-size: 26px; }
-body:not(.player-expanded) .player-widget .player-controls svg { width: 26px; height: 26px; }
+body:not(.player-expanded) .player-widget .player-controls button { width: 62px; height: 62px; font-size: 32px; }
+body:not(.player-expanded) .player-widget .player-controls svg { width: 34px; height: 34px; }
 body:not(.player-expanded) .player-widget .track-info { min-width: 130px; }
 
 /* Home: compass hidden again; the media player is wider. The top row (state, navigation) and the player share the same left edge. */
@@ -1231,3 +1231,6 @@ body:not(.player-expanded) .player-widget .track-info { min-width: 130px; }
 /* Section titles of the state and navigation cards use a second typeface (DejaVu Sans Condensed). */
 @font-face { font-family: "Exit Title"; src: url("fonts/DejaVuSansCondensed-Bold.ttf") format("truetype"); font-weight: 600 900; font-style: normal; }
 .hero .hw-state > .hw-eb, .hero .hw-nav > .hw-eb { font-family: "Exit Title", "Exit Sans", sans-serif; }
+
+/* Home player: a small "СЕЙЧАС ИГРАЕТ" line above the track title. */
+.hero-bottom:not(.in-stage) .track-info > .eyebrow { display: block !important; font-size: 14px; font-weight: 600; letter-spacing: .16em; color: #8fb8e8; margin-bottom: 6px; }
