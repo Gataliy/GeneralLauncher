@@ -1193,3 +1193,7 @@ body.player-expanded .player-widget.expanded .player-timeline { gap: 12px; }
 .hw-foot div:first-child { padding-left: 0; border-left: 0; }
 .hw-foot span { display: block; font-size: 11px; letter-spacing: .14em; color: #6f7c8a; text-transform: uppercase; }
 .hw-foot strong { display: block; font-size: 22px; font-weight: 300; color: #e6ecf2; }
+
+/* 1.2.444: compass removed from the home screen; navigation takes its space. */
+.hero-bottom:not(.in-stage) > .hw-compass { display: none !important; }
+.hero-bottom:not(.in-stage) > .hw-nav { grid-column: 11 / span 10; }
