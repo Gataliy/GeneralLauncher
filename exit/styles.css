@@ -1,3 +1,5 @@
+@font-face { font-family: "Exit Sans"; src: url("fonts/Carlito-Regular.ttf") format("truetype"); font-weight: 300 500; font-style: normal; }
+@font-face { font-family: "Exit Sans"; src: url("fonts/Carlito-Bold.ttf") format("truetype"); font-weight: 600 900; font-style: normal; }
 :root {
   color-scheme: dark;
   --safe-left: 0px;
@@ -18,7 +20,7 @@
 
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
-body { background-color: var(--bg); background-image: var(--hero-image); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; color: var(--text); font-family: Inter, "Roboto", "Segoe UI", Arial, sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; position: relative; }
+body { background-color: var(--bg); background-image: var(--hero-image); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed; color: var(--text); font-family: "Exit Sans", Inter, "Roboto", "Segoe UI", Arial, sans-serif; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; position: relative; }
 body::before { content: ""; position: fixed; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .2), transparent 42%), linear-gradient(0deg, rgba(6, 6, 8, .9), rgba(6, 6, 8, .18) 43%, transparent 68%); }
 button, input { font: inherit; }
 button { color: inherit; }
@@ -1207,3 +1209,19 @@ body.player-expanded .date-row { width: auto !important; border-top: 0 !importan
 /* Cover mode, weather variant 1: label on top, value and condition below, as on the home screen. */
 body.player-expanded .weather-widget .weather-copy { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 4px; }
 body.player-expanded .weather-widget .eyebrow { order: -1; font-size: 15px !important; letter-spacing: .2em !important; font-weight: 600 !important; color: #c4cbd4 !important; }
+
+/* Home player: the control icons take the text colour (they were black on dark themes), the cover and the buttons are a bit
+   smaller so the track title fits, and the track info keeps a minimum width. */
+.player-controls button { color: var(--text); }
+.player-controls svg { fill: currentColor; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 100px !important; height: 100px !important; flex: 0 0 100px; }
+body:not(.player-expanded) .player-widget .player-controls { flex: 0 0 auto; }
+body:not(.player-expanded) .player-widget .player-controls button { width: 50px; height: 50px; font-size: 26px; }
+body:not(.player-expanded) .player-widget .player-controls svg { width: 26px; height: 26px; }
+body:not(.player-expanded) .player-widget .track-info { min-width: 130px; }
+
+/* Home row: clock, weather and compass share one width, the media player takes the rest of the row. */
+.hero-bottom:not(.in-stage) > .hero-clock { grid-column: 1 / span 4; grid-row: 2; }
+.hero-bottom:not(.in-stage) > #weather-widget { grid-column: 5 / span 4; grid-row: 2; }
+.hero-bottom:not(.in-stage) > .hw-compass { display: block !important; grid-column: 9 / span 4; grid-row: 2; height: 208px !important; }
+.hero-bottom:not(.in-stage) > .player-widget { grid-column: 13 / span 8; grid-row: 2; }
