@@ -1197,3 +1197,13 @@ body.player-expanded .player-widget.expanded .player-timeline { gap: 12px; }
 /* 1.2.444: compass removed from the home screen; navigation takes its space. */
 .hero-bottom:not(.in-stage) > .hw-compass { display: none !important; }
 .hero-bottom:not(.in-stage) > .hw-nav { grid-column: 11 / span 10; }
+
+/* Cover mode: equal inner margins on the left and right of the player. */
+body.player-expanded .player-widget.expanded { padding-left: 40px !important; padding-right: 40px !important; }
+
+/* Cover mode, clock variant 2: no divider line under the time, the date sits right under it. */
+body.player-expanded .date-row { width: auto !important; border-top: 0 !important; padding-top: 0 !important; margin-top: 6px !important; justify-content: flex-start !important; }
+
+/* Cover mode, weather variant 1: label on top, value and condition below, as on the home screen. */
+body.player-expanded .weather-widget .weather-copy { display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 4px; }
+body.player-expanded .weather-widget .eyebrow { order: -1; font-size: 15px !important; letter-spacing: .2em !important; font-weight: 600 !important; color: #c4cbd4 !important; }

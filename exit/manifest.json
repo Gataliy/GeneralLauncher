@@ -1,6 +1,6 @@
 {
   "id": "generic_launcher",
   "name": "Generic Launcher",
-  "version": "1.2.444",
+  "version": "1.2.445",
   "entry": "index.html"
 }
