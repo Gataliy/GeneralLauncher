@@ -1239,3 +1239,9 @@ body:not(.player-expanded) .player-widget .track-info { min-width: 130px; }
 .hero .hw-state > .hw-eb, .hero .hw-nav > .hw-eb, .hero .hw-compass > .hw-eb { text-transform: none; letter-spacing: .02em; font-size: 26px; }
 .hero-bottom .weather-widget .eyebrow { text-transform: none; letter-spacing: .02em; font-size: 24px; }
 .hero-bottom:not(.in-stage) .track-info > .eyebrow { text-transform: none; letter-spacing: .02em; font-size: 16px; }
+
+/* Home player: the track info takes the free width of the player (no 300 px cap), titles stay on one line. */
+body:not(.player-expanded) .player-widget .track-info { flex: 1 1 auto; max-width: none; min-width: 0; }
+body:not(.player-expanded) .player-widget .player-extra { flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; }
+body:not(.player-expanded) .player-widget .track-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 1.2; }
+body:not(.player-expanded) .player-widget .track-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
