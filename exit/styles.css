@@ -1280,3 +1280,7 @@ body.player-expanded #player-stage .player-vol .ic { width: 58px !important; tex
 
 /* Progress bar: a touch drag scrubs instead of scrolling the page. */
 .player-timeline, .player-tl-line, #track-progress { touch-action: none; }
+
+/* Home: the media player progress bar is thicker (8 px, same as in cover mode). */
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line { height: 8px !important; border-radius: 4px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line #track-line-fill { border-radius: 4px !important; }
