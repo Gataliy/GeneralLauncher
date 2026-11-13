@@ -1284,3 +1284,6 @@ body.player-expanded #player-stage .player-vol .ic { width: 58px !important; tex
 /* Home: the media player progress bar is thicker (8 px, same as in cover mode). */
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line { height: 8px !important; border-radius: 4px !important; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-tl-line #track-line-fill { border-radius: 4px !important; }
+
+/* Home: the "Сейчас играет" label uses the same font, size and colour as the car-state and navigation headings. */
+.hero-bottom:not(.in-stage) .track-info > .eyebrow { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-size: 26px !important; font-weight: 600 !important; letter-spacing: .02em !important; color: #c4cbd4 !important; text-transform: none !important; margin-bottom: 4px !important; }
