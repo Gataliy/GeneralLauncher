@@ -1199,7 +1199,7 @@ body.player-expanded .player-widget.expanded .player-timeline { gap: 12px; }
 .hero-bottom:not(.in-stage) > .hw-nav { grid-column: 11 / span 10; }
 
 /* Cover mode: equal inner margins on the left and right of the player. */
-body.player-expanded .player-widget.expanded { padding-left: 40px !important; padding-right: 40px !important; }
+body.player-expanded .player-widget.expanded { padding-left: 24px !important; padding-right: 24px !important; width: 76% !important; max-width: 76% !important; margin-left: auto !important; margin-right: auto !important; }
 
 /* Cover mode, clock variant 2: no divider line under the time, the date sits right under it. */
 body.player-expanded .date-row { width: auto !important; border-top: 0 !important; padding-top: 0 !important; margin-top: 6px !important; justify-content: flex-start !important; }
