@@ -8,6 +8,7 @@ const state = {
   splits: [],
   actionIcons: Object.create(null),
   catalogAsync: false,
+  catalogReceived: false,
   weatherLocation: null,
   lastWeatherRequestAt: 0,
   pickerSlot: null,

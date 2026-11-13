@@ -175,8 +175,25 @@ function loadHostCapabilities() {
   if (bridge.has("requestLauncherCatalogAsync")) {
     const requestId = nextRequestId("catalog");
     state.catalogAsync = bridge.requestLauncherCatalogAsync(requestId);
-    if (state.catalogAsync) return;
+    if (state.catalogAsync) {
+      // Some firmware accepts the catalog request but never sends launcherCatalog events: then the lists stay empty.
+      // If nothing arrives in time, read the same lists synchronously. A late catalog still replaces them.
+      setTimeout(() => {
+        if (!state.catalogReceived) {
+          state.catalogAsync = false;
+          readHostLists();
+          scheduleCatalogRender();
+        }
+      }, CATALOG_FALLBACK_MS);
+      return;
+    }
   }
+  readHostLists();
+}
+
+const CATALOG_FALLBACK_MS = 2500;
+
+function readHostLists() {
   state.actions = normalizeActionList(bridge.getRunEnum());
   const apps = bridge.getUserApps();
   state.apps = Array.isArray(apps) ? apps : [];
@@ -186,6 +203,7 @@ function loadHostCapabilities() {
 
 function applyLauncherCatalog(raw) {
   const data = parseJson(raw, raw) || {};
+  state.catalogReceived = true;
   const items = Array.isArray(data.items) ? data.items : [];
   if (data.section === "actions") {
     const commands = normalizeActionList(items);

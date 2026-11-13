@@ -1,6 +1,6 @@
 // Settings sheet with tabs: appearance, wallpapers, cards, about. Opened from the "Настройки" button next to the slots.
 (function () {
-  const BUILD = (() => {
+  const BUILD = window.LAUNCHER_VERSION || (() => {
     const src = document.querySelector('script[src*="settings.js"]')?.getAttribute("src") || "";
     const match = src.match(/v=([\d.]+)/);
     return match ? match[1] : "—";
@@ -151,13 +151,46 @@
     });
   }
 
+  // First press: look for a newer version. Second press (the button then says the version): download it and restart.
+  async function checkUpdateClicked(event) {
+    const button = event.currentTarget;
+    const status = body.querySelector("#update-status");
+    button.disabled = true;
+    try {
+      if (pendingUpdate) {
+        status.textContent = "Скачиваю " + pendingUpdate.version + "…";
+        const bundle = await downloadUpdate(pendingUpdate);
+        status.textContent = "Скачано " + bundle.version + ". Перезапуск…";
+        setTimeout(() => location.reload(), 600);
+        return;
+      }
+      status.textContent = "Проверяю…";
+      const info = await checkForUpdate();
+      if (compareLauncherVersions(info.version, window.LAUNCHER_VERSION) > 0) {
+        pendingUpdate = info;
+        button.textContent = "Обновить до " + info.version;
+        status.textContent = "Есть новая версия " + info.version + ". Нажмите кнопку, чтобы скачать.";
+      } else {
+        status.textContent = "Установлена последняя версия " + window.LAUNCHER_VERSION + ".";
+      }
+    } catch (error) {
+      status.textContent = "Не получилось: " + error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   function renderAbout() {
     resetArmed = false;
     body.innerHTML = `
-      <p class="set-note">Generic Launcher, сборка ${BUILD}.</p>
+      <div class="set-row"><button type="button" data-act="check-update">Проверить обновления</button>${window.LAUNCHER_FROM_UPDATE ? '<button type="button" data-act="drop-update">Вернуть версию с флешки</button>' : ""}</div>
+      <p class="set-note" id="update-status">Generic Launcher, версия ${BUILD}${window.LAUNCHER_FROM_UPDATE ? ", из обновления" : ""}.</p>
       <div class="set-row"><button type="button" data-act="tour">Показать обучение</button></div>
       <div class="set-row"><button type="button" data-act="reset-all">Сбросить все настройки</button></div>
       <p class="set-note">Сбрасываются раскладка, карточки, обои, избранное, тема и слоты. Нужно нажать дважды.</p>`;
+    body.querySelector('[data-act="check-update"]').addEventListener("click", checkUpdateClicked);
+    const dropButton = body.querySelector('[data-act="drop-update"]');
+    if (dropButton) dropButton.addEventListener("click", () => { dropUpdate(); location.reload(); });
     body.querySelector('[data-act="tour"]').addEventListener("click", () => {
       sheet.hidden = true;
       if (typeof window.startTutorial === "function") window.startTutorial();
