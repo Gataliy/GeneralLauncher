@@ -39,19 +39,19 @@
   function renderChips() {
     const chips = [];
     const OPEN_STATES = ["open", "partial", "tilted"];
-    const STATE_WORDS = { closed: "закрыт", open: "открыт", partial: "частично", tilted: "наклон" };
+    const STATE_WORDS = { closed: "закрыт", open: "открыт", partial: "частично", tilted: "наклон", ajar: "приоткрыт" };
     // Sunroof and trunk from the car's own state commands (see core_manifest). Old data is used only when these are missing.
     const sunCar = carStates.get_sunroof_state;
     const sun = state.sunroofOpen;
-    if (sunCar && sunCar.available && STATE_WORDS[sunCar.state]) {
+    if (sunCar && sunCar.available && typeof sunCar.state === "string" && sunCar.state) {
       const percent = typeof sunCar.openPercent === "number" ? " " + Math.round(sunCar.openPercent) + " %" : "";
-      chips.push({ label: "Люк", value: STATE_WORDS[sunCar.state] + percent + rawSuffix(sunCar), open: OPEN_STATES.includes(sunCar.state) });
+      chips.push({ label: "Люк", value: (STATE_WORDS[sunCar.state] || sunCar.state) + percent + rawSuffix(sunCar), open: sunCar.state !== "closed" });
     } else if (sun != null) {
       chips.push({ label: "Люк", value: sun ? "открыт" : "закрыт", open: sun === true });
     }
     const trunkCar = carStates.get_trunk_state;
-    if (trunkCar && trunkCar.available && STATE_WORDS[trunkCar.state]) {
-      chips.push({ label: "Багажник", value: STATE_WORDS[trunkCar.state] + rawSuffix(trunkCar), open: OPEN_STATES.includes(trunkCar.state) });
+    if (trunkCar && trunkCar.available && typeof trunkCar.state === "string" && trunkCar.state) {
+      chips.push({ label: "Багажник", value: (STATE_WORDS[trunkCar.state] || trunkCar.state) + rawSuffix(trunkCar), open: trunkCar.state !== "closed" });
     } else if (carOpen.trunk != null) {
       chips.push({ label: "Багажник", value: carOpen.trunk ? "открыт" : "закрыт", open: carOpen.trunk === true });
     }
@@ -59,9 +59,8 @@
     const windowsCar = carStates.get_windows_state;
     const windows = windowsCar && Array.isArray(windowsCar.windows) ? windowsCar.windows.filter(w => w && w.available) : [];
     if (windows.length) {
-      const openCount = windows.filter(w => OPEN_STATES.includes(w.state)).length;
-      const raws = windows.map(w => (w.rawState === null || w.rawState === undefined ? "—" : w.rawState)).join("/");
-      chips.push({ label: "Окна", value: (openCount ? "открыто " + openCount : "закрыты") + " [" + raws + "]", open: openCount > 0 });
+      const openCount = windows.filter(w => w.state !== "closed").length;
+      chips.push({ label: "Окна", value: openCount ? "открыто " + openCount : "закрыты", open: openCount > 0 });
     } else if (carOpen.windows != null) {
       chips.push({ label: "Окна", value: carOpen.windows ? "открыты" : "закрыты", open: carOpen.windows === true });
     }

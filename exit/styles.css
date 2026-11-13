@@ -1289,7 +1289,17 @@ body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-
 .hero-bottom:not(.in-stage) .track-info > .eyebrow { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-size: 26px !important; font-weight: 600 !important; letter-spacing: .02em !important; color: #c4cbd4 !important; text-transform: none !important; margin-bottom: 4px !important; }
 
 /* Home: the native bottom bar covers the screen bottom; fit the dashboard above it. */
-body:not(.player-expanded) .dashboard { height: 100vh !important; min-height: 0 !important; grid-template-rows: minmax(0, 1fr) auto !important; padding-bottom: calc(clamp(16px, 1.8vw, 30px) + var(--safe-bottom) + 90px) !important; overflow: hidden; }
+body:not(.player-expanded) .dashboard { height: 100vh !important; min-height: 0 !important; grid-template-rows: minmax(0, 1fr) auto !important; padding-bottom: calc(clamp(16px, 1.8vw, 30px) + var(--safe-bottom) + 40px) !important; overflow: hidden; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hw-state, body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hw-nav { height: 150px !important; min-height: 0 !important; max-height: 150px !important; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock, body:not(.player-expanded) .hero-bottom:not(.in-stage) > #weather-widget, body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { height: 183px !important; min-height: 0 !important; max-height: 183px !important; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) { grid-template-rows: 150px 183px !important; align-content: start !important; }
+
+/* Home: the bottom row (clock, weather, player) is smaller so it no longer crowds the rest of the screen. */
+body:not(.player-expanded) .hero-bottom:not(.in-stage) { grid-template-rows: 150px 150px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock, body:not(.player-expanded) .hero-bottom:not(.in-stage) > #weather-widget, body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget { height: 150px !important; min-height: 0 !important; max-height: 150px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock .clock { font-size: 56px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > #weather-widget .weather-icon { width: 50px !important; height: 50px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-art { width: 118px !important; height: 118px !important; flex: 0 0 118px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-controls button { width: 48px !important; height: 48px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-controls svg { width: 24px !important; height: 24px !important; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) { row-gap: 28px !important; }
