@@ -1183,3 +1183,13 @@ body.home-port .hero-bottom:not(.in-stage) > .hw-nav .hw-gauge-speed .hw-num { p
 /* Cover mode: the track position and length are shown at the ends of the progress bar. */
 body.player-expanded .player-widget.expanded .player-time { display: inline-block !important; font-size: 15px; color: var(--muted); }
 body.player-expanded .player-widget.expanded .player-timeline { gap: 12px; }
+
+/* ===== 1.2.443: card headers, weather label, navigation foot row ===== */
+.hero .hw-state > .hw-eb, .hero .hw-nav > .hw-eb, .hero .hw-compass > .hw-eb { font-size: 22px; font-weight: 600; letter-spacing: .23em; color: #c4cbd4; text-align: center; }
+.hero-bottom .weather-widget .eyebrow { font-size: 22px; font-weight: 600; letter-spacing: .23em; color: #c4cbd4; }
+.hero-bottom .track-info > .eyebrow { display: none; }
+.hw-foot { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: auto; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08); }
+.hw-foot div { padding-left: 12px; border-left: 1px solid rgba(255,255,255,.08); }
+.hw-foot div:first-child { padding-left: 0; border-left: 0; }
+.hw-foot span { display: block; font-size: 11px; letter-spacing: .14em; color: #6f7c8a; text-transform: uppercase; }
+.hw-foot strong { display: block; font-size: 22px; font-weight: 300; color: #e6ecf2; }
