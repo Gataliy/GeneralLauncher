@@ -26,7 +26,7 @@ function applyWeather(raw, persist = true) {
   const city = String(data.city || "").trim();
   const condition = String(data.condition || "").trim();
   document.getElementById("weather-temperature").textContent = temperature;
-  if (city && city !== "N/A") document.getElementById("weather-city").textContent = city.toLocaleUpperCase("ru");
+  if (city && city !== "N/A") document.getElementById("weather-city").textContent = city;
   if (condition) {
     document.getElementById("weather-condition").textContent = condition;
     document.getElementById("weather-icon").textContent = weatherSymbol(condition);
