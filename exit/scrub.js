@@ -44,8 +44,12 @@ function applyTrackClockNow() {
 }
 
 document.addEventListener("pointerdown", event => {
-  const line = event.target.closest && event.target.closest(".player-tl-line, #track-progress");
-  if (!line || trackDurationSeconds() == null) return;
+  // The whole timeline row takes a touch (the bar itself is thin); the time labels do not seek.
+  if (event.target.closest && event.target.closest(".player-time")) return;
+  const hit = event.target.closest && event.target.closest(".player-timeline, .player-tl-line, #track-progress");
+  if (!hit || trackDurationSeconds() == null) return;
+  const line = hit.matches(".player-timeline") ? hit.querySelector(".player-tl-line") : hit;
+  if (!line) return;
   scrubLine = line;
   scrubFraction = scrubFractionOf(line, event.clientX);
   if (scrubFraction != null) paintScrub(scrubFraction);

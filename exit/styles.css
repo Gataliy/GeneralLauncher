@@ -1245,3 +1245,38 @@ body:not(.player-expanded) .player-widget .track-info { flex: 1 1 auto; max-widt
 body:not(.player-expanded) .player-widget .player-extra { flex: 0 0 0 !important; width: 0 !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; }
 body:not(.player-expanded) .player-widget .track-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; line-height: 1.2; }
 body:not(.player-expanded) .player-widget .track-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+/* Home clock: weekday with a capital first letter, date in normal case (not capitals). */
+.hero-bottom:not(.in-stage) > .hero-clock .date { text-transform: none; }
+
+/* Cover mode: clock, weather and the media player share one row across the screen. */
+body.player-expanded #player-stage .hero-bottom.in-stage { position: absolute !important; inset: 0 !important; display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 18px !important; padding: 0 36px !important; width: auto !important; height: auto !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock,
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget { position: static !important; flex: 0 0 auto !important; width: auto !important; max-width: none !important; inset: auto !important; margin: 0 !important; transform: none !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget { position: static !important; flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; max-width: none !important; margin: 0 !important; inset: auto !important; transform: none !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > * { align-self: center !important; height: auto !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock, body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget { min-height: 200px !important; }
+
+/* Cover mode: one bottom row, clock and weather narrow, media player takes the rest. */
+body.player-expanded #player-stage .hero-bottom.in-stage { position: absolute !important; left: 16px !important; right: 16px !important; top: auto !important; bottom: clamp(20px, 6vh, 56px) !important; display: grid !important; grid-template-columns: 220px 220px minmax(0, 1fr) !important; gap: 14px !important; align-items: stretch !important; padding: 0 !important; width: auto !important; height: auto !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock, body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget, body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget { position: relative !important; inset: auto !important; transform: none !important; margin: 0 !important; width: auto !important; min-width: 0 !important; max-width: none !important; flex: none !important; height: 200px !important; min-height: 200px !important; max-height: 200px !important; align-self: stretch !important; box-sizing: border-box !important; border: 1px solid rgba(255, 255, 255, .16) !important; border-radius: 33px !important; background: rgba(17, 17, 20, .74) !important; backdrop-filter: blur(22px) !important; box-shadow: 0 18px 50px rgba(0, 0, 0, .28) !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 18px 16px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .clock { font-size: 74px !important; line-height: 1 !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget { flex-direction: column !important; justify-content: center !important; padding: 18px 16px !important; gap: 10px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .weather-icon { width: 58px !important; height: 58px !important; font-size: 30px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget { padding: 16px 22px !important; gap: 22px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .album-art { display: block !important; width: 168px !important; height: 168px !important; flex: 0 0 168px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .player-controls button { width: 56px !important; height: 56px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .player-controls svg { width: 28px !important; height: 28px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .track-info { grid-column: auto !important; min-width: 0 !important; }
+
+/* Cover mode: volume and progress bars have the same thickness. */
+body.player-expanded #player-stage .player-vol-line, body.player-expanded #player-stage .player-tl-line { height: 8px !important; min-height: 8px !important; border-radius: 4px !important; }
+body.player-expanded #player-stage .player-vol-line i, body.player-expanded #player-stage .player-tl-line #track-line-fill { border-radius: 4px !important; }
+
+/* Cover mode: volume and progress bars start and end at the same x (icon column matches the time label). */
+body.player-expanded #player-stage .player-vol { gap: 12px !important; }
+body.player-expanded #player-stage .player-vol .ic { width: 58px !important; text-align: left !important; flex: 0 0 58px !important; }
+
+/* Progress bar: a touch drag scrubs instead of scrolling the page. */
+.player-timeline, .player-tl-line, #track-progress { touch-action: none; }
