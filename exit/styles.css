@@ -1322,3 +1322,15 @@ body:not(.player-expanded) #weather-widget .weather-icon { margin-top: 30px !imp
 
 /* Dark theme: clock, weather and player cards have the same near-black background as the car-state and navigation cards. */
 :root:not([data-theme="light"]) .hero-bottom .hero-clock, :root:not([data-theme="light"]) .hero-bottom #weather-widget, :root:not([data-theme="light"]) .hero-bottom .player-widget { background: rgba(2, 6, 12, .94) !important; backdrop-filter: none !important; }
+
+/* The clock digits use the same heading font as "Состояние автомобиля" and "Навигация". */
+.hero-bottom .hero-clock .clock { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-weight: 600 !important; letter-spacing: .02em !important; }
+
+/* The date under the clock uses the same size and spacing as the car-state labels. */
+.hero-bottom .hero-clock .date { font-size: 15px !important; letter-spacing: normal !important; }
+
+/* Route and artist lines use the same font as the date and the car-state labels. */
+#hw-road, #track-artist, #tg-artist, #tg-next-road { font-family: "Exit Sans", Inter, Roboto, "Segoe UI", Arial, sans-serif !important; font-size: 15px !important; font-weight: 400 !important; letter-spacing: normal !important; text-transform: none !important; color: #8aa0bd !important; }
+
+/* Page tabs (Сиденья и климат, Окна и авто, ...) use the same font size as the labels. */
+.page-tabs button { font-family: "Exit Sans", Inter, Roboto, "Segoe UI", Arial, sans-serif !important; font-size: 15px !important; font-weight: 400 !important; letter-spacing: normal !important; }
