@@ -1306,3 +1306,8 @@ body:not(.player-expanded) .hero-bottom:not(.in-stage) { row-gap: 28px !importan
 
 /* Top pills sit a little lower so the track pill is not cut at the top edge. */
 #top-pills { top: 14px !important; }
+
+/* Light theme: the headings (car state, navigation, now playing, weather) need a dark colour to stay readable. */
+:root[data-theme="light"] .hw-state > .hw-eb, :root[data-theme="light"] .hw-nav > .hw-eb, :root[data-theme="light"] .hero .hw-eb, :root[data-theme="light"] .hero-bottom:not(.in-stage) .track-info > .eyebrow, :root[data-theme="light"] #weather-city, :root[data-theme="light"] .weather-city { color: #1d2a3d !important; }
+/* Light theme, cover mode: the bottom row cards are light too (the row sets dark colours for the dark theme). */
+:root[data-theme="light"] body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock, :root[data-theme="light"] body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget, :root[data-theme="light"] body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget { background: rgba(255, 255, 255, .88) !important; border-color: rgba(31, 116, 184, .25) !important; color: #1d2a3d !important; box-shadow: 0 18px 50px rgba(20, 40, 70, .18) !important; }
