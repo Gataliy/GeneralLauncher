@@ -10,7 +10,9 @@
     // Roof (sunroof) from iconpantry.com, free for personal and commercial use, no attribution. Wheel: a plain tyre drawn for this launcher.
     const SUNROOF_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="20" x="6" y="2" rx="4"/><path d="M7 8.5q5-1.5 10 0M7 18q5 1.5 10 0"/><rect width="6" height="4.5" x="9" y="11" rx="1"/><path d="M6 8.5H4.5m13.5 0h1.5"/></svg>';
     const TYRE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.2M12 20.3v2.2M1.5 12h2.2M20.3 12h2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6"/></svg>';
-    window.TILE_ICON_SVG = { lock: ICON_SVG.lock, roof: SUNROOF_ICON, window: ICON_SVG.window, trunk: ICON_SVG.trunk, wheel: TYRE_ICON };
+    // Storage: a disk drawn for this launcher (stroke style as the other tile icons).
+    const STORAGE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>';
+    window.TILE_ICON_SVG = { lock: ICON_SVG.lock, roof: SUNROOF_ICON, window: ICON_SVG.window, trunk: ICON_SVG.trunk, wheel: TYRE_ICON, storage: STORAGE_ICON };
     if (typeof window.renderChips === "function") window.renderChips();
   }
   fillTileIcons();

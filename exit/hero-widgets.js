@@ -36,6 +36,19 @@
     return " [raw " + raw + pos + "]";
   }
 
+  // Free storage in GB, from the car's storageFree data (see core_manifest). Empty until the first answer.
+  let storageFreeText = "";
+  function readStorageFree() {
+    if (!bridge.has("getCarData")) return;
+    const data = parseJson(bridge.call("getCarData", TOKEN, "storageFree"), null);
+    if (data && data.display !== undefined && String(data.display).trim() !== "") {
+      storageFreeText = String(data.display).trim() + " ГБ";
+      renderChips();
+    }
+  }
+  setTimeout(readStorageFree, 2500);
+  setInterval(readStorageFree, 60000);
+
   function renderChips() {
     const chips = [];
     const OPEN_STATES = ["open", "partial", "tilted"];
@@ -73,6 +86,8 @@
         chips.push({ label: "Шины", value: warned ? "внимание: " + warned : "в норме", open: warned > 0 });
       }
     }
+    // Free space on the head unit's storage (getCarData "storageFree", read in readStorageFree). Placed before fuel so it stays in the six.
+    if (storageFreeText) chips.push({ label: "Память", value: storageFreeText, open: false });
     if (typeof tiggoState.fuel === "number") chips.push({ label: "Топливо", value: `${Math.round(tiggoState.fuel)} %`, open: false });
     if (typeof tiggoState.voltage === "number") chips.push({ label: "АКБ", value: `${tiggoState.voltage.toFixed(1).replace(".", ",")} В`, open: false });
     // Engine speed: the car often sends 0 even when running, so a chip is shown only for a real value.
@@ -199,7 +214,8 @@
     { key: "roof", label: "Люк", match: "Люк", title: "Люк" },
     { key: "window", label: "Окна", match: "Окна", title: "Окна" },
     { key: "trunk", label: "Багаж.", match: "Багажник", title: "Багажник" },
-    { key: "wheel", label: "Шины", match: "Шины", title: "Шины" }
+    { key: "wheel", label: "Шины", match: "Шины", title: "Шины" },
+    { key: "storage", label: "Память", match: "Память", title: "Свободное место" }
   ];
   function savedTileKeys() {
     try {
