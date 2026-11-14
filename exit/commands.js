@@ -84,7 +84,7 @@ function handleCarResponse(raw) {
     if (typeof window.applyCarStateCommand === "function") window.applyCarStateCommand(String(event.requestId), response);
     return;
   }
-  if (String(event.requestId || "").startsWith("dm_get_")) {
+  if (String(event.requestId || "").startsWith("dm_get_") || String(event.requestId || "").startsWith("dm_set_")) {
     if (typeof window.applyDriveMode === "function") window.applyDriveMode(response);
     return;
   }
