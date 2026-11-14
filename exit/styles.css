@@ -1359,3 +1359,11 @@ body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weat
 
 /* Cover mode row: it keeps the same place on screen as on a 720 px high display, and sits lower only on taller screens. */
 body.player-expanded #player-stage .hero-bottom.in-stage { bottom: max(110px, calc(100vh - 610px)) !important; }
+
+/* Drive mode pill colours, as the car's instrument panel: ECO green, NORMAL neutral, SPORT red. */
+.drive-pill[data-mode="eco"] { background: rgba(60, 190, 120, .45); border-color: #8ef0b8; box-shadow: 0 0 14px rgba(60, 190, 120, .5); }
+.drive-pill[data-mode="normal"] { background: rgba(200, 210, 225, .18); border-color: rgba(220, 230, 245, .6); box-shadow: 0 0 10px rgba(200, 210, 225, .22); }
+.drive-pill[data-mode="sport"] { background: rgba(230, 60, 60, .55); border-color: #ff9a9a; box-shadow: 0 0 14px rgba(230, 60, 60, .55); }
+:root[data-theme="light"] .drive-pill[data-mode="eco"] { background: #1f9d5c; border-color: #6fd39c; box-shadow: 0 0 12px rgba(31, 157, 92, .35); }
+:root[data-theme="light"] .drive-pill[data-mode="normal"] { background: rgba(93, 113, 137, .18); border-color: rgba(93, 113, 137, .5); box-shadow: none; color: #1b2230; }
+:root[data-theme="light"] .drive-pill[data-mode="sport"] { background: #d73a3a; border-color: #ff9a9a; box-shadow: 0 0 12px rgba(215, 58, 58, .35); }
