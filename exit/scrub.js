@@ -30,7 +30,7 @@ function seekTrackToFraction(fraction) {
   const targetMs = Math.round(Math.min(1, Math.max(0, fraction)) * durationMs);
   if (!bridge.seekMusic(targetMs)) return;
   // Move the local clock at once so the line jumps without waiting for musicInfo.
-  window.trackClock = { duration: clock.duration, position: clock.duration > 36000 ? targetMs : targetMs / 1000, at: Date.now() };
+  window.trackClock = { duration: clock.duration, position: clock.inMs ? targetMs : targetMs / 1000, at: Date.now(), inMs: clock.inMs, playing: clock.playing };
   applyTrackClockNow();
 }
 

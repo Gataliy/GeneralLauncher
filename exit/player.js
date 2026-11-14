@@ -71,16 +71,35 @@ function applyTrackProgress(data) {
     document.getElementById("track-end").textContent = "--:--";
     return;
   }
-  window.trackClock = { duration, position, at: Date.now() };
-  const percent = Math.min(100, (position / duration) * 100);
-  document.getElementById("track-progress-fill").style.width = `${percent}%`;
+  // One unit for the whole track, decided by the duration: a long duration means milliseconds.
+  // Deciding per value broke early in the track (a small ms position read as seconds, e.g. 205:45).
+  const inMs = duration > 36000;
+  window.trackClock = { duration, position, at: Date.now(), inMs, playing: data.PlayStat === "PLAY" };
   bar.classList.add("has-data");
-  // Start and end of the track in the expanded player. Units are assumed to be seconds (milliseconds if the value is very large).
-  const toSeconds = value => (value > 36000 ? value / 1000 : value);
+  renderTrackClock(position);
+}
+
+// Draw position (in the track's unit) as m:ss and the bar; used by musicInfo and by the 1 s ticker.
+function renderTrackClock(position) {
+  const clock = window.trackClock;
+  if (!clock) return;
+  const toSeconds = value => (clock.inMs ? value / 1000 : value);
+  const percent = Math.min(100, Math.max(0, (position / clock.duration) * 100));
+  document.getElementById("track-progress-fill").style.width = `${percent}%`;
   document.getElementById("track-line-fill").style.width = `${percent}%`;
   document.getElementById("track-pos").textContent = formatTrackTime(toSeconds(position));
-  document.getElementById("track-end").textContent = formatTrackTime(toSeconds(duration));
+  document.getElementById("track-end").textContent = formatTrackTime(toSeconds(clock.duration));
 }
+
+// musicInfo arrives only every few seconds, so the clock moves on locally while the track plays.
+setInterval(() => {
+  const clock = window.trackClock;
+  if (!clock || !clock.playing || !(clock.duration > 0)) return;
+  if (typeof scrubLine !== "undefined" && scrubLine) return; // the finger is moving the bar
+  const elapsed = Date.now() - clock.at;
+  const position = Math.min(clock.duration, clock.position + (clock.inMs ? elapsed : elapsed / 1000));
+  renderTrackClock(position);
+}, 1000);
 
 // Name of the app that plays the track (JCarTools getAppInfo, cached per package). Empty when unknown.
 const appNameCache = new Map();
