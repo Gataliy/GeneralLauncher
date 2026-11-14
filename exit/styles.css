@@ -1346,3 +1346,13 @@ body:not(.player-expanded) .player-widget .player-tl-line #track-line-fill { bor
 body:not(.player-expanded) .hero-clock { justify-content: center; padding-top: 8px; padding-bottom: 14px; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock .date-row { margin-top: -12px; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock .drive-pill { margin-top: 2px; }
+
+/* Cover mode weather: the same layout as the home screen: icon on the left, city above, temperature and condition beside it. */
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget { flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 16px !important; text-align: left !important; padding: 18px 20px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .weather-copy { align-items: flex-start !important; text-align: left !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .weather-refresh { margin-left: auto; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .weather-icon { width: 58px !important; height: 58px !important; flex: 0 0 58px; display: grid !important; place-items: center; border-radius: 16px; background: rgba(111, 195, 250, .12) !important; font-size: 30px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .eyebrow { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-size: 26px !important; font-weight: 600 !important; letter-spacing: .02em !important; text-transform: none !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-temperature { font-weight: 600 !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-temperature { font-size: 40px !important; line-height: 1.05 !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-condition { font-size: 15px !important; color: #8aa0bd !important; }
