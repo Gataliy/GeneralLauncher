@@ -1374,3 +1374,11 @@ body.player-expanded #player-stage .hero-bottom.in-stage { bottom: max(110px, ca
 .drive-menu-btn { border: 1px solid rgba(255, 255, 255, .2); border-radius: 12px; background: transparent; color: #eaf2ff; font-size: 13px; font-weight: 700; letter-spacing: .08em; padding: 8px 14px; cursor: pointer; }
 .drive-menu-btn[data-mode="eco"] { border-color: #8ef0b8; color: #8ef0b8; }
 .drive-menu-btn[data-mode="sport"] { border-color: #ff9a9a; color: #ff9a9a; }
+
+/* Cover mode clock: the same as the home screen, date in normal case and the drive mode pill under it, centred. */
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .date-row { display: flex !important; flex-direction: column !important; align-items: center !important; gap: 6px !important; width: auto !important; margin-top: 4px !important; border-top: 0 !important; padding-top: 0 !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .date { text-transform: none !important; letter-spacing: normal !important; font-size: 15px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .drive-pill { margin: 0 !important; }
+
+/* Home clock digits: as bright and bold as in cover mode. */
+body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-weight: 600 !important; color: var(--text) !important; }
