@@ -1356,3 +1356,6 @@ body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .eyeb
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-temperature { font-weight: 600 !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-temperature { font-size: 40px !important; line-height: 1.05 !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-condition { font-size: 15px !important; color: #8aa0bd !important; }
+
+/* Cover mode row: it keeps the same place on screen as on a 720 px high display, and sits lower only on taller screens. */
+body.player-expanded #player-stage .hero-bottom.in-stage { bottom: max(110px, calc(100vh - 610px)) !important; }
