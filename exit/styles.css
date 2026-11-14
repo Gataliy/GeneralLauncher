@@ -1303,3 +1303,6 @@ body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .album-a
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-controls button { width: 48px !important; height: 48px !important; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) > .player-widget .player-controls svg { width: 24px !important; height: 24px !important; }
 body:not(.player-expanded) .hero-bottom:not(.in-stage) { row-gap: 28px !important; }
+
+/* Top pills sit a little lower so the track pill is not cut at the top edge. */
+#top-pills { top: 14px !important; }

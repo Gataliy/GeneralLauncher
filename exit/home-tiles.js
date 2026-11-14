@@ -133,6 +133,9 @@
   // Shown for a few seconds; the message is set in sendCar above.
   let statePillTimer = null;
   function showStatePill(text) {
+    // While the car animation is on screen it already shows the same state; the pill would be hidden under it.
+    const anim = document.getElementById("car-anim");
+    if (anim && !anim.hidden) return;
     let pill = document.getElementById("state-pill");
     if (!pill) {
       pill = document.createElement("div");

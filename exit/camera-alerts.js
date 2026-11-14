@@ -94,12 +94,8 @@
     const hud = window.navWarning.hud;
     const cam = window.navWarning.cam;
     let name = "", dist = null, urgent = false, range = 1;
-    if (hud) {
-      name = "Радар";
-      dist = hud.dist;
-      urgent = Number.isFinite(dist) && dist < 250;
-      range = 1000;
-    } else if (cam) {
+    // The HUD radar is shown in the top strip only, not in the navigation card.
+    if (cam) {
       name = TYPE_LABELS[cam.cam[2]] || "Камера";
       dist = cam.dist;
       range = ALERT_RADIUS;

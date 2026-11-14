@@ -63,6 +63,12 @@ function noteTrackChange(title, artist, picture) {
   showTrackToast(title, artist, picture);
 }
 
+// Distance to the radar for the top strip: metres under a km, then km with one decimal.
+function radarDistText(m) {
+  if (!Number.isFinite(m)) return "";
+  return m < 1000 ? `${Math.round(m / 10) * 10} м` : `${(m / 1000).toFixed(1)} км`;
+}
+
 // Radar strip at the top: shown while the car reports an active radar (window.navWarning.hud).
 function radarStripElement() {
   let strip = document.getElementById("radar-strip");
@@ -82,7 +88,8 @@ function syncRadarStrip() {
   document.body.classList.toggle("radar-only", !!hud);
   if (hud) {
     const limit = hud.limit ? ` ${hud.limit}` : "";
-    strip.querySelector(".ns-radar").textContent = `Радар${limit}`;
+    const dist = radarDistText(hud.dist);
+    strip.querySelector(".ns-radar").textContent = `Радар${limit}${dist ? " · " + dist : ""}`;
   }
 }
 setInterval(syncRadarStrip, 1000);

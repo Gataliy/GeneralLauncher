@@ -28,8 +28,9 @@ function carAnimKind(command) {
 
 // Animation speed chosen in settings: off, fast or normal.
 const CAR_ANIM_SPEEDS = { fast: { dur: 0.6, hold: 1200 }, normal: { dur: 1.6, hold: 2600 } };
+// The car animation is removed for good: it always reads as "off" (the saved setting is ignored).
 function carAnimMode() {
-  try { return localStorage.getItem("generic_launcher_car_anim_v1") || "normal"; } catch (error) { return "normal"; }
+  return "off";
 }
 
 let carAnimTimer = null;
@@ -52,6 +53,9 @@ function showCarAnimation(command) {
   void box.offsetWidth;
   box.hidden = false;
   box.classList.add("show");
+  // The animation already says what is happening, so the small state pill steps aside.
+  const statePill = document.getElementById("state-pill");
+  if (statePill) statePill.hidden = true;
   clearTimeout(carAnimTimer);
   carAnimTimer = setTimeout(() => { box.hidden = true; box.classList.remove("show"); }, speed.hold);
 }
