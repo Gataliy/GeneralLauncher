@@ -1334,3 +1334,15 @@ body:not(.player-expanded) #weather-widget .weather-icon { margin-top: 30px !imp
 
 /* Page tabs (Сиденья и климат, Окна и авто, ...) use the same font size as the labels. */
 .page-tabs button { font-family: "Exit Sans", Inter, Roboto, "Segoe UI", Arial, sans-serif !important; font-size: 15px !important; font-weight: 400 !important; letter-spacing: normal !important; }
+
+/* Home player: the progress bar runs the full width along the bottom of the card, clear of the text. */
+body:not(.player-expanded) .player-widget { position: relative; }
+body:not(.player-expanded) .player-widget .player-timeline { position: absolute !important; left: 24px !important; right: 24px !important; width: auto !important; bottom: 8px !important; top: auto !important; margin: 0 !important; display: block !important; pointer-events: none; }
+body:not(.player-expanded) .player-widget .player-tl-line { position: relative; height: 6px !important; border-radius: 3px; background: rgba(255, 255, 255, .14) !important; overflow: hidden; }
+body:not(.player-expanded) .player-widget .player-tl-line #track-line-fill { border-radius: 3px !important; background: linear-gradient(90deg, #5fb8f2, #8fd4ff) !important; box-shadow: 0 0 10px rgba(111, 195, 250, .55); }
+:root[data-theme="light"] body:not(.player-expanded) .player-widget .player-tl-line { background: rgba(20, 40, 70, .14) !important; }
+
+/* Home clock card: the drive mode pill sits clear of the card's bottom edge. */
+body:not(.player-expanded) .hero-clock { justify-content: center; padding-top: 8px; padding-bottom: 14px; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock .date-row { margin-top: -12px; }
+body:not(.player-expanded) .hero-bottom:not(.in-stage) > .hero-clock .drive-pill { margin-top: 2px; }
