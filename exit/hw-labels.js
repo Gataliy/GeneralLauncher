@@ -67,7 +67,7 @@ document.addEventListener("click", event => {
   if (stateLabel && !document.body.classList.contains("hw-edit")) openStateSheet();
 });
 
-// "На приборку" pill on the navigation card: a tap shows the instrument panel (GO_TO_PP).
+// "На приборку" pill on the navigation card: a tap toggles between the head unit and the instrument panel (TOGGLE_GU_PP).
 function ensureNavPill() {
   const card = document.querySelector(".hw-nav");
   if (!card || card.querySelector("[data-tg-nav=cluster]")) return;
@@ -84,5 +84,5 @@ document.addEventListener("click", event => {
   if (!pill || document.body.classList.contains("hw-edit")) return;
   event.stopPropagation();
   event.preventDefault();
-  runCommand("GO_TO_PP", "Показать на приборной панели", pill);
+  runCommand("TOGGLE_GU_PP", "Переключить головное устройство и приборную панель", pill);
 }, true);
