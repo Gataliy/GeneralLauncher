@@ -1382,3 +1382,13 @@ body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .drive-pi
 
 /* Home clock digits: as bright and bold as in cover mode. */
 body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit Title", "Exit Sans", sans-serif !important; font-weight: 600 !important; color: var(--text) !important; }
+
+/* Weather card shows only icon, city and temperature; the full condition moved to the forecast sheet (1.2.498). */
+#weather-widget #weather-condition { display: none !important; }
+.forecast-now { display: flex; align-items: center; gap: 16px; padding: 12px 4px 16px; border-bottom: 1px solid rgba(255, 255, 255, .14); margin-bottom: 10px; }
+.forecast-now:empty { display: none; }
+.forecast-now-icon { flex: 0 0 56px; width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; font-size: 30px; color: var(--accent); background: rgba(111, 195, 250, .12); }
+.forecast-now-copy { min-width: 0; }
+.forecast-now-city { font-family: "Exit Title", "Exit Sans", sans-serif; font-size: 18px; font-weight: 600; color: var(--muted); }
+.forecast-now-temp { font-family: "Exit Title", "Exit Sans", sans-serif; font-size: 36px; font-weight: 600; line-height: 1.1; color: var(--text); }
+.forecast-now-cond { font-size: 16px; color: var(--muted); margin-top: 2px; }

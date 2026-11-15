@@ -29,10 +29,25 @@ function ensureForecastSheet() {
   sheet.id = "forecast-sheet";
   sheet.className = "forecast-sheet";
   sheet.hidden = true;
-  sheet.innerHTML = '<div class="forecast-card" role="dialog" aria-label="Прогноз на 10 дней"><h3>Прогноз на 10 дней</h3><div class="forecast-list"></div><p class="forecast-note"></p></div>';
+  sheet.innerHTML = '<div class="forecast-card" role="dialog" aria-label="Прогноз на 10 дней"><div class="forecast-now" id="forecast-now"></div><h3>Прогноз на 10 дней</h3><div class="forecast-list"></div><p class="forecast-note"></p></div>';
   sheet.addEventListener("click", () => { sheet.hidden = true; });
   document.body.appendChild(sheet);
   return sheet;
+}
+
+// Current weather block at the top of the sheet. The card itself shows only icon, city and temperature,
+// so the full condition text lives here.
+function fillForecastNow() {
+  const box = document.getElementById("forecast-now");
+  if (!box) return;
+  const city = document.getElementById("weather-city")?.textContent || "";
+  const temp = document.getElementById("weather-temperature")?.textContent || "—";
+  const condition = document.getElementById("weather-condition")?.textContent || "";
+  const icon = document.getElementById("weather-icon")?.textContent || "◌";
+  box.innerHTML = `<span class="forecast-now-icon" aria-hidden="true">${escapeHtml(icon)}</span>` +
+    `<div class="forecast-now-copy"><div class="forecast-now-city">${escapeHtml(city)}</div>` +
+    `<div class="forecast-now-temp">${escapeHtml(temp)}</div>` +
+    `<div class="forecast-now-cond">${escapeHtml(condition)}</div></div>`;
 }
 
 function escapeHtml(text) {
@@ -60,6 +75,7 @@ async function openForecastSheet() {
   const list = sheet.querySelector(".forecast-list");
   const note = sheet.querySelector(".forecast-note");
   list.innerHTML = "";
+  fillForecastNow();
   // Prefer the car's own forecast: it needs no network. Open-Meteo is the fallback.
   if (Array.isArray(window.carForecast) && window.carForecast.length) {
     renderCarForecast(list, note, window.carForecast);
