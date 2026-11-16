@@ -1405,3 +1405,7 @@ body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit 
 .queue-title { font-size: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .queue-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
 .queue-row.on .queue-title { color: var(--accent); font-weight: 600; }
+
+/* Cover mode only: the strip moves up 14 px, the cover art 6 px; the player frame and the row stay (1.2.501). */
+body.player-expanded .player-widget.expanded .player-timeline { transform: translateY(-14px); }
+body.player-expanded .player-widget.expanded .album-art { transform: translateY(-1px); }
