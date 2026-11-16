@@ -1409,3 +1409,11 @@ body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit 
 /* Cover mode only: the strip moves up 14 px, the cover art 6 px; the player frame and the row stay (1.2.501). */
 body.player-expanded .player-widget.expanded .player-timeline { transform: translateY(-14px); }
 body.player-expanded .player-widget.expanded .album-art { transform: translateY(-1px); }
+
+/* Calibration overlay (Settings → About → Калибровка обложки), 1.2.502. */
+#calib-layer { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, .18); }
+#calib-layer[hidden] { display: none; }
+#calib-layer .calib-line { position: absolute; left: 0; right: 0; height: 2px; background: #ff3b3b; box-shadow: 0 0 6px rgba(255, 59, 59, .8); }
+#calib-layer .calib-line[data-k="at"], #calib-layer .calib-line[data-k="ab"] { background: #ffe14d; box-shadow: 0 0 6px rgba(255, 225, 77, .8); }
+#calib-layer .calib-info { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); padding: 8px 16px; border-radius: 12px; background: #000; color: #fff; font-size: 20px; font-weight: 600; white-space: nowrap; }
+#calib-layer .calib-hint { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); padding: 6px 12px; border-radius: 10px; background: rgba(0, 0, 0, .7); color: #ddd; font-size: 14px; }

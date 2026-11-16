@@ -180,17 +180,46 @@
     }
   }
 
+
+  // Calibration: lines on the player frame and its cover art, with the gaps above and below the cover (1.2.502).
+  let calibFrame = null;
+  function openCalibration() {
+    let layer = document.getElementById("calib-layer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "calib-layer";
+      layer.innerHTML = '<div class="calib-line" data-k="wt"></div><div class="calib-line" data-k="wb"></div><div class="calib-line" data-k="at"></div><div class="calib-line" data-k="ab"></div><div class="calib-info" id="calib-info"></div><div class="calib-hint">Нажмите, чтобы закрыть</div>';
+      layer.addEventListener("click", () => { layer.hidden = true; cancelAnimationFrame(calibFrame); });
+      document.body.appendChild(layer);
+    }
+    layer.hidden = false;
+    const place = () => {
+      const widget = document.querySelector(".player-widget");
+      const art = widget && widget.querySelector(".album-art");
+      if (widget && art) {
+        const w = widget.getBoundingClientRect();
+        const a = art.getBoundingClientRect();
+        const set = (k, y) => { layer.querySelector(`[data-k="${k}"]`).style.top = `${Math.round(y)}px`; };
+        set("wt", w.top); set("wb", w.bottom); set("at", a.top); set("ab", a.bottom);
+        layer.querySelector("#calib-info").textContent = `сверху ${Math.round(a.top - w.top)} px · снизу ${Math.round(w.bottom - a.bottom)} px`;
+      }
+      if (!layer.hidden) calibFrame = requestAnimationFrame(place);
+    };
+    place();
+  }
   function renderAbout() {
     resetArmed = false;
     body.innerHTML = `
       <div class="set-row"><button type="button" data-act="check-update">Проверить обновления</button>${window.LAUNCHER_FROM_UPDATE ? '<button type="button" data-act="drop-update">Вернуть версию с флешки</button>' : ""}</div>
       <p class="set-note" id="update-status">Generic Launcher, версия ${BUILD}${window.LAUNCHER_FROM_UPDATE ? ", из обновления" : ""}.</p>
       <div class="set-row"><button type="button" data-act="tour">Показать обучение</button></div>
+      <div class="set-row"><button type="button" data-act="calibrate">Калибровка обложки</button></div>
       <div class="set-row"><button type="button" data-act="reset-all">Сбросить все настройки</button></div>
       <p class="set-note">Сбрасываются раскладка, карточки, обои, избранное, тема и слоты. Нужно нажать дважды.</p>`;
     body.querySelector('[data-act="check-update"]').addEventListener("click", checkUpdateClicked);
     const dropButton = body.querySelector('[data-act="drop-update"]');
     if (dropButton) dropButton.addEventListener("click", () => { dropUpdate(); location.reload(); });
+    body.querySelector('[data-act="calibrate"]').addEventListener("click", () => { sheet.hidden = true; openCalibration(); });
     body.querySelector('[data-act="tour"]').addEventListener("click", () => {
       sheet.hidden = true;
       if (typeof window.startTutorial === "function") window.startTutorial();
