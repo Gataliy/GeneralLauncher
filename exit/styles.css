@@ -1393,3 +1393,15 @@ body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit 
 .forecast-now-city { font-family: "Exit Title", "Exit Sans", sans-serif; font-size: 18px; font-weight: 600; color: var(--muted); }
 .forecast-now-temp { font-family: "Exit Title", "Exit Sans", sans-serif; font-size: 36px; font-weight: 600; line-height: 1.1; color: var(--text); }
 .forecast-now-cond { font-size: 16px; color: var(--muted); margin-top: 2px; }
+
+/* Playlist of the media player (queue.js): a button next to next-track, and a sheet with the car's queue. */
+.player-controls .player-queue { width: 52px !important; height: 52px !important; font-size: 0 !important; color: var(--muted); opacity: .75; }
+.player-controls .player-queue[hidden] { display: none !important; }
+.player-controls .player-queue svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.queue-list { display: flex; flex-direction: column; }
+.queue-row { display: flex; flex-direction: column; align-items: flex-start; width: 100%; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .08); background: transparent; color: inherit; padding: 12px 4px; text-align: left; cursor: pointer; font: inherit; }
+.queue-row:last-child { border-bottom: 0; }
+.queue-row:disabled { cursor: default; opacity: .75; }
+.queue-title { font-size: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.queue-row.on .queue-title { color: var(--accent); font-weight: 600; }
