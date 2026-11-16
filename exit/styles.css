@@ -1359,7 +1359,7 @@ body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weat
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget #weather-condition { font-size: 15px !important; color: #8aa0bd !important; }
 
 /* Cover mode row: it keeps the same place on screen as on a 720 px high display, and sits lower only on taller screens. */
-body.player-expanded #player-stage .hero-bottom.in-stage { bottom: 135px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage { bottom: 110px !important; }
 
 /* Drive mode pill colours, as the car's instrument panel: ECO green, NORMAL neutral, SPORT red. */
 .drive-pill[data-mode="eco"] { background: rgba(60, 190, 120, .45); border-color: #8ef0b8; box-shadow: 0 0 14px rgba(60, 190, 120, .5); }
