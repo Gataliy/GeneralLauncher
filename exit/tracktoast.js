@@ -60,7 +60,6 @@ function noteTrackChange(title, artist, picture) {
   if (lastTrackKey === null) { lastTrackKey = key; return; }
   if (key === lastTrackKey) return;
   lastTrackKey = key;
-  showTrackToast(title, artist, picture);
 }
 
 // Distance to the radar for the top strip: metres under a km, then km with one decimal.
@@ -83,13 +82,20 @@ function radarStripElement() {
 
 function syncRadarStrip() {
   const hud = window.navWarning && window.navWarning.hud;
+  const cam = window.navWarning && window.navWarning.cam;
   const strip = radarStripElement();
-  strip.hidden = !hud;
+  // In cover mode the camera from the database gets the same strip as the radar (the navigation card is hidden there).
+  const showCam = !hud && !!cam && document.body.classList.contains("player-expanded");
+  strip.hidden = !hud && !showCam;
   document.body.classList.toggle("radar-only", !!hud);
   if (hud) {
     const limit = hud.limit ? ` ${hud.limit}` : "";
     const dist = radarDistText(hud.dist);
     strip.querySelector(".ns-radar").textContent = `Радар${limit}${dist ? " · " + dist : ""}`;
+  } else if (showCam) {
+    const label = (typeof TYPE_LABELS !== "undefined" && TYPE_LABELS[cam.cam[2]]) || "Камера";
+    const dist = radarDistText(cam.dist);
+    strip.querySelector(".ns-radar").textContent = `${label}${dist ? " · " + dist : ""}`;
   }
 }
 setInterval(syncRadarStrip, 1000);

@@ -23,7 +23,6 @@
 
   function sendCar(cmd) {
     const messages = { open_windows_10: "Окна открываются", open_windows_full: "Окна открываются", close_windows: "Окна закрываются", open_trunk: "Багажник открывается", close_trunk: "Багажник закрывается" };
-    if (messages[cmd] && typeof showStatePill === "function") showStatePill(messages[cmd]);
     if (typeof bridge === "undefined" || !bridge.has("requestCarCommandAsync")) return false;
     return bridge.requestCarCommandAsync("tile_" + Date.now(), JSON.stringify({ cmd }));
   }
