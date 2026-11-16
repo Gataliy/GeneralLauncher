@@ -1408,7 +1408,7 @@ body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit 
 
 /* Cover mode only: the strip moves up 14 px, the cover art 6 px; the player frame and the row stay (1.2.501). */
 body.player-expanded .player-widget.expanded .player-timeline { transform: translateY(-14px); }
-body.player-expanded .player-widget.expanded .album-art { transform: translateY(-1px); }
+body.player-expanded .player-widget.expanded .album-art { transform: translateY(-11px); }
 
 /* Calibration overlay (Settings → About → Калибровка обложки), 1.2.502. */
 #calib-layer { position: fixed; inset: 0; z-index: 2000; background: rgba(0, 0, 0, .18); }
