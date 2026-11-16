@@ -266,7 +266,7 @@
     widths: { state: 515, nav: 420, compass: 206, clock: 250, weather: 250, heatWheel: 190, heatGlass: 190, fan: 190 },
     heights: { state: 170, nav: 170, compass: 170, clock: 171, weather: 171, heatWheel: 170, heatGlass: 170, fan: 170 }
   };
-  const CARD_NAMES = { state: "Состояние автомобиля", nav: "Навигация", compass: "Компас", clock: "Часы", weather: "Погода", heatWheel: "Обогрев руля", heatGlass: "Обогрев стекла", fan: "Вентилятор" };
+  const CARD_NAMES = { state: "Состояние автомобиля", nav: "Навигация", compass: "Компас", clock: "Часы", weather: "Погода" };  // heater and fan cards removed from the list (1.2.508)
   const MIN_W = 160;
   const MIN_H = 120;
   const MAX_H = { top: 190, bottom: 171 };

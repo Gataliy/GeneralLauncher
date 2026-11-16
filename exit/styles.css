@@ -1422,3 +1422,6 @@ body.player-expanded .player-widget.expanded .album-art { transform: translateY(
 
 /* Cover mode: the camera strip keeps its top edge, so it no longer looks cut off (1.2.506). */
 body.player-expanded #radar-strip { border-top: 1px solid rgba(255, 157, 77, .6); border-radius: 12px; top: 14px; }
+
+/* Heater and fan cards are removed from the home screen and from the card settings (1.2.508). */
+.hw-card.hw-heat, .hw-card.hw-fan, .hw-heat-wheel, .hw-heat-glass, .hw-fan { display: none !important; }
