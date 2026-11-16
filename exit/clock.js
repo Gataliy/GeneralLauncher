@@ -6,7 +6,8 @@ function updateClock() {
   const weekdayLine = document.createElement("span");
   weekdayLine.textContent = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   const dayLine = document.createElement("span");
-  dayLine.textContent = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-  document.getElementById("date").replaceChildren(weekdayLine, dayLine);
+  // Non-breaking space keeps the day and month together ("16 ноября"), so the wrap goes before the day.
+  dayLine.textContent = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }).replace(/ /g, "\u00A0");
+  document.getElementById("date").replaceChildren(weekdayLine, document.createTextNode(" "), dayLine);
 }
 
