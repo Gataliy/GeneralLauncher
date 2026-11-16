@@ -1425,3 +1425,6 @@ body.player-expanded #radar-strip { border-top: 1px solid rgba(255, 157, 77, .6)
 
 /* Heater and fan cards are removed from the home screen and from the card settings (1.2.508). */
 .hw-card.hw-heat, .hw-card.hw-fan, .hw-heat-wheel, .hw-heat-glass, .hw-fan { display: none !important; }
+
+/* Home screen: the slot tiles and their tabs sit 24 px lower, nearer the car's bottom bar (1.2.509). */
+body:not(.player-expanded) .action-slots, body:not(.player-expanded) .page-controls { transform: translateY(24px); }
