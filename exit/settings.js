@@ -188,8 +188,14 @@
     if (!layer) {
       layer = document.createElement("div");
       layer.id = "calib-layer";
-      layer.innerHTML = '<div class="calib-line" data-k="wt"></div><div class="calib-line" data-k="wb"></div><div class="calib-line" data-k="at"></div><div class="calib-line" data-k="ab"></div><div class="calib-info" id="calib-info"></div><div class="calib-hint">Нажмите, чтобы закрыть</div>';
-      layer.addEventListener("click", () => { layer.hidden = true; cancelAnimationFrame(calibFrame); });
+      layer.innerHTML = '<div class="calib-line" data-k="wt"></div><div class="calib-line" data-k="wb"></div><div class="calib-line" data-k="at"></div><div class="calib-line" data-k="ab"></div><div class="calib-info" id="calib-info"></div><div class="calib-hint"><button type="button" data-calib="cover">Открыть обложку</button><button type="button" data-calib="close">Закрыть</button></div>';
+      layer.addEventListener("click", event => {
+        const act = event.target.closest("[data-calib]");
+        if (!act) return;
+        if (act.dataset.calib === "close") { layer.hidden = true; cancelAnimationFrame(calibFrame); return; }
+        // Expand the cover from here: the overlay stays on and keeps measuring.
+        if (typeof window.expandPlayer === "function" && !state.playerExpanded) window.expandPlayer();
+      });
       document.body.appendChild(layer);
     }
     layer.hidden = false;
