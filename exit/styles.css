@@ -1428,3 +1428,6 @@ body.player-expanded #radar-strip { border-top: 1px solid rgba(255, 157, 77, .6)
 
 /* Home screen: the slot tiles and their tabs sit 24 px lower, nearer the car's bottom bar (1.2.509). */
 body:not(.player-expanded) .action-slots, body:not(.player-expanded) .page-controls { transform: translateY(25px); }
+
+/* The Settings button moves down with the tabs and slots (1.2.511). */
+body:not(.player-expanded) #open-settings { transform: translateY(25px); }
