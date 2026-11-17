@@ -1434,3 +1434,6 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 
 /* Tabs and tab-like buttons (page tabs, +Слот, Настройки, Settings tabs and option buttons) use the same background as the clock and weather cards (1.2.512). Dark theme only; the active/selected state keeps its highlight. */
 :root:not([data-theme="light"]) .page-tabs button:not(.active), :root:not([data-theme="light"]) .add-slot-button, :root:not([data-theme="light"]) #open-settings, :root:not([data-theme="light"]) .set-tabs button:not(.active), :root:not([data-theme="light"]) .set-row button:not(.on) { background: rgba(2, 6, 12, .94) !important; }
+
+/* Light theme: tabs and tab-like buttons use the same white card background as the clock and weather cards. The active/selected state keeps its highlight. */
+:root[data-theme="light"] .page-tabs button:not(.active), :root[data-theme="light"] .add-slot-button, :root[data-theme="light"] #open-settings, :root[data-theme="light"] .set-tabs button:not(.active), :root[data-theme="light"] .set-row button:not(.on) { background: rgba(255, 255, 255, .8) !important; }
