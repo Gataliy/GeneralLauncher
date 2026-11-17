@@ -358,11 +358,13 @@ function renderSlot(slot, index) {
   if (slot.type === "fan") {
     const speed = Math.min(10, Math.max(0, Number(slot.speed) || 0));
     element.classList.add("has-fan", "cool");
+    if (speed) element.classList.add("state-on");
     const ticks = Array.from({ length: 10 }, (_, i) => `<i data-speed="${i + 1}" class="${i + 1 <= speed ? "on" : ""}"></i>`).join("");
     element.innerHTML = `
       <div class="action-icon">${ICON_SVG.fan}</div>
       <div class="action-main"><strong>Вентилятор</strong><span>${speed ? `Скорость ${speed}` : "Выберите скорость"}</span></div>
-      <div class="fan-ticks level-control" aria-label="Скорость вентилятора">${ticks}</div>`;
+      <div class="fan-ticks level-control" aria-label="Скорость вентилятора">${ticks}</div>
+      <div class="single-lamp" aria-hidden="true"></div>`;
     element.querySelector(".fan-ticks").addEventListener("click", event => {
       const tick = event.target.closest("i[data-speed]");
       if (tick) setFanSpeed(index, Number(tick.dataset.speed));

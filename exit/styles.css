@@ -1451,3 +1451,7 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 .fan-ticks i.on { background: var(--blue); box-shadow: 0 0 9px rgba(121, 220, 255, .7); }
 :root[data-theme="light"] .fan-ticks i { background: #c5cad1; box-shadow: none; }
 :root[data-theme="light"] .fan-ticks i.on { background: #2f9fd8; }
+
+/* Fan slot lamp: lit while a speed is set, blue like the other cool slots. */
+.action-slot.has-fan.state-on .single-lamp { background: var(--blue); box-shadow: 0 0 11px rgba(121, 220, 255, .8); }
+:root[data-theme="light"] .action-slot.has-fan.state-on .single-lamp { background: #2f9fd8; box-shadow: none; }
