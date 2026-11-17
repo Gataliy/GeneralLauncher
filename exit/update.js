@@ -7,10 +7,22 @@ const UPDATE_BUNDLE_KEY = "generic_launcher_bundle_v1";
 const UPDATE_FILE = "bundle.json";
 // Address of the published launcher folder (raw files of the repository). Can be changed in the settings storage if the repository moves.
 const DEFAULT_UPDATE_URL = "https://raw.githubusercontent.com/Gataliy/GeneralLauncher/main/";
+// Mirror of the same folder through a CDN, used when the main address does not answer (for example after the repository moves).
+const UPDATE_MIRRORS = [DEFAULT_UPDATE_URL, "https://cdn.jsdelivr.net/gh/Gataliy/GeneralLauncher@main/"];
+const UPDATE_LAST_OK_KEY = "generic_launcher_update_ok_v1";
 
-function updateBaseUrl() {
-  try { return localStorage.getItem(UPDATE_URL_KEY) || DEFAULT_UPDATE_URL; }
-  catch (error) { return DEFAULT_UPDATE_URL; }
+// An address typed in the settings storage is used alone. Otherwise the last address that worked goes first, then the mirrors.
+function updateBaseUrls() {
+  let manual = null;
+  let lastOk = null;
+  try { manual = localStorage.getItem(UPDATE_URL_KEY); } catch (error) { /* no storage */ }
+  if (manual) return [manual];
+  try { lastOk = localStorage.getItem(UPDATE_LAST_OK_KEY); } catch (error) { /* no storage */ }
+  return [lastOk, ...UPDATE_MIRRORS].filter((url, index, list) => url && list.indexOf(url) === index);
+}
+
+function rememberUpdateBase(base) {
+  try { localStorage.setItem(UPDATE_LAST_OK_KEY, base); } catch (error) { /* not stored, next time starts from the mirrors */ }
 }
 
 function fetchUpdateText(url) {
@@ -33,10 +45,20 @@ function checkBundle(bundle) {
   return bundle;
 }
 
-// Reads bundle.json: returns { version, bundle }. Throws if the address does not answer or the file is broken.
+// Reads bundle.json from the first address that answers with a complete file: returns { version, bundle }.
+// Throws the last error only if every address fails.
 async function checkForUpdate() {
-  const bundle = checkBundle(JSON.parse(await fetchUpdateText(updateBaseUrl() + UPDATE_FILE + "?t=" + Date.now())));
-  return { version: bundle.version, bundle };
+  let lastError = null;
+  for (const base of updateBaseUrls()) {
+    try {
+      const bundle = checkBundle(JSON.parse(await fetchUpdateText(base + UPDATE_FILE + "?t=" + Date.now())));
+      rememberUpdateBase(base);
+      return { version: bundle.version, bundle };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("адрес обновлений не указан");
 }
 
 // Stores the checked bundle. It is stored only if it is complete (see boot.js).
