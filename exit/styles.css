@@ -1437,3 +1437,7 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 
 /* Light theme: tabs and tab-like buttons use the same white card background as the clock and weather cards. The active/selected state keeps its highlight. */
 :root[data-theme="light"] .page-tabs button:not(.active), :root[data-theme="light"] .add-slot-button, :root[data-theme="light"] #open-settings, :root[data-theme="light"] .set-tabs button:not(.active), :root[data-theme="light"] .set-row button:not(.on) { background: rgba(255, 255, 255, .8) !important; }
+
+/* Heat toggles (steering wheel, windshield, rear window) light their lamp in the same orange as the seat heaters (1.2.515). */
+.action-slot.heat-slot.state-on .single-lamp { background: #ff8e5c; box-shadow: 0 0 11px rgba(255, 142, 92, .8); }
+:root[data-theme="light"] .action-slot.heat-slot.state-on .single-lamp { background: #ff7a3d; box-shadow: none; }

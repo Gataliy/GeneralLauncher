@@ -361,6 +361,7 @@ function renderSlot(slot, index) {
   const trackedAction = slot.type === "action" ? ACTION_STATE_COMMANDS[slot.command] : null;
   const trackedState = heatToggle ? state.actionStates[heatToggle.key] : trackedAction ? state.actionStates[trackedAction.key] : null;
   if (trackedState === true) element.classList.add("state-on");
+  if (heatToggle) element.classList.add("heat-slot");
   const label = slot.label || (isApp ? slot.packageName : isSplit ? "Сохранённая комбинация" : actionLabel(slot.command));
   const slotIcon = slot.icon || (slot.type === "action" ? actionIcon(slot.command) : "");
   const iconContent = slotIcon
