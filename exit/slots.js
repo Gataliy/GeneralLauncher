@@ -46,7 +46,7 @@ function retireMainPage() {
 }
 
 function isClimateSlot(slot) {
-  return slot?.type === "level" || slot?.type === "temp" || (slot?.type === "action" && CLIMATE_ACTIONS.has(slot.command));
+  return slot?.type === "level" || slot?.type === "temp" || slot?.type === "fan" || (slot?.type === "action" && CLIMATE_ACTIONS.has(slot.command));
 }
 
 function initPages() {
@@ -355,6 +355,22 @@ function renderSlot(slot, index) {
     return element;
   }
 
+  if (slot.type === "fan") {
+    const speed = Math.min(10, Math.max(0, Number(slot.speed) || 0));
+    element.classList.add("has-fan", "cool");
+    const ticks = Array.from({ length: 10 }, (_, i) => `<i data-speed="${i + 1}" class="${i + 1 <= speed ? "on" : ""}"></i>`).join("");
+    element.innerHTML = `
+      <div class="action-icon">${ICON_SVG.fan}</div>
+      <div class="action-main"><strong>Вентилятор</strong><span>${speed ? `Скорость ${speed}` : "Выберите скорость"}</span></div>
+      <div class="fan-ticks level-control" aria-label="Скорость вентилятора">${ticks}</div>`;
+    element.querySelector(".fan-ticks").addEventListener("click", event => {
+      const tick = event.target.closest("i[data-speed]");
+      if (tick) setFanSpeed(index, Number(tick.dataset.speed));
+    });
+    bindSlotPress(element, index, null);
+    return element;
+  }
+
   const isApp = slot.type === "app";
   const isSplit = slot.type === "split";
   const heatToggle = slot.type === "action" ? HEAT_TOGGLES[slot.command] : null;
@@ -434,6 +450,18 @@ function setLevel(index, level) {
   const element = document.querySelector(`[data-slot="${index}"]`);
   pulse(element);
   enqueueEnumCommand(command, group.label, group.id);
+}
+
+// Fan slot: ten ticks at the bottom, tapping tick N sends the car's fan speed N (profile:climate_fan_N).
+function setFanSpeed(index, speed) {
+  const slot = state.slots[index];
+  if (!slot || slot.type !== "fan") return;
+  const element = document.querySelector(`[data-slot="${index}"]`);
+  slot.speed = speed;
+  saveSlots();
+  renderSlots();
+  const next = document.querySelector(`[data-slot="${index}"]`);
+  runCommand(`profile:climate_fan_${speed}`, `Вентилятор климата: ${speed}`, next || element);
 }
 
 function cycleLevel(index) {

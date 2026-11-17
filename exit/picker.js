@@ -30,7 +30,7 @@ function isClimateCommand(command) {
 
 // The group of one item. "sound" is hidden: its items are offered nowhere.
 function pickerGroup(item) {
-  if (item.type === "level" || item.type === "temp") return "seats";
+  if (item.type === "level" || item.type === "temp" || item.type === "fan") return "seats";
   if (item.type === "split") return "splits";
   if (item.type !== "action") return "screen";
   const command = item.command || "";
@@ -91,6 +91,7 @@ function pickerItems() {
       return { type: "level", id: group.id, label: group.label, detail: `${group.detail} · уровни 0–3`, symbol: group.icon };
     });
   const shownLevels = onClimate ? levels : [];
+  const fanItems = onClimate ? [{ type: "fan", label: "Вентилятор", detail: "10 скоростей · нажмите деление внизу", symbol: "❄" }] : [];
   const tempItems = onClimate
     ? Object.entries(TEMP_ZONES).map(([zone, info]) => ({ type: "temp", zone, label: info.label, detail: "+ сверху · − снизу", symbol: "°" }))
     : [];
@@ -117,7 +118,7 @@ function pickerItems() {
 
   // Each page offers its own group; the screen page also offers combinations and the installed apps.
   const group = PAGE_GROUPS[state.page];
-  const groupItems = [...shownLevels, ...tempItems, ...actions].filter(item => pickerGroup(item) === group);
+  const groupItems = [...shownLevels, ...fanItems, ...tempItems, ...actions].filter(item => pickerGroup(item) === group);
   if (state.page === "combos") return splits;
   if (state.page === "apps") {
     const appActions = actions.filter(item => pickerGroup(item) === "apps");
@@ -191,6 +192,8 @@ function assignPickerItem(item) {
   if (state.pickerSlot == null) return;
   if (item.type === "level") {
     state.slots[state.pickerSlot] = { type: "level", id: item.id, level: 0 };
+  } else if (item.type === "fan") {
+    state.slots[state.pickerSlot] = { type: "fan", speed: 0 };
   } else if (item.type === "temp") {
     state.slots[state.pickerSlot] = { type: "temp", zone: item.zone };
   } else if (item.type === "app") {

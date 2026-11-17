@@ -1443,3 +1443,11 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 /* Heat toggles (steering wheel, windshield, rear window) light their lamp in the same orange as the seat heaters (1.2.515). */
 .action-slot.heat-slot.state-on .single-lamp { background: #ff8e5c; box-shadow: 0 0 11px rgba(255, 142, 92, .8); }
 :root[data-theme="light"] .action-slot.heat-slot.state-on .single-lamp { background: #ff7a3d; box-shadow: none; }
+
+/* Fan slot (1.2.517): ten ticks along the bottom of the card, tap a tick to set that speed. */
+.action-slot.has-fan .action-main span { display: none; }
+.fan-ticks { position: absolute; left: 17px; right: 17px; bottom: 14px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.fan-ticks i { display: block; height: 22px; border-radius: 4px; background: #3d3d43; box-shadow: inset 0 1px 2px rgba(0, 0, 0, .45); cursor: pointer; }
+.fan-ticks i.on { background: var(--blue); box-shadow: 0 0 9px rgba(121, 220, 255, .7); }
+:root[data-theme="light"] .fan-ticks i { background: #c5cad1; box-shadow: none; }
+:root[data-theme="light"] .fan-ticks i.on { background: #2f9fd8; }
