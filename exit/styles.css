@@ -1431,3 +1431,6 @@ body:not(.player-expanded) .action-slots, body:not(.player-expanded) .page-contr
 
 /* The Settings button moves down with the tabs and slots (1.2.511). */
 body:not(.player-expanded) #open-settings { transform: translateY(25px); }
+
+/* Tabs and tab-like buttons (page tabs, +Слот, Настройки, Settings tabs and option buttons) use the same background as the clock and weather cards (1.2.512). Dark theme only; the active/selected state keeps its highlight. */
+:root:not([data-theme="light"]) .page-tabs button:not(.active), :root:not([data-theme="light"]) .add-slot-button, :root:not([data-theme="light"]) #open-settings, :root:not([data-theme="light"]) .set-tabs button:not(.active), :root:not([data-theme="light"]) .set-row button:not(.on) { background: rgba(2, 6, 12, .94) !important; }
