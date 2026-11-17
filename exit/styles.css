@@ -211,10 +211,10 @@ button { color: inherit; }
 .player-widget.expanded .track-progress.has-data { display: block; }
 .track-progress span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 1s linear; }
 /* Page switch: the slot row slides out and in, following the tab order. */
-@keyframes page-out-next { to { opacity: 0; transform: translateX(-24px); } }
-@keyframes page-out-prev { to { opacity: 0; transform: translateX(24px); } }
-@keyframes page-in-next { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
-@keyframes page-in-prev { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+@keyframes page-out-next { to { opacity: 0; transform: translate(-24px, var(--row-y, 0px)); } }
+@keyframes page-out-prev { to { opacity: 0; transform: translate(24px, var(--row-y, 0px)); } }
+@keyframes page-in-next { from { opacity: 0; transform: translate(24px, var(--row-y, 0px)); } to { opacity: 1; transform: translate(0, var(--row-y, 0px)); } }
+@keyframes page-in-prev { from { opacity: 0; transform: translate(-24px, var(--row-y, 0px)); } to { opacity: 1; transform: translate(0, var(--row-y, 0px)); } }
 .action-slots.leaving-next { animation: page-out-next .09s ease-in forwards; }
 .action-slots.leaving-prev { animation: page-out-prev .09s ease-in forwards; }
 .action-slots.entering-next { animation: page-in-next .17s cubic-bezier(.2, .8, .2, 1); }
@@ -1428,6 +1428,8 @@ body.player-expanded #radar-strip { border-top: 1px solid rgba(255, 157, 77, .6)
 
 /* Home screen: the slot tiles and their tabs sit 24 px lower, nearer the car's bottom bar (1.2.509). */
 body:not(.player-expanded) .action-slots, body:not(.player-expanded) .page-controls { transform: translateY(25px); }
+/* The page-switch animation keeps the same 25 px drop (it used to reset the row to 0 for a moment, which made the slots jump). */
+body:not(.player-expanded) .action-slots { --row-y: 25px; }
 
 /* The Settings button moves down with the tabs and slots (1.2.511). */
 body:not(.player-expanded) #open-settings { transform: translateY(25px); }
