@@ -1471,3 +1471,6 @@ body.player-expanded #top-pills #radar-strip { border-radius: 12px !important; b
 
 /* Radar pill on the home screen too: all four corners rounded and a visible top border, so the top edge is not cut off (1.2.522). */
 #top-pills #radar-strip { border-radius: 12px !important; border-top: 1px solid rgba(255, 157, 77, .6) !important; }
+
+/* Home screen: the top pills (radar, camera, track) hang 14–46px from the top edge, so the hero starts 26px lower and the navigation card is not covered (1.2.523). */
+body:not(.player-expanded) .hero { padding-top: 26px !important; }
