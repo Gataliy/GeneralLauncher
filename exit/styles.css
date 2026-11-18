@@ -1461,3 +1461,7 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 :root:not([data-theme="light"]) .slot-menu button { background: rgba(2, 6, 12, .94) !important; border-color: rgba(255, 255, 255, .16) !important; }
 :root[data-theme="light"] .slot-menu { background: rgba(255, 255, 255, .8) !important; }
 :root[data-theme="light"] .slot-menu button { background: rgba(255, 255, 255, .8) !important; }
+
+/* Settings → Карточки rows (.set-switch) use the same background as the clock and weather cards (1.2.520). */
+:root:not([data-theme="light"]) .set-switch { background: rgba(2, 6, 12, .94) !important; }
+:root[data-theme="light"] .set-switch { background: rgba(255, 255, 255, .8) !important; }
