@@ -2,6 +2,7 @@
 // (selectMusicQueueItem). The button stays hidden when the player does not report a queue (available: false).
 const QUEUE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><path d="M18 15v6M18 15l3-1"/></svg>';
 let queueData = null;
+let queueQuery = "";
 
 function readQueue() {
   const raw = bridge.call("getMusicQueue", TOKEN);
@@ -23,25 +24,45 @@ function ensureQueueSheet() {
   sheet.id = "queue-sheet";
   sheet.className = "forecast-sheet";
   sheet.hidden = true;
-  sheet.innerHTML = '<div class="forecast-card" role="dialog" aria-label="Плейлист"><h3>Плейлист</h3><div class="queue-list"></div><p class="forecast-note"></p></div>';
+  sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлист"><h3>Плейлист</h3>' +
+    '<div class="search-field queue-search"><span>⌕</span><input id="queue-search-input" type="search" placeholder="Найти трек" autocomplete="off"></div>' +
+    '<div class="queue-list"></div><p class="forecast-note"></p></div>';
+  // No auto-focus: focusing the search field would bring up the on-screen keyboard.
+  sheet.querySelector("#queue-search-input").addEventListener("input", event => { queueQuery = event.target.value; renderQueueList(); });
   sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
   document.body.appendChild(sheet);
   return sheet;
 }
 
-function renderQueueSheet() {
+// Tracks whose title or subtitle contains the search text (case-insensitive).
+function queueMatches(item, query) {
+  if (!query) return true;
+  return `${item.title || ""} ${item.subtitle || ""}`.toLowerCase().includes(query);
+}
+
+function renderQueueList() {
   const sheet = ensureQueueSheet();
   const list = sheet.querySelector(".queue-list");
   const note = sheet.querySelector(".forecast-note");
   const data = queueData;
   if (!data) { list.innerHTML = ""; note.textContent = "Плеер не отдаёт очередь"; return; }
   const selectable = data.canSelect !== false;
-  list.innerHTML = data.items.map(item => {
+  const query = queueQuery.trim().toLowerCase();
+  const items = data.items.filter(item => queueMatches(item, query));
+  list.innerHTML = items.map(item => {
     const active = String(item.queueId) === String(data.activeQueueId);
     return `<button type="button" class="queue-row${active ? " on" : ""}" data-queue-id="${escapeHtml(item.queueId)}"${selectable ? "" : " disabled"}>` +
       `<span class="queue-title">${escapeHtml(item.title)}</span><span class="queue-sub">${escapeHtml(item.subtitle || "")}</span></button>`;
   }).join("");
-  note.textContent = selectable ? "" : "Выбор трека этот плеер не поддерживает";
+  note.textContent = !selectable ? "Выбор трека этот плеер не поддерживает" : (items.length ? "" : "Ничего не найдено");
+}
+
+function renderQueueSheet() {
+  const sheet = ensureQueueSheet();
+  const input = sheet.querySelector("#queue-search-input");
+  queueQuery = "";
+  if (input) input.value = "";
+  renderQueueList();
 }
 
 function selectQueueItem(queueId) {

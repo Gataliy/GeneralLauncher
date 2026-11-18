@@ -1474,3 +1474,15 @@ body.player-expanded #top-pills #radar-strip { border-radius: 12px !important; b
 
 /* Home screen: the top pills (radar, camera, track) hang 14–46px from the top edge, so the hero starts 26px lower and the navigation card is not covered (1.2.523). */
 body:not(.player-expanded) .hero { padding-top: 26px !important; }
+
+/* Playlist (queue.js): a wider sheet with a search field, and the tracks in a grid of cards instead of one column (1.2.524 working copy). */
+.forecast-card.queue-card { width: min(980px, 100%); }
+.search-field.queue-search { height: 48px; margin: 0 0 12px; padding: 0 14px; border-radius: 14px; }
+.search-field.queue-search span { font-size: 20px; }
+.search-field.queue-search input { font-size: 16px; }
+.queue-list { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.queue-row { border: 1px solid rgba(255, 255, 255, .12) !important; border-radius: 16px; background: rgba(255, 255, 255, .04) !important; padding: 12px 14px !important; min-width: 0; }
+.queue-row:last-child { border-bottom: 1px solid rgba(255, 255, 255, .12) !important; }
+.queue-row.on { border-color: var(--accent) !important; }
+:root[data-theme="light"] .queue-row { border-color: rgba(20, 30, 50, .14) !important; background: rgba(255, 255, 255, .7) !important; }
+:root[data-theme="light"] .queue-row.on { border-color: var(--accent) !important; }
