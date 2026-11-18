@@ -1455,3 +1455,9 @@ body:not(.player-expanded) #open-settings { transform: translateY(25px); }
 /* Fan slot lamp: lit while a speed is set, blue like the other cool slots. */
 .action-slot.has-fan.state-on .single-lamp { background: var(--blue); box-shadow: 0 0 11px rgba(121, 220, 255, .8); }
 :root[data-theme="light"] .action-slot.has-fan.state-on .single-lamp { background: #2f9fd8; box-shadow: none; }
+
+/* Slot long-press menu (Заменить / Переставить / Удалить) uses the same background as the clock and weather cards (1.2.519). */
+:root:not([data-theme="light"]) .slot-menu { background: rgba(2, 6, 12, .94) !important; border-color: rgba(255, 255, 255, .16) !important; }
+:root:not([data-theme="light"]) .slot-menu button { background: rgba(2, 6, 12, .94) !important; border-color: rgba(255, 255, 255, .16) !important; }
+:root[data-theme="light"] .slot-menu { background: rgba(255, 255, 255, .8) !important; }
+:root[data-theme="light"] .slot-menu button { background: rgba(255, 255, 255, .8) !important; }
