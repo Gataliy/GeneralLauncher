@@ -1486,3 +1486,9 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .queue-row.on { border-color: var(--accent) !important; }
 :root[data-theme="light"] .queue-row { border-color: rgba(20, 30, 50, .14) !important; background: rgba(255, 255, 255, .7) !important; }
 :root[data-theme="light"] .queue-row.on { border-color: var(--accent) !important; }
+/* Playlist: the search field and the "Открыть плеер" button sit on one row (queue.js, 1.2.525 working copy). */
+.queue-top { display: flex; gap: 10px; align-items: center; margin: 0 0 12px; }
+.queue-top .queue-search { flex: 1 1 auto; margin: 0; min-width: 0; }
+.queue-open { flex: 0 0 auto; height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid rgba(111, 195, 250, .55); background: rgba(2, 6, 12, .86); color: #9fd4ff; font: inherit; font-size: 15px; white-space: nowrap; cursor: pointer; }
+.queue-open[hidden] { display: none; }
+:root[data-theme="light"] .queue-open { background: #ffffff; color: #1f6fd6; border-color: rgba(31, 111, 214, .4); }

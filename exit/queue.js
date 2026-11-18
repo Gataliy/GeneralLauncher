@@ -25,8 +25,16 @@ function ensureQueueSheet() {
   sheet.className = "forecast-sheet";
   sheet.hidden = true;
   sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлист"><h3>Плейлист</h3>' +
-    '<div class="search-field queue-search"><span>⌕</span><input id="queue-search-input" type="search" placeholder="Найти трек" autocomplete="off"></div>' +
+    '<div class="queue-top"><div class="search-field queue-search"><span>⌕</span><input id="queue-search-input" type="search" placeholder="Найти трек" autocomplete="off"></div>' +
+    '<button type="button" class="queue-open" id="queue-open">Открыть плеер</button></div>' +
     '<div class="queue-list"></div><p class="forecast-note"></p></div>';
+  // Opens the player app itself (runApp by package name); the playlist inside it is chosen there.
+  sheet.querySelector("#queue-open").addEventListener("click", () => {
+    const pkg = queueData && queueData.packageName;
+    if (!pkg) return;
+    bridge.call("runApp", TOKEN, pkg);
+    sheet.hidden = true;
+  });
   // No auto-focus: focusing the search field would bring up the on-screen keyboard.
   sheet.querySelector("#queue-search-input").addEventListener("input", event => { queueQuery = event.target.value; renderQueueList(); });
   sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
@@ -47,6 +55,8 @@ function renderQueueList() {
   const data = queueData;
   if (!data) { list.innerHTML = ""; note.textContent = "Плеер не отдаёт очередь"; return; }
   const selectable = data.canSelect !== false;
+  const openButton = sheet.querySelector("#queue-open");
+  if (openButton) openButton.hidden = !data.packageName;
   const query = queueQuery.trim().toLowerCase();
   const items = data.items.filter(item => queueMatches(item, query));
   list.innerHTML = items.map(item => {
