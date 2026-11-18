@@ -1492,3 +1492,6 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .queue-open { flex: 0 0 auto; height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid rgba(111, 195, 250, .55); background: rgba(2, 6, 12, .86); color: #9fd4ff; font: inherit; font-size: 15px; white-space: nowrap; cursor: pointer; }
 .queue-open[hidden] { display: none; }
 :root[data-theme="light"] .queue-open { background: #ffffff; color: #1f6fd6; border-color: rgba(31, 111, 214, .4); }
+/* Playlist sheet in the light theme: the same light card background as the clock and weather cards (1.2.526 working copy). */
+:root[data-theme="light"] .forecast-card.queue-card { background: rgba(255, 255, 255, .8) !important; border-color: rgba(20, 30, 50, .14) !important; box-shadow: 0 18px 50px rgba(27, 38, 64, .18) !important; color: #1d2a3d; }
+:root[data-theme="light"] .forecast-card.queue-card h3 { color: #1d2a3d; }
