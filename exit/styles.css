@@ -1495,3 +1495,14 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 /* Playlist sheet in the light theme: the same light card background as the clock and weather cards (1.2.526 working copy). */
 :root[data-theme="light"] .forecast-card.queue-card { background: rgba(255, 255, 255, .8) !important; border-color: rgba(20, 30, 50, .14) !important; box-shadow: 0 18px 50px rgba(27, 38, 64, .18) !important; color: #1d2a3d; }
 :root[data-theme="light"] .forecast-card.queue-card h3 { color: #1d2a3d; }
+/* Playlist: the title, search and "Открыть плеер" stay fixed, and only the list of tracks scrolls (1.2.527 working copy). */
+.forecast-card.queue-card { display: flex; flex-direction: column; height: min(640px, calc(100vh - 32px)); max-height: calc(100vh - 32px); overflow: hidden; }
+.forecast-card.queue-card > h3, .forecast-card.queue-card > .queue-top { flex: 0 0 auto; }
+.forecast-card.queue-card > .queue-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 2px 4px 6px 0; align-content: start; }
+.forecast-card.queue-card > .forecast-note { flex: 0 0 auto; }
+/* Playlist: a close button "×" at the right end of the title row (queue.js, 1.2.527 working copy). */
+.queue-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
+.queue-head h3 { margin: 0 !important; }
+.queue-close { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); color: inherit; font: inherit; font-size: 24px; line-height: 1; cursor: pointer; padding: 0; }
+:root[data-theme="light"] .queue-close { border-color: rgba(20, 30, 50, .18); background: rgba(20, 30, 50, .05); }
+.forecast-card.queue-card > .queue-head { flex: 0 0 auto; }

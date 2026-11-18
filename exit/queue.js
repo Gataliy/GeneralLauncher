@@ -24,10 +24,12 @@ function ensureQueueSheet() {
   sheet.id = "queue-sheet";
   sheet.className = "forecast-sheet";
   sheet.hidden = true;
-  sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлист"><h3>Плейлист</h3>' +
+  sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлист">' +
+    '<div class="queue-head"><h3>Плейлист</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
     '<div class="queue-top"><div class="search-field queue-search"><span>⌕</span><input id="queue-search-input" type="search" placeholder="Найти трек" autocomplete="off"></div>' +
     '<button type="button" class="queue-open" id="queue-open">Открыть плеер</button></div>' +
     '<div class="queue-list"></div><p class="forecast-note"></p></div>';
+  sheet.querySelector(".queue-close").addEventListener("click", () => { sheet.hidden = true; });
   // Opens the player app itself (runApp by package name); the playlist inside it is chosen there.
   sheet.querySelector("#queue-open").addEventListener("click", () => {
     const pkg = queueData && queueData.packageName;
