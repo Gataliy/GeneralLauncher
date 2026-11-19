@@ -67,7 +67,7 @@ document.addEventListener("click", event => {
   if (stateLabel && !document.body.classList.contains("hw-edit")) openStateSheet();
 });
 
-// "На приборку" pill on the navigation card: a tap alternates GO_TO_PP and GO_TO_GU (TOGGLE_SCREEN_TARGET), remembering the last one sent.
+// "На приборку" pill on the navigation card: every tap sends GO_TO_PP (as the reference launcher does), no toggle memory.
 function ensureNavPill() {
   const card = document.querySelector(".hw-nav");
   if (!card || card.querySelector("[data-tg-nav=cluster]")) return;
@@ -84,5 +84,5 @@ document.addEventListener("click", event => {
   if (!pill || document.body.classList.contains("hw-edit")) return;
   event.stopPropagation();
   event.preventDefault();
-  runCommand("TOGGLE_SCREEN_TARGET", "Показ: панель / ГУ", pill);
+  runCommand("GO_TO_PP", "Показать на приборной панели", pill);
 }, true);
