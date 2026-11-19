@@ -225,7 +225,7 @@
     const token = ymToken();
     body.innerHTML = `
       <p class="set-note">Проверка доступа к Яндекс Музыке по вашему токену. Токен хранится только на этом ГУ. Это неофициальный доступ: он может перестать работать.</p>
-      <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"><button type="button" data-act="ym-save">Сохранить</button></div>
+      <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-save">Сохранить</button></div>
       <div class="set-row"><button type="button" data-act="ym-check">Проверить подключение</button><button type="button" data-act="ym-clear">Удалить токен</button></div>
       <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
     const status = body.querySelector("#ym-status");
@@ -233,6 +233,13 @@
       const value = body.querySelector("#ym-token").value.trim();
       try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return; }
       status.textContent = value ? "Токен сохранён." : "Токен удалён.";
+    });
+    // Shows the typed token so the user can check a paste; hides it again on the next tap.
+    body.querySelector('[data-act="ym-eye"]').addEventListener("click", event => {
+      const input = body.querySelector("#ym-token");
+      const shown = input.type === "text";
+      input.type = shown ? "password" : "text";
+      event.currentTarget.textContent = shown ? "Показать" : "Скрыть";
     });
     body.querySelector('[data-act="ym-clear"]').addEventListener("click", () => {
       try { localStorage.removeItem(YM_TOKEN_KEY); } catch (e) { /* nothing stored */ }
@@ -250,7 +257,9 @@
         const name = data && data.result && data.result.account && data.result.account.login;
         status.textContent = name ? `Подключено: ${name}.` : "Подключено, но логин не получен.";
       } catch (error) {
-        status.textContent = "Не удалось подключиться: сеть или ограничения WebView (CORS).";
+        // Backup when the WebView blocks the request (CORS or no network): check only the token's shape, and say that the server was not reached.
+        const shape = /^y0_[\w-]{20,}$/.test(value) ? "похож на OAuth-токен Яндекса" : "не похож на OAuth-токен (обычно начинается с y0_)";
+        status.textContent = `Сервер Яндекса не проверен: WebView не пустил запрос (CORS или сеть). Формат токена ${shape}.`;
       }
     });
   }
