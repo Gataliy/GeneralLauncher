@@ -9,6 +9,7 @@
     { id: "look", title: "Внешний вид" },
     { id: "wallpapers", title: "Обои" },
     { id: "cards", title: "Карточки" },
+    { id: "music", title: "Музыка" },
     { id: "about", title: "О программе" }
   ];
   const sheet = document.createElement("div");
@@ -35,6 +36,7 @@
     if (tab === "look") renderLook();
     if (tab === "wallpapers") renderWallpapers();
     if (tab === "cards") renderCards();
+    if (tab === "music") renderMusic();
     if (tab === "about") renderAbout();
   }
 
@@ -212,6 +214,45 @@
       if (!layer.hidden) calibFrame = requestAnimationFrame(place);
     };
     place();
+  }
+  // Yandex Music token test (1.2.528 working copy). The token is kept only in this head unit's storage, never in the repository.
+  const YM_TOKEN_KEY = "generic_launcher_ym_token_v1";
+  function ymToken() {
+    try { return localStorage.getItem(YM_TOKEN_KEY) || ""; } catch (e) { return ""; }
+  }
+  function renderMusic() {
+    resetArmed = false;
+    const token = ymToken();
+    body.innerHTML = `
+      <p class="set-note">Проверка доступа к Яндекс Музыке по вашему токену. Токен хранится только на этом ГУ. Это неофициальный доступ: он может перестать работать.</p>
+      <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"><button type="button" data-act="ym-save">Сохранить</button></div>
+      <div class="set-row"><button type="button" data-act="ym-check">Проверить подключение</button><button type="button" data-act="ym-clear">Удалить токен</button></div>
+      <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
+    const status = body.querySelector("#ym-status");
+    body.querySelector('[data-act="ym-save"]').addEventListener("click", () => {
+      const value = body.querySelector("#ym-token").value.trim();
+      try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return; }
+      status.textContent = value ? "Токен сохранён." : "Токен удалён.";
+    });
+    body.querySelector('[data-act="ym-clear"]').addEventListener("click", () => {
+      try { localStorage.removeItem(YM_TOKEN_KEY); } catch (e) { /* nothing stored */ }
+      body.querySelector("#ym-token").value = "";
+      status.textContent = "Токен удалён.";
+    });
+    body.querySelector('[data-act="ym-check"]').addEventListener("click", async () => {
+      const value = ymToken();
+      if (!value) { status.textContent = "Сначала сохраните токен."; return; }
+      status.textContent = "Проверяю…";
+      try {
+        const response = await fetch("https://api.music.yandex.net/account/status", { headers: { Authorization: "OAuth " + value } });
+        if (!response.ok) { status.textContent = `Яндекс ответил ${response.status}. Токен не принят или запрос закрыт.`; return; }
+        const data = await response.json();
+        const name = data && data.result && data.result.account && data.result.account.login;
+        status.textContent = name ? `Подключено: ${name}.` : "Подключено, но логин не получен.";
+      } catch (error) {
+        status.textContent = "Не удалось подключиться: сеть или ограничения WebView (CORS).";
+      }
+    });
   }
   function renderAbout() {
     resetArmed = false;
