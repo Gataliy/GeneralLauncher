@@ -238,31 +238,16 @@ function openCalendar() {
   sheet.hidden = false;
 }
 
-// Long press on the clock in cover mode opens the calendar. On the main screen the same press starts the layout editor
-// (hero-widgets.js), so it is left alone there.
-function bindClockLongPress() {
+// In cover mode a tap on the clock opens the calendar instead of the night screen.
+// On the main screen a tap still toggles night mode, and a long press still starts the layout editor (hero-widgets.js).
+function bindClockInCover() {
   const clock = document.querySelector(".hero-clock");
   if (!clock) return;
-  let timer = null;
-  let fired = false;
-  clock.addEventListener("pointerdown", () => {
-    fired = false;
-    clearTimeout(timer);
-    if (!document.body.classList.contains("player-expanded")) return;
-    timer = setTimeout(() => {
-      fired = true;
-      openCalendar();
-    }, 600);
-  });
-  ["pointerup", "pointercancel"].forEach(type => {
-    document.addEventListener(type, () => clearTimeout(timer), true);
-  });
-  // The click that ends the long press is swallowed, so night mode does not turn on as well.
   clock.addEventListener("click", event => {
-    if (!fired) return;
-    fired = false;
+    if (!document.body.classList.contains("player-expanded")) return;
     event.stopImmediatePropagation();
     event.preventDefault();
+    openCalendar();
   }, true);
 }
 
@@ -275,7 +260,7 @@ function bindCalendar() {
       openCalendar();
     });
   }
-  bindClockLongPress();
+  bindClockInCover();
 }
 
 bindCalendar();
