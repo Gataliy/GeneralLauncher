@@ -239,12 +239,12 @@ function openCalendar() {
 }
 
 // In cover mode a tap on the clock opens the calendar instead of the night screen.
-// On the main screen a tap still toggles night mode, and a long press still starts the layout editor (hero-widgets.js).
+// It is caught on the document in the capture phase, so it runs before the clock's own listeners (nightmode.js),
+// whose order differs between WebView versions. On the main screen a tap still toggles night mode.
 function bindClockInCover() {
-  const clock = document.querySelector(".hero-clock");
-  if (!clock) return;
-  clock.addEventListener("click", event => {
+  document.addEventListener("click", event => {
     if (!document.body.classList.contains("player-expanded")) return;
+    if (!event.target || !event.target.closest || !event.target.closest(".hero-clock")) return;
     event.stopImmediatePropagation();
     event.preventDefault();
     openCalendar();
