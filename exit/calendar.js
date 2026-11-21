@@ -279,3 +279,27 @@ function bindCalendar() {
 }
 
 bindCalendar();
+
+// Reminders: while the launcher is on screen, a toast shows CAL_REMIND_MINUTES before an event today.
+// Each event is reminded once per launcher session. Reminders need the launcher open (see the notes on system notifications).
+const CAL_REMIND_MINUTES = 10;
+const calRemindedKeys = new Set();
+
+function checkReminders() {
+  const now = new Date();
+  for (const item of eventsOn(now)) {
+    const [hours, minutes] = String(item.start || "").split(":").map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) continue;
+    const startsAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+    const minutesLeft = (startsAt - now) / 60000;
+    const key = dateKey(now) + "|" + item.id;
+    if (calRemindedKeys.has(key) || minutesLeft <= 0 || minutesLeft > CAL_REMIND_MINUTES) continue;
+    calRemindedKeys.add(key);
+    if (typeof showToast === "function") {
+      showToast(`Через ${Math.ceil(minutesLeft)} мин: ${item.title} (${item.start})`, 6000);
+    }
+  }
+}
+
+setTimeout(checkReminders, 2000);
+setInterval(checkReminders, 20000);
