@@ -278,7 +278,13 @@ function navDistance(value) {
 function applyNavFrame(raw) {
   const data = navParse(raw);
   const src = data?.image;
-  if (typeof src !== "string" || !src) return;
+  if (typeof src !== "string" || !src || src.includes('"')) return;
+  // The classic home navigation card shows the same frame as its background (darkened on the left, see styles.css).
+  const card = document.querySelector(".hw-nav");
+  if (card) {
+    card.style.setProperty("--nav-map", `url("${src}")`);
+    card.classList.add("has-map");
+  }
   const img = document.getElementById("tg-map-img");
   const placeholder = document.getElementById("tg-map-placeholder");
   if (!img) return;

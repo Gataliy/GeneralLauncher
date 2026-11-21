@@ -775,6 +775,8 @@ body.night-mode .night-hint { display: block; }
 @keyframes nightHint { 0% { opacity: 0; transform: translateX(-50%) translateY(8px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); } 80% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
 
 /* Speed gauge moved to the navigation card: bottom right corner of the card. */
+/* Map behind the navigation card: the left side is darkened so the turn text and the pill stay readable. */
+.hw-nav.has-map { background-image: linear-gradient(90deg, rgba(4, 8, 14, .9) 0%, rgba(4, 8, 14, .6) 42%, rgba(4, 8, 14, .15) 100%), var(--nav-map); background-size: cover; background-position: center; }
 .hw-nav .hw-gauge-speed { position: absolute; right: 16px; bottom: 12px; width: 118px; height: 68px; }
 .hw-nav .hw-gauge-speed svg { width: 118px; height: 68px; }
 .hw-nav .hw-gauge-speed .hw-num { bottom: 4px; }
