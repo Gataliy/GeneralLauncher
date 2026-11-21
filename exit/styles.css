@@ -778,6 +778,7 @@ body.night-mode .night-hint { display: block; }
 /* Map behind the navigation card: the left side is darkened so the turn text and the pill stay readable. */
 .hw-nav.has-map { background-image: linear-gradient(90deg, rgba(4, 8, 14, .9) 0%, rgba(4, 8, 14, .6) 42%, rgba(4, 8, 14, .15) 100%), var(--nav-map); background-size: cover; background-position: center; }
 /* Same size and left edge as the turn arrow (.hw-turn, 64px at left 21px), stacked above it. */
+:root[data-theme="light"] .hw-nav.has-map { background-image: linear-gradient(90deg, rgba(248, 250, 253, .93) 0%, rgba(248, 250, 253, .8) 45%, rgba(248, 250, 253, .6) 100%), var(--nav-map); background-size: cover; background-position: center; }
 .hw-limit { position: absolute; left: 20px; top: 6px; z-index: 3; width: 64px; height: 64px; box-sizing: border-box; border-radius: 50%; border: 4px solid #ff5a5a; background: #fff; display: grid; place-items: center; }
 .hw-limit[hidden] { display: none !important; }
 .hw-limit strong { font: 700 26px/1 "Exit Sans", sans-serif; color: #111; }
