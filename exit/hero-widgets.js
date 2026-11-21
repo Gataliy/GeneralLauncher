@@ -114,6 +114,13 @@
     byId("hw-turn-icon") && byId("tg-turn-icon") && (byId("hw-turn-icon").innerHTML = byId("tg-turn-icon").innerHTML);
     byId("hw-turn-dist") && (byId("hw-turn-dist").textContent = text("tg-turn-dist") || "—");
     byId("hw-road") && (byId("hw-road").textContent = text("tg-next-road"));
+    // Speed limit sign: shown only while the navigation reports one (the same value as on the Tiggo navigation tile).
+    const limitOn = !!byId("tg-limit") && !byId("tg-limit").hidden;
+    const limit = byId("hw-limit");
+    if (limit) {
+      limit.hidden = !limitOn;
+      if (limitOn) byId("hw-limit-value").textContent = text("tg-limit-value");
+    }
     const camOn = !!byId("tg-cam") && !byId("tg-cam").hidden;
     const cam = byId("hw-cam");
     if (cam) cam.hidden = !camOn;
