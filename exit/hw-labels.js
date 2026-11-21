@@ -57,7 +57,8 @@ function closeStateSheet() {
 }
 
 document.addEventListener("click", event => {
-  const navLabel = event.target.closest && event.target.closest(".hw-nav > .hw-eb");
+  // A tap anywhere on the navigation card opens the navigator (as on the Tiggo home); the pill and the layout editor have their own rules.
+  const navLabel = event.target.closest && event.target.closest(".hw-nav");
   if (navLabel && !document.body.classList.contains("hw-edit")) {
     if (bridge.has("runApp")) bridge.runApp(NAV_APP_PACKAGE);
     else showToast("Навигатор недоступен");
