@@ -1541,3 +1541,11 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .calendar-error { margin: 0; min-height: 18px; color: #ff8a8a; font-size: 13px; }
 .calendar-form-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .calendar-form-buttons button[data-save] { border-color: #6fb8ff; color: #cfe6ff; }
+
+/* Night mode opened from the cover view: the player stage holds the clock row, so keep it visible on black (the clock still hides the rest). */
+body.night-mode.player-expanded #player-stage { display: flex !important; position: fixed !important; inset: 0 !important; z-index: 2; background: #05070c !important; align-items: center !important; justify-content: center !important; padding: 0 !important; margin: 0 !important; }
+body.night-mode.player-expanded #player-stage > .hero-bottom.in-stage { position: relative !important; inset: auto !important; background: transparent !important; }
+body.night-mode.player-expanded #player-stage .hero-bottom.in-stage, body.night-mode.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock { opacity: 1 !important; animation: none !important; }
+body.night-mode.player-expanded #player-stage { top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; }
+body.night-mode.player-expanded .dashboard > .actions-section:not(#no-such-id) { display: block !important; }
+

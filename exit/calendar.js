@@ -9,6 +9,7 @@ let calMonth = null;      // a Date on the 1st of the month shown
 let calYear = null;       // year shown in the month picker
 let calSelected = null;   // the selected Date, or null
 let calForm = false;      // the "new event" form is open for the selected day
+let calOpenedAt = 0;     // when the calendar was last opened (see the overlay click guard)
 
 function startOfMonth(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
@@ -63,7 +64,11 @@ function ensureCalendarSheet() {
     '<div id="calendar-events"></div>' +
     '<button type="button" class="calendar-today" id="calendar-today">Сегодня</button></div>';
   sheet.addEventListener("click", event => {
-    if (event.target === sheet) { sheet.hidden = true; return; }
+    // The click that ends a long press can land on this overlay just as it opens: ignore it for a moment.
+    if (event.target === sheet) {
+      if (performance.now() - calOpenedAt > 500) sheet.hidden = true;
+      return;
+    }
     const target = event.target;
     if (target.closest("#calendar-today")) {
       const now = new Date();
@@ -222,6 +227,7 @@ function renderCalendar() {
 }
 
 function openCalendar() {
+  calOpenedAt = performance.now();
   const sheet = ensureCalendarSheet(); // create the markup first, so the render has somewhere to write
   const now = new Date();
   calMonth = startOfMonth(now);
@@ -232,14 +238,44 @@ function openCalendar() {
   sheet.hidden = false;
 }
 
+// Long press on the clock in cover mode opens the calendar. On the main screen the same press starts the layout editor
+// (hero-widgets.js), so it is left alone there.
+function bindClockLongPress() {
+  const clock = document.querySelector(".hero-clock");
+  if (!clock) return;
+  let timer = null;
+  let fired = false;
+  clock.addEventListener("pointerdown", () => {
+    fired = false;
+    clearTimeout(timer);
+    if (!document.body.classList.contains("player-expanded")) return;
+    timer = setTimeout(() => {
+      fired = true;
+      openCalendar();
+    }, 600);
+  });
+  ["pointerup", "pointercancel"].forEach(type => {
+    document.addEventListener(type, () => clearTimeout(timer), true);
+  });
+  // The click that ends the long press is swallowed, so night mode does not turn on as well.
+  clock.addEventListener("click", event => {
+    if (!fired) return;
+    fired = false;
+    event.stopImmediatePropagation();
+    event.preventDefault();
+  }, true);
+}
+
 function bindCalendar() {
   const date = document.getElementById("date");
-  if (!date) return;
-  date.addEventListener("click", event => {
-    // The date sits inside .hero-clock, where a tap toggles night mode: keep it from reaching there.
-    event.stopPropagation();
-    openCalendar();
-  });
+  if (date) {
+    date.addEventListener("click", event => {
+      // The date sits inside .hero-clock, where a tap toggles night mode: keep it from reaching there.
+      event.stopPropagation();
+      openCalendar();
+    });
+  }
+  bindClockLongPress();
 }
 
 bindCalendar();
