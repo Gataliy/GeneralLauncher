@@ -114,9 +114,24 @@
   chooser.id = "viz-chooser";
   chooser.className = "viz-chooser";
   chooser.hidden = true;
-  chooser.innerHTML = '<div class="viz-chooser-card" role="dialog" aria-label="Визуализатор"><h3>Визуализатор</h3><div class="viz-chooser-grid">' +
-    STYLES.map(([id, title]) => `<button type="button" data-viz="${id}">${title}</button>`).join("") +
-    '</div><p class="viz-chooser-note">Нажмите за пределами окна, чтобы закрыть</p></div>';
+  // Small static picture of each style for the chooser (same look as the bars, dots, lines, etc.).
+  function thumb(index) {
+    const w = 64, h = 32, n = 12, bw = w / n;
+    const vals = [0.8, 0.5, 0.9, 0.6, 0.7, 0.4, 0.85, 0.55, 0.65, 0.9, 0.5, 0.75];
+    let body = "";
+    if (index === 0) vals.forEach((v, k) => { const bh = v * (h - 4); body += `<rect x="${k * bw + bw * 0.2}" y="${h - 2 - bh}" width="${bw * 0.6}" height="${bh}" rx="1.5" fill="#6fc3fa"/>`; });
+    if (index === 1) vals.forEach((v, k) => { const bh = v * (h - 4); body += `<rect x="${k * bw + bw * 0.2}" y="${h / 2 - bh / 2}" width="${bw * 0.6}" height="${bh}" rx="1.5" fill="#6fc3fa" opacity=".8"/>`; });
+    if (index === 2) vals.forEach((v, k) => { body += `<circle cx="${k * bw + bw * 0.5}" cy="${h / 2}" r="${1 + v * 2.5}" fill="#6fc3fa"/>`; });
+    if (index === 3) vals.forEach((v, k) => { const bh = v * (h - 4); body += `<line x1="${k * bw + bw * 0.5}" x2="${k * bw + bw * 0.5}" y1="${h / 2 - bh / 2}" y2="${h / 2 + bh / 2}" stroke="#6fc3fa" stroke-width="1.2"/>`; });
+    if (index === 4) vals.forEach((v, k) => { for (let j = 0; j < 4; j++) if (v * 4 > j) body += `<rect x="${k * bw + bw * 0.2}" y="${h - 3 - j * 6}" width="${bw * 0.6}" height="3" fill="#6fc3fa"/>`; });
+    if (index === 5) vals.forEach((v, k) => { body += `<circle cx="${k * bw + bw * 0.5}" cy="${h - 2 - v * (h - 6)}" r="${bw * 0.3}" fill="#6fc3fa"/>`; });
+    if (index === 6) { let d = `M0 ${h / 2}`; vals.forEach((v, k) => { d += ` L${k * bw + bw / 2} ${h / 2 - (v - 0.5) * (h - 6)}`; }); body = `<path d="${d}" fill="none" stroke="#6fc3fa" stroke-width="1.6"/>`; }
+    if (index === 7) { let d = `M0 ${h} `; vals.forEach((v, k) => { d += `L${k * bw + bw / 2} ${h - v * (h - 6)} `; }); d += `L${w} ${h}Z`; body = `<path d="${d}" fill="rgba(111,195,250,.35)" stroke="#6fc3fa" stroke-width="1.4"/>`; }
+    return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">${body}</svg>`;
+  }
+  chooser.innerHTML = '<div class="viz-chooser-card" role="dialog" aria-label="Визуализатор"><div class="viz-chooser-head"><h3>Визуализатор</h3><button type="button" class="viz-chooser-close" data-viz-close aria-label="Закрыть">×</button></div><div class="viz-chooser-grid">' +
+    STYLES.map(([id, title], i) => `<button type="button" data-viz="${id}"><span class="viz-thumb">${thumb(i)}</span><span class="viz-name">${title}</span></button>`).join("") +
+    '</div><p class="viz-chooser-note">Нажмите × или за пределами окна, чтобы закрыть</p></div>';
   document.body.appendChild(chooser);
   function openChooser() {
     chooser.querySelectorAll("[data-viz]").forEach(b => b.classList.toggle("on", b.dataset.viz === style()));
@@ -125,7 +140,7 @@
   chooser.addEventListener("click", event => {
     const button = event.target.closest("[data-viz]");
     if (button) { setStyle(button.dataset.viz); chooser.hidden = true; return; }
-    if (event.target === chooser) chooser.hidden = true;
+    if (event.target.closest("[data-viz-close]") || event.target === chooser) chooser.hidden = true;
   });
   let pressTimer = 0;
   el.addEventListener("pointerdown", () => {

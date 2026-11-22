@@ -133,7 +133,7 @@
     } else if (source === "local") {
       const pickedNow = localPickIndex();
       details = localOpen
-        ? `<p class="set-note">Нажмите картинку, чтобы поставить её на главный экран. Всего: ${LOCAL_WALLPAPERS.length}.</p><div class="local-grid">${LOCAL_WALLPAPERS.map((url, i) => `<button type="button" data-pick="${i}" class="local-cell${i === (pickedNow >= 0 ? pickedNow : 0) ? " on" : ""}"><img src="${escapeHtml(url)}" alt=""></button>`).join("")}</div>`
+        ? `<p class="set-note">Нажмите картинку, чтобы поставить её на главный экран. Всего: ${LOCAL_WALLPAPERS.length}.</p><div class="local-grid">${LOCAL_WALLPAPERS.map((url, i) => `<button type="button" data-pick="${i}" class="local-cell${i === (pickedNow >= 0 ? pickedNow : 0) ? " on" : ""}"><img src="${escapeHtml(url)}" alt=""></button>`).join("")}</div><div class="set-row"><button type="button" data-local-close>Закрыть</button></div>`
         : `<p class="set-note">Нажмите на «Свои файлы» ещё раз, чтобы увидеть все свои обои (${LOCAL_WALLPAPERS.length}).</p>`;
     } else {
       details = '<p class="set-note">Фон выключен: только чёрный экран.</p>';
@@ -175,6 +175,8 @@
       setHeroWallpaper(true);
       render();
     }));
+    const localClose = body.querySelector("[data-local-close]");
+    if (localClose) localClose.addEventListener("click", () => { localOpen = false; render(); });
     body.querySelectorAll("[data-pick]").forEach(button => button.addEventListener("click", () => {
       try { localStorage.setItem(LOCAL_PICK_KEY, button.dataset.pick); } catch (error) { /* keep going */ }
       setHeroWallpaper(false);

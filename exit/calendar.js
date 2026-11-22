@@ -289,19 +289,3 @@ function checkReminders() {
 setTimeout(checkReminders, 2000);
 setInterval(checkReminders, 20000);
 
-// TEMPORARY DIAGNOSTIC (remove after the cover-mode clock issue is found): shows what a tap on the clock sees.
-(function calDebugClock() {
-  const describe = el => el ? (el.tagName + (el.className && typeof el.className === "string" ? "." + el.className.trim().split(/\s+/).join(".") : "")) : "none";
-  // Window capture runs before every other listener, so the state is read before any handler changes it.
-  window.addEventListener("click", event => {
-    const onClock = !!(event.target && event.target.closest && event.target.closest(".hero-clock"));
-    if (!onClock) return;
-    const state = { expanded: document.body.classList.contains("player-expanded"), night: document.body.classList.contains("night-mode"), target: describe(event.target) };
-    setTimeout(() => {
-      const after = document.body.classList.contains("night-mode");
-      if (typeof showToast === "function") {
-        showToast(`DBG обл:${state.expanded ? 1 : 0} ночь:${state.night ? 1 : 0}→${after ? 1 : 0} цель:${state.target}`, 9000);
-      }
-    }, 80);
-  }, true);
-})();
