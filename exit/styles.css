@@ -1753,3 +1753,27 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .state-card h5.state-group { grid-column: 1 / -1; margin: 10px 0 0; }
 .state-card .state-row { margin-bottom: 0 !important; }
 .state-card .state-row:last-child { border-bottom: 1px solid #243247 !important; }
+/* Calendar in the same style as the settings, playlist and slot picker: dark card, outlined cells and rows, blue selected day and primary buttons. */
+.forecast-card.calendar-card { background: #111824 !important; border: 1px solid #243247 !important; border-radius: 16px !important; box-shadow: 0 30px 90px rgba(0, 0, 0, .55) !important; padding: 20px 22px !important; }
+.calendar-title { color: #e8edf3 !important; font-size: 20px !important; font-weight: 700 !important; }
+.calendar-nav { width: 44px !important; height: 44px !important; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 22px !important; }
+.calendar-week { color: #8fa0b8 !important; font-size: 13px !important; }
+.calendar-cell { border-radius: 12px !important; border: 1px solid transparent; color: #e8edf3; }
+.calendar-day { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 12px !important; }
+.calendar-day:hover, .calendar-day:focus-visible { border-color: #6fc3fa !important; outline: 0; }
+.calendar-cell.today { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .12) !important; color: #cfe6ff !important; }
+.calendar-day.selected { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #ffffff !important; }
+.calendar-month { border: 1px solid #243247 !important; background: #0d131c !important; border-radius: 12px !important; color: #e8edf3 !important; }
+.calendar-month.selected { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #ffffff !important; }
+.calendar-today, .calendar-add, .calendar-form-buttons button { border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 15px !important; min-height: 44px; }
+.calendar-form-buttons button[data-save] { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #ffffff !important; font-weight: 600; }
+.calendar-form input[type="text"], .calendar-times input { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 12px !important; color: #e8edf3 !important; }
+.calendar-event { background: #0d131c; border: 1px solid #243247 !important; border-radius: 14px !important; }
+.calendar-event-time { color: #6fc3fa !important; }
+.calendar-event-del { color: #ff8a9a !important; border-radius: 10px !important; }
+.calendar-selected, .calendar-empty, .calendar-times label { color: #8fa0b8 !important; }
+:root[data-theme="light"] .forecast-card.calendar-card { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .calendar-title, :root[data-theme="light"] .calendar-cell, :root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-event { color: #1c2736 !important; }
+:root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-day, :root[data-theme="light"] .calendar-event, :root[data-theme="light"] .calendar-form input[type="text"], :root[data-theme="light"] .calendar-times input { background: #ffffff !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .calendar-cell.today { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; }
+:root[data-theme="light"] .calendar-day.selected, :root[data-theme="light"] .calendar-month.selected { background: #2f6fb4 !important; color: #ffffff !important; }
