@@ -312,10 +312,18 @@
         <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"></div>
         <div class="set-row set-actions"><button type="button" class="primary" data-act="ym-check">Проверить</button><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-clear">Удалить</button></div>
       </div>
+      <div class="set-group">
+        <p class="set-note">Визуализатор под музыкой. Коротким тапом по нему тоже можно переключить стиль.</p>
+        <div class="set-grid viz-grid">${(window.vizStyles || []).map(([id, title]) => `<button type="button" class="viz-pick${(window.vizStyle && window.vizStyle()) === id ? " on" : ""}" data-viz="${id}">${title}</button>`).join("")}</div>
+      </div>
       <p class="set-note">Неофициальный доступ: он может перестать работать.</p>
       <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
     const status = body.querySelector("#ym-status");
     const badge = body.querySelector("#ym-badge");
+    body.querySelectorAll("[data-viz]").forEach(button => button.addEventListener("click", () => {
+      if (window.setVizStyle) window.setVizStyle(button.dataset.viz);
+      body.querySelectorAll("[data-viz]").forEach(b => b.classList.toggle("on", b === button));
+    }));
     const saveTyped = () => {
       const value = body.querySelector("#ym-token").value.trim();
       try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return false; }

@@ -1754,7 +1754,7 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .state-card .state-row { margin-bottom: 0 !important; }
 .state-card .state-row:last-child { border-bottom: 1px solid #243247 !important; }
 /* Calendar in the same style as the settings, playlist and slot picker: dark card, outlined cells and rows, blue selected day and primary buttons. */
-.forecast-card.calendar-card { background: #111824 !important; border: 1px solid #243247 !important; border-radius: 16px !important; box-shadow: 0 30px 90px rgba(0, 0, 0, .55) !important; padding: 20px 22px !important; }
+.forecast-card.calendar-card { background: rgba(2, 6, 12, .94) !important; border: 1px solid rgba(255, 255, 255, .16) !important; border-radius: 33px !important; box-shadow: 0 18px 50px rgba(0, 0, 0, .28) !important; padding: 20px 22px !important; }
 .calendar-title { color: #e8edf3 !important; font-size: 20px !important; font-weight: 700 !important; }
 .calendar-nav { width: 44px !important; height: 44px !important; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 22px !important; }
 .calendar-week { color: #8fa0b8 !important; font-size: 13px !important; }
@@ -1772,8 +1772,18 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .calendar-event-time { color: #6fc3fa !important; }
 .calendar-event-del { color: #ff8a9a !important; border-radius: 10px !important; }
 .calendar-selected, .calendar-empty, .calendar-times label { color: #8fa0b8 !important; }
-:root[data-theme="light"] .forecast-card.calendar-card { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .forecast-card.calendar-card { background: rgba(255, 255, 255, .92) !important; border-color: #d5dce6 !important; }
 :root[data-theme="light"] .calendar-title, :root[data-theme="light"] .calendar-cell, :root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-event { color: #1c2736 !important; }
 :root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-day, :root[data-theme="light"] .calendar-event, :root[data-theme="light"] .calendar-form input[type="text"], :root[data-theme="light"] .calendar-times input { background: #ffffff !important; border-color: #d5dce6 !important; }
 :root[data-theme="light"] .calendar-cell.today { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; }
 :root[data-theme="light"] .calendar-day.selected, :root[data-theme="light"] .calendar-month.selected { background: #2f6fb4 !important; color: #ffffff !important; }
+/* Visualizer under the music card (viz.js). */
+.viz { position: fixed; z-index: 4; border-radius: 33px; background: rgba(2, 6, 12, .94); border: 1px solid rgba(255, 255, 255, .16); box-shadow: 0 18px 50px rgba(0, 0, 0, .28); padding: 0; box-sizing: border-box; overflow: hidden; cursor: pointer; }
+.viz[hidden] { display: none; }
+.viz canvas { width: 100%; height: 100%; display: block; }
+:root[data-theme="light"] .viz { background: rgba(255, 255, 255, .92); border-color: #d5dce6; }
+.set-sheet .viz-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+.set-sheet .viz-pick { min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; color: #e8edf3; font-size: 15px; text-align: left; }
+.set-sheet .viz-pick.on { border-color: #6fc3fa; background: rgba(111, 195, 250, .16); }
+:root[data-theme="light"] .set-sheet .viz-pick { background: #ffffff; color: #1c2736; border-color: #c9d2de; }
+:root[data-theme="light"] .set-sheet .viz-pick.on { border-color: #2f6fb4; background: rgba(47, 111, 180, .12); }
