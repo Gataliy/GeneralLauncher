@@ -1671,3 +1671,15 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .set-sheet .set-thumb svg { position: absolute; inset: 0; margin: auto; width: 30px; height: 30px; fill: none; stroke: #cfe6ff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .set-sheet .look-src-black .look-prev img { filter: grayscale(1) contrast(1.05); }
 .set-sheet .look-src-black .look-prev img.bw-cycle { filter: grayscale(1) contrast(1.05); }
+/* Settings in the light theme: buttons, pills, inputs and selected states use light colours (the dark defaults above are for the dark theme). */
+:root[data-theme="light"] .set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove):not(.primary),
+:root[data-theme="light"] .set-sheet .set-switch,
+:root[data-theme="light"] .set-sheet .set-link { background: #ffffff !important; color: #1c2736 !important; border-color: #c9d2de !important; }
+:root[data-theme="light"] .set-sheet .set-row button.on { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; }
+:root[data-theme="light"] .set-sheet .set-row button.primary, :root[data-theme="light"] .set-sheet .about-buttons .primary { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #ffffff !important; }
+:root[data-theme="light"] .set-sheet .set-custom input, :root[data-theme="light"] .set-sheet input[type="password"], :root[data-theme="light"] .set-sheet input[type="url"] { background: #ffffff !important; color: #1c2736 !important; border-color: #c9d2de !important; }
+:root[data-theme="light"] .set-sheet .set-custom input::placeholder, :root[data-theme="light"] .set-sheet input::placeholder { color: #8a97a8; }
+:root[data-theme="light"] .set-sheet .set-switch b { color: #5b6b7d; }
+:root[data-theme="light"] .set-sheet .set-item { background: #ffffff; }
+:root[data-theme="light"] .set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove):not(.primary).on { background: rgba(47, 111, 180, .14) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; box-shadow: inset 0 0 0 1px #2f6fb4; }
+.set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove):not(.primary).on { background: rgba(111, 195, 250, .2) !important; border-color: #6fc3fa !important; color: #e8edf3 !important; box-shadow: inset 0 0 0 1px #6fc3fa; }
