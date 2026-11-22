@@ -1800,3 +1800,9 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 :root[data-theme="light"] .viz-chooser-grid button { background: #ffffff; border-color: #c9d2de; color: #1c2736; }
 :root[data-theme="light"] .viz-chooser-grid button.on { border-color: #2f6fb4; background: rgba(47, 111, 180, .12); }
 :root[data-theme="light"] .viz-chooser-note { color: #5b6b7d; }
+
+/* Свои файлы: все свои обои сеткой, нажатие ставит картинку на главный экран */
+.local-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 8px; }
+.local-cell { padding: 0; border: 2px solid rgba(255,255,255,.12); border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 10; background: none; cursor: pointer; }
+.local-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.local-cell.on { border-color: #6fc3fa; }

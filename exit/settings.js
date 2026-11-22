@@ -66,7 +66,6 @@
   function renderLook() {
     const current = themeChoice();
     const options = [["auto", "Как в машине"], ["light", "Светлая"], ["dark", "Тёмная"]];
-    const carAnimOptions = [["off", "Выкл"], ["fast", "Быстро"], ["normal", "Обычно"]];
     body.innerHTML = `
       <p class="set-note">Тема по умолчанию берётся из машины. Выберите вручную, если машина присылает не то.</p>
       <div class="look-cards">${options.map(([v, t]) => `<button type="button" data-theme="${v}" class="look-card look-${v}${current === v ? " on" : ""}">${themePreview(v)}<span class="look-name">${t}</span><span class="look-radio"></span></button>`).join("")}</div>
@@ -74,8 +73,7 @@
       <div class="set-row">${[["solid", "Плотные"], ["glass", "Стекло"]].map(([v, t]) => `<button type="button" data-cardstyle="${v}" class="${cardStyleMode() === v ? "on" : ""}">${t}</button>`).join("")}</div>
       <p class="set-note">Акцентный цвет кнопок и подсветки.</p>
       <div class="set-row">${ACCENTS.map(([v, c, t]) => `<button type="button" data-accent="${v}" class="accent-dot${accentMode() === v ? " on" : ""}" style="background:${c} !important" aria-label="${t}" title="${t}"></button>`).join("")}</div>
-      <p class="set-note">Анимация открытия окон, багажника, люка и шторки на экране машины.</p>
-      <div class="set-row">${carAnimOptions.map(([v, t]) => `<button type="button" data-caranim="${v}" class="${carAnimMode() === v ? "on" : ""}">${t}</button>`).join("")}</div>`;
+      `;
     body.insertAdjacentHTML("beforeend", '<div class="look-actions"><button type="button" class="look-reset" data-look-reset>Сбросить</button><button type="button" class="look-done" data-look-done>Готово</button></div>');
     body.querySelector("[data-look-reset]").addEventListener("click", () => {
       try {
@@ -88,10 +86,6 @@
       render();
     });
     body.querySelector("[data-look-done]").addEventListener("click", () => { sheet.hidden = true; });
-    body.querySelectorAll("[data-caranim]").forEach(button => button.addEventListener("click", () => {
-      try { localStorage.setItem("generic_launcher_car_anim_v1", button.dataset.caranim); } catch (e) { /* keep going */ }
-      render();
-    }));
     body.querySelectorAll("[data-cardstyle]").forEach(button => button.addEventListener("click", () => {
       try { localStorage.setItem(CARD_STYLE_KEY, button.dataset.cardstyle); } catch (e) { /* keep going */ }
       applyLook();
@@ -125,7 +119,8 @@
     // Real pictures: the wallpaper now on screen for "Из сети" (a bundled one until a wallpaper loads), the first bundled picture for "Свои файлы", a black-and-white bundled picture for "Чёрный".
     const sourcePreview = v => {
       if (v === "black") return `<img class="bw-cycle" src="${escapeHtml(LOCAL_WALLPAPERS[bwIndex % LOCAL_WALLPAPERS.length])}" alt="">`;
-      const url = v === "online" ? (currentWallpaperUrl() || LOCAL_WALLPAPERS[1] || "") : (LOCAL_WALLPAPERS[0] || "");
+      const pick = localPickIndex();
+      const url = v === "online" ? (currentWallpaperUrl() || LOCAL_WALLPAPERS[1] || "") : (LOCAL_WALLPAPERS[pick >= 0 ? pick : 0] || "");
       return url ? `<img src="${escapeHtml(url)}" alt="">` : "<i></i><i></i>";
     };
     let details = "";
@@ -136,7 +131,10 @@
         <p class="set-note">Свой сервер: адрес картинки, где {w} и {h} заменяются размером экрана. Пусто — не использовать.</p>
         <div class="set-row set-custom"><input type="url" id="wall-custom" placeholder="https://..." value="${escapeHtml(customServerUrl())}"><button type="button" data-act="custom-save">Сохранить</button></div>`;
     } else if (source === "local") {
-      details = `<p class="set-note">Свои обои в сборке: ${LOCAL_WALLPAPERS.length}. Файлы кладутся в assets/wallpapers и перечисляются в wallpaper.js.</p>`;
+      const pickedNow = localPickIndex();
+      details = localOpen
+        ? `<p class="set-note">Нажмите картинку, чтобы поставить её на главный экран. Всего: ${LOCAL_WALLPAPERS.length}.</p><div class="local-grid">${LOCAL_WALLPAPERS.map((url, i) => `<button type="button" data-pick="${i}" class="local-cell${i === (pickedNow >= 0 ? pickedNow : 0) ? " on" : ""}"><img src="${escapeHtml(url)}" alt=""></button>`).join("")}</div>`
+        : `<p class="set-note">Нажмите на «Свои файлы» ещё раз, чтобы увидеть все свои обои (${LOCAL_WALLPAPERS.length}).</p>`;
     } else {
       details = '<p class="set-note">Фон выключен: только чёрный экран.</p>';
     }
@@ -167,8 +165,19 @@
         render();
         return;
       }
+      if (button.dataset.source === "local" && source === "local") {
+        localOpen = !localOpen;
+        render();
+        return;
+      }
+      localOpen = false;
       try { localStorage.setItem(WALLPAPER_SOURCE_KEY, button.dataset.source); } catch (error) { /* keep going */ }
       setHeroWallpaper(true);
+      render();
+    }));
+    body.querySelectorAll("[data-pick]").forEach(button => button.addEventListener("click", () => {
+      try { localStorage.setItem(LOCAL_PICK_KEY, button.dataset.pick); } catch (error) { /* keep going */ }
+      setHeroWallpaper(false);
       render();
     }));
     body.querySelectorAll("[data-server]").forEach(button => button.addEventListener("click", () => {
@@ -195,6 +204,8 @@
   // Pictures for the "Чёрный" card: all bundled ones, shown grey, changing every few seconds.
   // Pictures for the black card: all bundled ones, shown grey. A tap on the card when it is already chosen moves to the next one.
   let bwIndex = 0;
+  // "Свои файлы": the grid of all own pictures opens on the second tap of the card.
+  let localOpen = false;
   // Small pictures for the widgets in the Cards tab: the same glyph each widget shows on the home screen.
   const SVG_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true">';
   const CARD_ICONS = {
@@ -377,14 +388,12 @@
       </div>
       <div class="set-group set-list">
         <button type="button" class="set-link" data-act="tour"><span>Показать обучение</span><i>›</i></button>
-        <button type="button" class="set-link" data-act="calibrate"><span>Калибровка обложки</span><i>›</i></button>
         <button type="button" class="set-link danger" data-act="reset-all"><span>Сбросить все настройки</span><i>›</i></button>
       </div>
       <p class="set-note">Сбрасываются раскладка, карточки, обои, избранное, тема и слоты. Нужно нажать дважды.</p>`;
     body.querySelector('[data-act="check-update"]').addEventListener("click", checkUpdateClicked);
     const dropButton = body.querySelector('[data-act="drop-update"]');
     if (dropButton) dropButton.addEventListener("click", () => { dropUpdate(); location.reload(); });
-    body.querySelector('[data-act="calibrate"]').addEventListener("click", () => { sheet.hidden = true; openCalibration(); });
     body.querySelector('[data-act="tour"]').addEventListener("click", () => {
       sheet.hidden = true;
       if (typeof window.startTutorial === "function") window.startTutorial();

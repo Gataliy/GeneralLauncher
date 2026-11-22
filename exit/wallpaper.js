@@ -150,9 +150,20 @@ function wallpaperCandidates() {
   return list;
 }
 
+const LOCAL_PICK_KEY = "generic_launcher_wallpaper_local_pick_v1";
+
+function localPickIndex() {
+  try {
+    const value = Number(localStorage.getItem(LOCAL_PICK_KEY));
+    return Number.isInteger(value) && value >= 0 && value < LOCAL_WALLPAPERS.length ? value : -1;
+  } catch (error) { return -1; }
+}
+
 function localWallpaperFor(force) {
   if (!LOCAL_WALLPAPERS.length) return "";
-  // Changes once a day, or on every "new picture" request.
+  // A picture chosen in Settings wins; otherwise it changes once a day, or on every "new picture" request.
+  const picked = localPickIndex();
+  if (!force && picked >= 0) return LOCAL_WALLPAPERS[picked];
   const index = force ? Math.floor(Math.random() * LOCAL_WALLPAPERS.length) : new Date().getDate() % LOCAL_WALLPAPERS.length;
   return LOCAL_WALLPAPERS[index];
 }
