@@ -1787,3 +1787,16 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .set-sheet .viz-pick.on { border-color: #6fc3fa; background: rgba(111, 195, 250, .16); }
 :root[data-theme="light"] .set-sheet .viz-pick { background: #ffffff; color: #1c2736; border-color: #c9d2de; }
 :root[data-theme="light"] .set-sheet .viz-pick.on { border-color: #2f6fb4; background: rgba(47, 111, 180, .12); }
+/* Visualizer chooser (long press on the visualizer): same look as the settings and the picker. */
+.viz-chooser { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(0, 0, 0, .45); backdrop-filter: blur(6px); }
+.viz-chooser[hidden] { display: none; }
+.viz-chooser-card { width: min(560px, 92vw); padding: 22px 24px; border-radius: 16px; background: #111824; border: 1px solid #243247; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); color: #e8edf3; }
+.viz-chooser-card h3 { margin: 0 0 14px; font-size: 22px; font-weight: 700; }
+.viz-chooser-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.viz-chooser-grid button { min-height: 52px; padding: 10px 14px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; color: #e8edf3; font-size: 16px; text-align: left; }
+.viz-chooser-grid button.on { border-color: #6fc3fa; background: rgba(111, 195, 250, .16); }
+.viz-chooser-note { margin: 14px 0 0; font-size: 13px; color: #8fa0b8; }
+:root[data-theme="light"] .viz-chooser-card { background: #f7f9fc; border-color: #d5dce6; color: #1c2736; }
+:root[data-theme="light"] .viz-chooser-grid button { background: #ffffff; border-color: #c9d2de; color: #1c2736; }
+:root[data-theme="light"] .viz-chooser-grid button.on { border-color: #2f6fb4; background: rgba(47, 111, 180, .12); }
+:root[data-theme="light"] .viz-chooser-note { color: #5b6b7d; }

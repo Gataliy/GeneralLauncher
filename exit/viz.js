@@ -1,5 +1,5 @@
 // Визуализатор под карточкой музыки: 8 стилей на canvas. Это анимация, а не спектр звука (из машины спектр не приходит).
-// Анимирован, пока играет (state.isPlaying); на паузе столбики опускаются. Стиль выбирается в «Настройки > Музыка» или коротким тапом по визуализатору.
+// Анимирован, пока играет (state.isPlaying); на паузе столбики опускаются. Стиль выбирается долгим нажатием на визуализатор или в «Настройки > Музыка».
 (function () {
   const KEY = "generic_launcher_viz_v1";
   const STYLES = [
@@ -109,9 +109,35 @@
     }
   }
 
-  el.addEventListener("click", next);
+  // Choosing: a long press (about 0.6 s) on the visualizer opens the list of styles. A short tap does nothing, so it cannot change the style by accident.
+  const chooser = document.createElement("div");
+  chooser.id = "viz-chooser";
+  chooser.className = "viz-chooser";
+  chooser.hidden = true;
+  chooser.innerHTML = '<div class="viz-chooser-card" role="dialog" aria-label="Визуализатор"><h3>Визуализатор</h3><div class="viz-chooser-grid">' +
+    STYLES.map(([id, title]) => `<button type="button" data-viz="${id}">${title}</button>`).join("") +
+    '</div><p class="viz-chooser-note">Нажмите за пределами окна, чтобы закрыть</p></div>';
+  document.body.appendChild(chooser);
+  function openChooser() {
+    chooser.querySelectorAll("[data-viz]").forEach(b => b.classList.toggle("on", b.dataset.viz === style()));
+    chooser.hidden = false;
+  }
+  chooser.addEventListener("click", event => {
+    const button = event.target.closest("[data-viz]");
+    if (button) { setStyle(button.dataset.viz); chooser.hidden = true; return; }
+    if (event.target === chooser) chooser.hidden = true;
+  });
+  let pressTimer = 0;
+  el.addEventListener("pointerdown", () => {
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(openChooser, 600);
+  });
+  const cancelPress = () => clearTimeout(pressTimer);
+  el.addEventListener("pointerup", cancelPress);
+  el.addEventListener("pointerleave", cancelPress);
+  el.addEventListener("pointercancel", cancelPress);
+  el.addEventListener("contextmenu", event => event.preventDefault());
   window.addEventListener("resize", place);
-  document.addEventListener("viz-style", () => {});
   window.vizStyles = STYLES;
   window.vizStyle = style;
   window.setVizStyle = setStyle;
