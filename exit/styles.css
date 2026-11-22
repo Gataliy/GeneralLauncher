@@ -1813,3 +1813,6 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .local-cell { padding: 0; border: 2px solid rgba(255,255,255,.12); border-radius: 14px; overflow: hidden; aspect-ratio: 16 / 10; background: none; cursor: pointer; }
 .local-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .local-cell.on { border-color: #6fc3fa; }
+
+.local-close-row { justify-content: flex-end; }
+.local-close { width: 48px; height: 48px; border-radius: 50%; padding: 0; font-size: 28px; line-height: 1; }
