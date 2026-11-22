@@ -1683,3 +1683,73 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 :root[data-theme="light"] .set-sheet .set-item { background: #ffffff; }
 :root[data-theme="light"] .set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove):not(.primary).on { background: rgba(47, 111, 180, .14) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; box-shadow: inset 0 0 0 1px #2f6fb4; }
 .set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove):not(.primary).on { background: rgba(111, 195, 250, .2) !important; border-color: #6fc3fa !important; color: #e8edf3 !important; box-shadow: inset 0 0 0 1px #6fc3fa; }
+/* Wallpaper source cards: the picture fills the whole preview area on the head unit too. */
+.set-sheet .look-cards .look-card .look-prev { display: block; position: relative; width: 100%; height: 84px; overflow: hidden; }
+.set-sheet .look-cards .look-card .look-prev img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+/* Settings > Карточки: widget and tile rows in two columns, so the list fits without scrolling on the head unit. */
+.set-sheet .set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.set-sheet .set-grid .set-item { padding: 10px; gap: 10px; }
+.set-sheet .set-grid .set-thumb { width: 64px; height: 40px; border-radius: 9px; }
+.set-sheet .set-grid .set-item-copy strong { font-size: 15px; }
+.set-sheet .set-grid .set-item-copy small { font-size: 12px; }
+/* Playlist sheet in the same style as the settings and the slot picker: dark sheet, outlined rows, blue primary button. */
+.forecast-card.queue-card { background: #111824 !important; border: 1px solid #243247 !important; border-radius: 16px !important; box-shadow: 0 30px 90px rgba(0, 0, 0, .55) !important; }
+.queue-head h3 { color: #e8edf3 !important; font-size: 22px; font-weight: 700; }
+.queue-close { width: 44px !important; height: 44px !important; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 22px !important; }
+.search-field.queue-search { min-height: 44px; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; }
+.queue-open { height: 44px !important; border-radius: 12px !important; border: 1px solid #2f6fb4 !important; background: #2f6fb4 !important; color: #ffffff !important; font-weight: 600; }
+.queue-list { gap: 10px !important; }
+.queue-row { border: 1px solid #243247 !important; border-radius: 14px !important; background: #0d131c !important; padding: 12px 14px !important; color: #e8edf3; }
+.queue-row:hover:not(:disabled), .queue-row:focus-visible { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .08) !important; outline: 0; }
+.queue-row.on { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .14) !important; box-shadow: 0 0 0 3px rgba(111, 195, 250, .18); }
+.queue-row.on .queue-title { color: #cfe6ff !important; }
+.queue-sub { color: #8fa0b8 !important; }
+:root[data-theme="light"] .forecast-card.queue-card { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .queue-head h3, :root[data-theme="light"] .queue-row { color: #1c2736 !important; }
+:root[data-theme="light"] .queue-row { background: #ffffff !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .queue-row.on { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; }
+:root[data-theme="light"] .queue-sub { color: #5b6b7d !important; }
+:root[data-theme="light"] .queue-close, :root[data-theme="light"] .search-field.queue-search { background: #ffffff !important; border-color: #c9d2de !important; color: #1c2736 !important; }
+/* Trips panel in the same style as the settings and playlist: dark sheet, outlined trip rows and tiles, blue selected state. */
+.ts-panel { background: #111824 !important; border: 1px solid #243247 !important; border-radius: 16px !important; box-shadow: 0 30px 90px rgba(0, 0, 0, .55) !important; }
+.ts-head { font-size: 18px !important; letter-spacing: 0 !important; text-transform: none !important; color: #e8edf3; font-weight: 700; }
+.ts-close { width: 44px !important; height: 44px !important; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 22px !important; }
+.ts-list { border-right: 1px solid #243247 !important; }
+.ts-day { color: #8fa0b8 !important; letter-spacing: .04em !important; text-transform: none !important; font-size: 13px !important; }
+.ts-trip { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 14px !important; color: #e8edf3 !important; }
+.ts-trip:hover, .ts-trip:focus-visible { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .08) !important; outline: 0; }
+.ts-trip.sel { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .14) !important; box-shadow: 0 0 0 3px rgba(111, 195, 250, .18); }
+.ts-trip span { color: #8fa0b8 !important; }
+.ts-tile, .ts-chart { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 14px !important; }
+.ts-tile small, .ts-tile em, .ts-note { color: #8fa0b8 !important; }
+:root[data-theme="light"] .ts-panel { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .ts-head, :root[data-theme="light"] .ts-trip, :root[data-theme="light"] .ts-tile b { color: #1c2736 !important; }
+:root[data-theme="light"] .ts-trip, :root[data-theme="light"] .ts-tile, :root[data-theme="light"] .ts-chart, :root[data-theme="light"] .ts-close { background: #ffffff !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .ts-trip.sel { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; }
+:root[data-theme="light"] .ts-list { border-right-color: #d5dce6 !important; }
+:root[data-theme="light"] .ts-close { color: #1c2736 !important; }
+/* Car state sheet (the sheet opened from the car state card, with the trips button) in the same style as settings. */
+.state-card { width: min(680px, 92vw) !important; background: #111824 !important; color: #e8edf3 !important; border: 1px solid #243247 !important; border-radius: 16px !important; box-shadow: 0 30px 90px rgba(0, 0, 0, .55) !important; padding: 22px 24px !important; }
+.state-card h3 { font-size: 22px !important; font-weight: 700 !important; color: #e8edf3; }
+.state-card h5.state-group { margin: 16px 0 6px; font-size: 13px; font-weight: 600; color: #8fa0b8; letter-spacing: .02em; }
+.state-row { padding: 10px 14px !important; margin-bottom: 6px; border: 1px solid #243247 !important; border-radius: 12px !important; background: #0d131c; font-size: 16px !important; color: #e8edf3; }
+.state-row:last-child { border-bottom: 1px solid #243247 !important; }
+.state-row span { color: #c3ccd8; }
+.state-row b { color: #e8edf3; font-weight: 600; }
+.state-row.open { border-color: #6fc3fa !important; }
+.state-row.open b { color: #6fc3fa !important; }
+.state-note { color: #8fa0b8 !important; opacity: 1 !important; font-size: 13px !important; }
+#trips-open { border-radius: 12px !important; height: 40px !important; border: 1px solid #2f6fb4 !important; background: #2f6fb4 !important; color: #ffffff !important; }
+:root[data-theme="light"] .state-card { background: #f7f9fc !important; color: #1c2736 !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .state-card h3, :root[data-theme="light"] .state-row b { color: #1c2736 !important; }
+:root[data-theme="light"] .state-row { background: #ffffff; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .state-row span { color: #3a4a5e; }
+:root[data-theme="light"] .state-note, :root[data-theme="light"] .state-card h5.state-group { color: #5b6b7d !important; }
+:root[data-theme="light"] .state-row.open { border-color: #2f6fb4 !important; }
+:root[data-theme="light"] .state-row.open b { color: #2f6fb4 !important; }
+/* Car state sheet: rows in two columns, group titles across both, so the list fits without scrolling. */
+.state-card { width: min(860px, 94vw) !important; }
+.state-card .state-list { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.state-card h5.state-group { grid-column: 1 / -1; margin: 10px 0 0; }
+.state-card .state-row { margin-bottom: 0 !important; }
+.state-card .state-row:last-child { border-bottom: 1px solid #243247 !important; }

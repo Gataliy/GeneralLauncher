@@ -54,13 +54,22 @@
   }
   applyLook();
 
+  // Theme preview drawn with inline styles, so it does not depend on the stylesheet (it shows the same on every head unit).
+  function themePreview(v) {
+    const frame = "position:relative;display:block;width:100%;height:84px;overflow:hidden;border-radius:10px;";
+    const box = (top, width, color) => `<i style="position:absolute;left:8px;top:${top};width:${width};height:36%;border-radius:8px;background:${color};"></i>`;
+    const plate = (bg, color) => `<span class="look-prev" style="${frame}background:${bg};">${box("8px", "55%", color)}${box("auto", "40%", color).replace("top:auto;", "bottom:8px;")}</span>`;
+    if (v === "light") return plate("#f2f5f9", "#ffffff");
+    if (v === "dark") return plate("#0a1220", "#1c2b48");
+    return `<span class="look-prev" style="${frame}background:linear-gradient(90deg,#0a1220 50%,#f2f5f9 50%);">${box("8px", "36%", "#3a4a63")}${box("auto", "28%", "#8a97a8").replace("top:auto;", "bottom:8px;")}</span>`;
+  }
   function renderLook() {
     const current = themeChoice();
     const options = [["auto", "Как в машине"], ["light", "Светлая"], ["dark", "Тёмная"]];
     const carAnimOptions = [["off", "Выкл"], ["fast", "Быстро"], ["normal", "Обычно"]];
     body.innerHTML = `
       <p class="set-note">Тема по умолчанию берётся из машины. Выберите вручную, если машина присылает не то.</p>
-      <div class="look-cards">${options.map(([v, t]) => `<button type="button" data-theme="${v}" class="look-card look-${v}${current === v ? " on" : ""}"><span class="look-prev"><i></i><i></i></span><span class="look-name">${t}</span><span class="look-radio"></span></button>`).join("")}</div>
+      <div class="look-cards">${options.map(([v, t]) => `<button type="button" data-theme="${v}" class="look-card look-${v}${current === v ? " on" : ""}">${themePreview(v)}<span class="look-name">${t}</span><span class="look-radio"></span></button>`).join("")}</div>
       <p class="set-note">Оформление карточек: плотные или стеклянные.</p>
       <div class="set-row">${[["solid", "Плотные"], ["glass", "Стекло"]].map(([v, t]) => `<button type="button" data-cardstyle="${v}" class="${cardStyleMode() === v ? "on" : ""}">${t}</button>`).join("")}</div>
       <p class="set-note">Акцентный цвет кнопок и подсветки.</p>
@@ -202,11 +211,11 @@
     body.innerHTML = `
       <div class="set-group">
         <p class="set-note">Виджеты главного экрана</p>
-        ${Object.keys(names).map((id, i) => `<div class="set-item"><span class="set-thumb has-icon t${i % 3}">${CARD_ICONS[id] || ""}</span><span class="set-item-copy"><strong>${names[id]}</strong><small>${cardHidden(id) ? "Скрыта, вернётся на своё место" : "Показана"}</small></span><button type="button" class="toggle${cardHidden(id) ? "" : " on"}" data-card="${id}" aria-label="${names[id]}"></button></div>`).join("")}
+        <div class="set-grid">${Object.keys(names).map((id, i) => `<div class="set-item"><span class="set-thumb has-icon t${i % 3}">${CARD_ICONS[id] || ""}</span><span class="set-item-copy"><strong>${names[id]}</strong><small>${cardHidden(id) ? "Скрыта, вернётся на своё место" : "Показана"}</small></span><button type="button" class="toggle${cardHidden(id) ? "" : " on"}" data-card="${id}" aria-label="${names[id]}"></button></div>`).join("")}</div>
       </div>
       <div class="set-group">
         <p class="set-note">Плитки состояния автомобиля</p>
-        ${(window.hwTileDefs ? window.hwTileDefs() : []).map(t => `<div class="set-item"><span class="set-item-copy"><strong>${t.title}</strong><small>${tileOn(t.key) ? "Показана" : "Скрыта"}</small></span><button type="button" class="toggle${tileOn(t.key) ? " on" : ""}" data-tile="${t.key}" aria-label="${t.title}"></button></div>`).join("")}
+        <div class="set-grid">${(window.hwTileDefs ? window.hwTileDefs() : []).map(t => `<div class="set-item"><span class="set-item-copy"><strong>${t.title}</strong><small>${tileOn(t.key) ? "Показана" : "Скрыта"}</small></span><button type="button" class="toggle${tileOn(t.key) ? " on" : ""}" data-tile="${t.key}" aria-label="${t.title}"></button></div>`).join("")}</div>
       </div>
       <div class="set-row"><button type="button" data-act="layout">Сбросить раскладку карточек</button></div>
       <p class="set-note">Скрытая карточка запоминает своё место и вернётся на него.</p>`;
