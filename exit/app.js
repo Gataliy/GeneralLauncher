@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("weather-widget").addEventListener("click", () => refreshWeather(true));
   bindWeatherForecast();
   document.getElementById("picker-close").addEventListener("click", closePicker);
+  document.getElementById("picker-done").addEventListener("click", closePicker);
   document.getElementById("add-slot").addEventListener("click", addSlot);
   document.getElementById("picker-remove").addEventListener("click", () => {
     if (state.pickerSlot != null) removeSlot(state.pickerSlot);

@@ -40,17 +40,57 @@
     if (tab === "about") renderAbout();
   }
 
+  // Card style (solid or glass) and accent colour: stored per viewer, applied on load and on change.
+  const CARD_STYLE_KEY = "generic_launcher_card_style_v1";
+  const ACCENT_KEY = "generic_launcher_accent_v1";
+  const ACCENTS = [["default", "#6fc3fa", "Голубой"], ["green", "#7bd88f", "Зелёный"], ["amber", "#ffb454", "Янтарный"], ["pink", "#ff6b8b", "Розовый"], ["violet", "#b39ddb", "Сиреневый"]];
+  function cardStyleMode() { try { return localStorage.getItem(CARD_STYLE_KEY) || "solid"; } catch (e) { return "solid"; } }
+  function accentMode() { try { return localStorage.getItem(ACCENT_KEY) || "default"; } catch (e) { return "default"; } }
+  function applyLook() {
+    document.documentElement.dataset.style = cardStyleMode();
+    const accent = ACCENTS.find(item => item[0] === accentMode());
+    if (accent && accent[0] !== "default") document.documentElement.style.setProperty("--accent", accent[1]);
+    else document.documentElement.style.removeProperty("--accent");
+  }
+  applyLook();
+
   function renderLook() {
     const current = themeChoice();
     const options = [["auto", "Как в машине"], ["light", "Светлая"], ["dark", "Тёмная"]];
     const carAnimOptions = [["off", "Выкл"], ["fast", "Быстро"], ["normal", "Обычно"]];
     body.innerHTML = `
       <p class="set-note">Тема по умолчанию берётся из машины. Выберите вручную, если машина присылает не то.</p>
-      <div class="set-row">${options.map(([v, t]) => `<button type="button" data-theme="${v}" class="${current === v ? "on" : ""}">${t}</button>`).join("")}</div>
+      <div class="look-cards">${options.map(([v, t]) => `<button type="button" data-theme="${v}" class="look-card look-${v}${current === v ? " on" : ""}"><span class="look-prev"><i></i><i></i></span><span class="look-name">${t}</span><span class="look-radio"></span></button>`).join("")}</div>
+      <p class="set-note">Оформление карточек: плотные или стеклянные.</p>
+      <div class="set-row">${[["solid", "Плотные"], ["glass", "Стекло"]].map(([v, t]) => `<button type="button" data-cardstyle="${v}" class="${cardStyleMode() === v ? "on" : ""}">${t}</button>`).join("")}</div>
+      <p class="set-note">Акцентный цвет кнопок и подсветки.</p>
+      <div class="set-row">${ACCENTS.map(([v, c, t]) => `<button type="button" data-accent="${v}" class="accent-dot${accentMode() === v ? " on" : ""}" style="background:${c} !important" aria-label="${t}" title="${t}"></button>`).join("")}</div>
       <p class="set-note">Анимация открытия окон, багажника, люка и шторки на экране машины.</p>
       <div class="set-row">${carAnimOptions.map(([v, t]) => `<button type="button" data-caranim="${v}" class="${carAnimMode() === v ? "on" : ""}">${t}</button>`).join("")}</div>`;
+    body.insertAdjacentHTML("beforeend", '<div class="look-actions"><button type="button" class="look-reset" data-look-reset>Сбросить</button><button type="button" class="look-done" data-look-done>Готово</button></div>');
+    body.querySelector("[data-look-reset]").addEventListener("click", () => {
+      try {
+        localStorage.removeItem("generic_launcher_theme_manual_v1");
+        localStorage.removeItem(CARD_STYLE_KEY);
+        localStorage.removeItem(ACCENT_KEY);
+      } catch (e) { /* keep going */ }
+      applyLook();
+      if (window.reapplyTheme) window.reapplyTheme();
+      render();
+    });
+    body.querySelector("[data-look-done]").addEventListener("click", () => { sheet.hidden = true; });
     body.querySelectorAll("[data-caranim]").forEach(button => button.addEventListener("click", () => {
       try { localStorage.setItem("generic_launcher_car_anim_v1", button.dataset.caranim); } catch (e) { /* keep going */ }
+      render();
+    }));
+    body.querySelectorAll("[data-cardstyle]").forEach(button => button.addEventListener("click", () => {
+      try { localStorage.setItem(CARD_STYLE_KEY, button.dataset.cardstyle); } catch (e) { /* keep going */ }
+      applyLook();
+      render();
+    }));
+    body.querySelectorAll("[data-accent]").forEach(button => button.addEventListener("click", () => {
+      try { localStorage.setItem(ACCENT_KEY, button.dataset.accent); } catch (e) { /* keep going */ }
+      applyLook();
       render();
     }));
     body.querySelectorAll("[data-theme]").forEach(button => button.addEventListener("click", () => {
@@ -69,9 +109,16 @@
     const items = favorites.length
       ? favorites.map((url, i) => `<div class="set-fav"><span>Обои ${i + 1}</span><button type="button" data-remove="${i}">Удалить</button></div>`).join("")
       : `<p class="set-note">Избранного пока нет. Долгое нажатие на пустом месте главного экрана сохраняет текущие обои.</p>`;
+    const favCards = favorites.map((url, i) => `<div class="look-card fav-card"><span class="look-prev"><img src="${escapeHtml(url)}" alt=""></span><span class="look-name">Обои ${i + 1}</span><button type="button" class="fav-remove" data-remove="${i}">Удалить</button></div>`).join("");
     const source = wallpaperSource();
     const servers = enabledServerIds();
     const sources = [["online", "Из сети"], ["local", "Свои файлы"], ["black", "Чёрный"]];
+    // Real pictures: the wallpaper now on screen for "Из сети" (a bundled one until a wallpaper loads), the first bundled picture for "Свои файлы", a black-and-white bundled picture for "Чёрный".
+    const sourcePreview = v => {
+      if (v === "black") return `<img class="bw-cycle" src="${escapeHtml(LOCAL_WALLPAPERS[bwIndex % LOCAL_WALLPAPERS.length])}" alt="">`;
+      const url = v === "online" ? (currentWallpaperUrl() || LOCAL_WALLPAPERS[1] || "") : (LOCAL_WALLPAPERS[0] || "");
+      return url ? `<img src="${escapeHtml(url)}" alt="">` : "<i></i><i></i>";
+    };
     let details = "";
     if (source === "online") {
       details = `
@@ -85,10 +132,10 @@
       details = '<p class="set-note">Фон выключен: только чёрный экран.</p>';
     }
     body.innerHTML = `
-      <div class="set-row">${sources.map(([v, t]) => `<button type="button" data-source="${v}" class="${source === v ? "on" : ""}">${t}</button>`).join("")}</div>
+      <div class="look-cards">${sources.map(([v, t]) => `<button type="button" data-source="${v}" class="look-card look-src-${v}${source === v ? " on" : ""}"><span class="look-prev">${sourcePreview(v)}</span><span class="look-name">${t}</span><span class="look-radio"></span></button>`).join("")}</div>
       ${details}
       <div class="set-row"><button type="button" data-act="new">Новые обои</button><button type="button" data-act="save">Сохранить текущие</button></div>
-      ${items}
+      ${favorites.length ? `<div class="fav-grid">${favCards}</div>` : items}
       ${favorites.length ? `<div class="set-row"><button type="button" data-act="clear">Очистить избранное</button></div>` : ""}`;
     body.querySelector('[data-act="new"]').addEventListener("click", () => { setHeroWallpaper(true); });
     body.querySelector('[data-act="save"]').addEventListener("click", () => {
@@ -106,6 +153,11 @@
       render();
     }));
     body.querySelectorAll("[data-source]").forEach(button => button.addEventListener("click", () => {
+      if (button.dataset.source === "black" && source === "black") {
+        bwIndex = (bwIndex + 1) % LOCAL_WALLPAPERS.length;
+        render();
+        return;
+      }
       try { localStorage.setItem(WALLPAPER_SOURCE_KEY, button.dataset.source); } catch (error) { /* keep going */ }
       setHeroWallpaper(true);
       render();
@@ -131,14 +183,33 @@
     if (clear) clear.addEventListener("click", () => { saveWallpaperFavorites([]); render(); });
   }
 
+  // Pictures for the "Чёрный" card: all bundled ones, shown grey, changing every few seconds.
+  // Pictures for the black card: all bundled ones, shown grey. A tap on the card when it is already chosen moves to the next one.
+  let bwIndex = 0;
+  // Small pictures for the widgets in the Cards tab: the same glyph each widget shows on the home screen.
+  const SVG_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true">';
+  const CARD_ICONS = {
+    state: SVG_OPEN + '<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4h-2v-2H5v2H3z"/><circle cx="7.5" cy="15" r="1"/><circle cx="16.5" cy="15" r="1"/></svg>',
+    nav: SVG_OPEN + '<path d="M12 3l7 17-7-4-7 4z"/></svg>',
+    compass: SVG_OPEN + '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
+    clock: SVG_OPEN + '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    weather: SVG_OPEN + '<path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3 3 0 0 0 7 18z"/></svg>'
+  };
   function renderCards() {
     const names = window.hwCardNames || {};
+    const cardHidden = id => !!(window.hwIsHidden && window.hwIsHidden(id));
+    const tileOn = key => !!(window.hwTileEnabled && window.hwTileEnabled(key));
     body.innerHTML = `
-      <p class="set-note">Скрытая карточка запоминает своё место и вернётся на него.</p>
-      ${Object.keys(names).map(id => `<button type="button" class="set-switch" data-card="${id}">${names[id]}<b>${window.hwIsHidden && window.hwIsHidden(id) ? "скрыта" : "показана"}</b></button>`).join("")}
-      <p class="set-note">Плитки состояния автомобиля</p>
-      ${(window.hwTileDefs ? window.hwTileDefs() : []).map(t => `<button type="button" class="set-switch" data-tile="${t.key}">${t.title}<b>${window.hwTileEnabled && window.hwTileEnabled(t.key) ? "показана" : "скрыта"}</b></button>`).join("")}
-      <div class="set-row"><button type="button" data-act="layout">Сбросить раскладку карточек</button></div>`;
+      <div class="set-group">
+        <p class="set-note">Виджеты главного экрана</p>
+        ${Object.keys(names).map((id, i) => `<div class="set-item"><span class="set-thumb has-icon t${i % 3}">${CARD_ICONS[id] || ""}</span><span class="set-item-copy"><strong>${names[id]}</strong><small>${cardHidden(id) ? "Скрыта, вернётся на своё место" : "Показана"}</small></span><button type="button" class="toggle${cardHidden(id) ? "" : " on"}" data-card="${id}" aria-label="${names[id]}"></button></div>`).join("")}
+      </div>
+      <div class="set-group">
+        <p class="set-note">Плитки состояния автомобиля</p>
+        ${(window.hwTileDefs ? window.hwTileDefs() : []).map(t => `<div class="set-item"><span class="set-item-copy"><strong>${t.title}</strong><small>${tileOn(t.key) ? "Показана" : "Скрыта"}</small></span><button type="button" class="toggle${tileOn(t.key) ? " on" : ""}" data-tile="${t.key}" aria-label="${t.title}"></button></div>`).join("")}
+      </div>
+      <div class="set-row"><button type="button" data-act="layout">Сбросить раскладку карточек</button></div>
+      <p class="set-note">Скрытая карточка запоминает своё место и вернётся на него.</p>`;
     body.querySelectorAll("[data-card]").forEach(button => button.addEventListener("click", () => {
       window.hwToggleCard(button.dataset.card);
       render();
@@ -224,16 +295,27 @@
     resetArmed = false;
     const token = ymToken();
     body.innerHTML = `
-      <p class="set-note">Проверка доступа к Яндекс Музыке по вашему токену. Токен хранится только на этом ГУ. Это неофициальный доступ: он может перестать работать.</p>
-      <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-save">Сохранить</button></div>
-      <div class="set-row"><button type="button" data-act="ym-check">Проверить подключение</button><button type="button" data-act="ym-clear">Удалить токен</button></div>
+      <div class="set-group">
+        <div class="set-item set-item-head">
+          <span class="set-item-copy"><strong>Яндекс Музыка</strong><small>Токен хранится только на этом ГУ</small></span>
+          <span class="badge${token ? " ok" : ""}" id="ym-badge">${token ? "Сохранён" : "Не задан"}</span>
+        </div>
+        <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"></div>
+        <div class="set-row set-actions"><button type="button" class="primary" data-act="ym-check">Проверить</button><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-clear">Удалить</button></div>
+      </div>
+      <p class="set-note">Неофициальный доступ: он может перестать работать.</p>
       <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
     const status = body.querySelector("#ym-status");
-    body.querySelector('[data-act="ym-save"]').addEventListener("click", () => {
+    const badge = body.querySelector("#ym-badge");
+    const saveTyped = () => {
       const value = body.querySelector("#ym-token").value.trim();
-      try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return; }
-      status.textContent = value ? "Токен сохранён." : "Токен удалён.";
-    });
+      try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return false; }
+      badge.textContent = value ? "Сохранён" : "Не задан";
+      badge.classList.toggle("ok", !!value);
+      return true;
+    };
+    // The token is saved when the field loses focus or when "Проверить" is pressed.
+    body.querySelector("#ym-token").addEventListener("change", () => { if (saveTyped()) status.textContent = "Токен сохранён."; });
     // Shows the typed token so the user can check a paste; hides it again on the next tap.
     body.querySelector('[data-act="ym-eye"]').addEventListener("click", event => {
       const input = body.querySelector("#ym-token");
@@ -244,11 +326,14 @@
     body.querySelector('[data-act="ym-clear"]').addEventListener("click", () => {
       try { localStorage.removeItem(YM_TOKEN_KEY); } catch (e) { /* nothing stored */ }
       body.querySelector("#ym-token").value = "";
+      badge.textContent = "Не задан";
+      badge.classList.remove("ok");
       status.textContent = "Токен удалён.";
     });
     body.querySelector('[data-act="ym-check"]').addEventListener("click", async () => {
+      if (!saveTyped()) return;
       const value = ymToken();
-      if (!value) { status.textContent = "Сначала сохраните токен."; return; }
+      if (!value) { status.textContent = "Сначала введите токен."; return; }
       status.textContent = "Проверяю…";
       try {
         const response = await fetch("https://api.music.yandex.net/account/status", { headers: { Authorization: "OAuth " + value } });
@@ -265,12 +350,19 @@
   }
   function renderAbout() {
     resetArmed = false;
+    const from = window.LAUNCHER_FROM_UPDATE;
     body.innerHTML = `
-      <div class="set-row"><button type="button" data-act="check-update">Проверить обновления</button>${window.LAUNCHER_FROM_UPDATE ? '<button type="button" data-act="drop-update">Вернуть версию с флешки</button>' : ""}</div>
-      <p class="set-note" id="update-status">Generic Launcher, версия ${BUILD}${window.LAUNCHER_FROM_UPDATE ? ", из обновления" : ""}.</p>
-      <div class="set-row"><button type="button" data-act="tour">Показать обучение</button></div>
-      <div class="set-row"><button type="button" data-act="calibrate">Калибровка обложки</button></div>
-      <div class="set-row"><button type="button" data-act="reset-all">Сбросить все настройки</button></div>
+      <div class="set-group">
+        <div class="set-item set-item-head">
+          <span class="set-item-copy"><strong>Generic Launcher</strong><b class="about-ver">${BUILD}</b><small id="update-status">Установлено${from ? " из обновления" : " на ГУ"}.</small></span>
+          <span class="about-buttons"><button type="button" class="primary" data-act="check-update">Проверить обновления</button>${from ? '<button type="button" data-act="drop-update">Вернуть версию с флешки</button>' : ""}</span>
+        </div>
+      </div>
+      <div class="set-group set-list">
+        <button type="button" class="set-link" data-act="tour"><span>Показать обучение</span><i>›</i></button>
+        <button type="button" class="set-link" data-act="calibrate"><span>Калибровка обложки</span><i>›</i></button>
+        <button type="button" class="set-link danger" data-act="reset-all"><span>Сбросить все настройки</span><i>›</i></button>
+      </div>
       <p class="set-note">Сбрасываются раскладка, карточки, обои, избранное, тема и слоты. Нужно нажать дважды.</p>`;
     body.querySelector('[data-act="check-update"]').addEventListener("click", checkUpdateClicked);
     const dropButton = body.querySelector('[data-act="drop-update"]');
@@ -281,7 +373,7 @@
       if (typeof window.startTutorial === "function") window.startTutorial();
     });
     body.querySelector('[data-act="reset-all"]').addEventListener("click", event => {
-      const button = event.currentTarget;
+      const button = event.currentTarget.querySelector("span");
       if (!resetArmed) {
         resetArmed = true;
         button.textContent = "Точно сбросить всё?";

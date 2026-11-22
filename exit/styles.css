@@ -1548,5 +1548,126 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .calendar-error { margin: 0; min-height: 18px; color: #ff8a8a; font-size: 13px; }
 .calendar-form-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .calendar-form-buttons button[data-save] { border-color: #6fb8ff; color: #cfe6ff; }
-
-
+/* Settings: accent colour dots and the glass card style. */
+.set-sheet .set-row .accent-dot { flex: 0 0 34px; width: 34px !important; height: 34px !important; min-width: 0 !important; min-height: 34px !important; border-radius: 50% !important; border: 2px solid transparent; padding: 0; background: var(--dot) !important; }
+.set-sheet .set-row .accent-dot.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(111, 195, 250, .5); }
+:root[data-style="glass"] .hw-card { backdrop-filter: blur(16px) saturate(1.25); -webkit-backdrop-filter: blur(16px) saturate(1.25); border-color: rgba(255, 255, 255, .22); }
+/* Settings > Внешний вид: theme preview cards and the reset / done row. */
+.look-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.look-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 2px solid #243247; background: #0d131c; text-align: left; }
+.look-card.on { border-color: #6fc3fa; box-shadow: 0 0 0 3px rgba(111, 195, 250, .18); }
+.look-prev { position: relative; display: block; height: 84px; border-radius: 10px; overflow: hidden; background: #0a1220; }
+.look-prev i { position: absolute; border-radius: 8px; background: #16223a; }
+.look-prev i:nth-child(1) { left: 8px; top: 8px; width: 55%; height: 40%; }
+.look-prev i:nth-child(2) { left: 8px; bottom: 8px; width: 40%; height: 32%; }
+.look-light .look-prev { background: #f2f5f9; }
+.look-light .look-prev i { background: #fff; }
+.look-auto .look-prev { background: linear-gradient(90deg, #0a1220 50%, #f2f5f9 50%); }
+.look-auto .look-prev i { background: rgba(120, 140, 170, .35); }
+.look-name { font-size: 15px; font-weight: 600; color: #e8edf3; }
+.look-radio { position: absolute; right: 12px; top: 12px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid #5b6b7d; }
+.look-card.on .look-radio { background: #6fc3fa; border-color: #6fc3fa; }
+.look-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.look-actions button { padding: 10px 18px; border-radius: 10px; border: 1px solid #2d3d55; background: #1c2736; color: #e8edf3; font-size: 14px; }
+.look-actions .look-done { background: #2f6fb4; border-color: #2f6fb4; }
+.set-sheet .look-card, .set-sheet .look-card.on { background: #0d131c !important; color: #e8edf3 !important; }
+.set-sheet .look-card .look-name { color: #e8edf3 !important; }
+:root[data-theme="light"] .set-sheet .look-card, :root[data-theme="light"] .set-sheet .look-card.on { background: #f7f9fc !important; color: #1c2736 !important; }
+:root[data-theme="light"] .set-sheet .look-card .look-name { color: #1c2736 !important; }
+/* Look tab alignment fixes: previews stay inside their halves, dark preview visible, one selected style everywhere, equal buttons. */
+.look-prev i { border: 1px solid rgba(255, 255, 255, .08); box-sizing: border-box; }
+.look-auto .look-prev i:nth-child(1) { width: 36%; }
+.look-auto .look-prev i:nth-child(2) { width: 28%; }
+.look-auto .look-prev i { background: rgba(120, 140, 170, .45); }
+.look-dark .look-prev i { background: #1c2b48; }
+.set-sheet .set-row button.on { background: rgba(111, 195, 250, .2); border-color: #6fc3fa; color: #e8edf3; }
+.set-sheet .look-actions button { height: 44px; min-width: 120px; font-size: 15px; font-weight: 600; }
+.set-sheet .look-cards { margin-bottom: 8px; }
+.set-sheet .set-note { margin-top: 10px; margin-bottom: 8px; }
+/* Theme card radio: sits on the name row (bottom-right), same size and style on every card. */
+.set-sheet .look-card .look-radio { top: auto !important; bottom: 6px !important; right: 12px !important; width: 18px !important; height: 18px !important; border: 2px solid #5b6b7d !important; background: transparent !important; box-sizing: border-box; }
+.set-sheet .look-card.on .look-radio { background: #6fc3fa !important; border-color: #6fc3fa !important; box-shadow: inset 0 0 0 3px #0d131c; }
+/* Settings > Обои: source cards and favourite thumbnails in the same style as the theme cards. */
+.look-src-online .look-prev { background: linear-gradient(135deg, #2a4a7a, #0a1220); }
+.look-src-local .look-prev { background: #1a2433; }
+.look-src-black .look-prev { background: #000; }
+.fav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; }
+.fav-card { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; border: 2px solid #243247; background: #0d131c; }
+.fav-card .look-prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fav-remove { align-self: flex-start; padding: 6px 12px; border-radius: 8px; border: 1px solid #2d3d55; background: #1c2736; color: #e8edf3; font-size: 13px; }
+.set-sheet .fav-card, .set-sheet .fav-card .look-name { color: #e8edf3 !important; }
+/* Settings: every tab uses the same button, switch-row and input style as the look cards. */
+.set-sheet .set-row button:not(.set-close):not(.accent-dot):not(.look-card):not(.fav-remove),
+.set-sheet .set-switch { min-height: 44px; padding: 10px 16px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; color: #e8edf3; font-size: 15px; }
+.set-sheet .set-row button.on { background: rgba(111, 195, 250, .2); border-color: #6fc3fa; color: #e8edf3; }
+.set-sheet .set-switch { display: flex; justify-content: space-between; align-items: center; width: 100%; text-align: left; margin-top: 6px; }
+.set-sheet .set-switch b { font-weight: 600; color: #8fa0b8; }
+.set-sheet .set-custom input, .set-sheet input[type="password"], .set-sheet input[type="url"] { min-height: 44px; flex: 1 1 auto; padding: 10px 14px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; color: #e8edf3; font-size: 15px; }
+.set-sheet .set-note + .set-switch, .set-sheet .set-switch + .set-note { margin-top: 10px; }
+/* Slot picker in the new style: same sheet, pills, cards and footer as Settings. */
+.picker-sheet { background: #111824 !important; border: 1px solid #243247 !important; border-radius: 16px !important; }
+.picker-header h2 { color: #e8edf3; }
+.picker-header::before { content: none; }
+.picker-tabs button { border-radius: 999px; border: 1px solid #243247 !important; background: #0d131c !important; color: #8fa0b8 !important; font-size: 14px; }
+.picker-tabs button.active { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .18) !important; color: #e8edf3 !important; }
+.picker-item { border-radius: 14px !important; border: 1px solid #243247 !important; background: #0d131c !important; }
+.picker-item:hover, .picker-item:focus-visible { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .08) !important; box-shadow: 0 0 0 3px rgba(111, 195, 250, .18); }
+.picker-item-icon { border-radius: 12px !important; background: #1c2736 !important; }
+.picker-item-copy strong { color: #e8edf3; font-weight: 600; }
+.picker-item-copy span { color: #8fa0b8 !important; }
+.picker-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+.picker-done { min-height: 44px; padding: 10px 22px; border-radius: 12px; border: 1px solid #2f6fb4; background: #2f6fb4; color: #fff; font-size: 15px; font-weight: 600; }
+:root[data-theme="light"] .picker-sheet { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .picker-header h2, :root[data-theme="light"] .picker-item-copy strong { color: #1c2736; }
+.picker-sheet .search-field { margin-bottom: 14px; min-height: 44px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; }
+.picker-foot { position: sticky; bottom: 0; background: #111824; padding-top: 12px; }
+/* Slot action menu (short tap / long press on a slot): same sheet, pill-free buttons and colours as the slot picker. */
+.slot-menu { width: 220px !important; padding: 10px !important; border-radius: 16px !important; background: #111824 !important; border: 1px solid #243247 !important; box-shadow: 0 20px 50px rgba(0, 0, 0, .5) !important; backdrop-filter: none !important; gap: 8px !important; }
+.slot-menu button { height: 48px !important; border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 16px !important; font-weight: 600; padding: 0 16px !important; }
+.slot-menu button:hover, .slot-menu button:focus-visible { border-color: #6fc3fa !important; background: rgba(111, 195, 250, .08) !important; outline: 0; }
+.slot-menu button.danger { color: #ff8a9a !important; }
+:root[data-theme="light"] .slot-menu { background: #f7f9fc !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .slot-menu button { background: #fff !important; border-color: #d5dce6 !important; color: #1c2736 !important; }
+:root[data-theme="light"] .slot-menu button.danger { color: #c2394f !important; }
+/* Settings tabs Карточки / Музыка / О программе: groups and rows as in the agreed tabs mockup (tabs_mock.png). */
+.set-sheet .set-group { display: grid; gap: 10px; margin-bottom: 14px; padding: 12px; border: 1px solid #1e2a3c; border-radius: 16px; background: #0b1119; }
+.set-sheet .set-group > .set-note { margin: 2px 4px 0; }
+.set-sheet .set-item { display: flex; align-items: center; gap: 14px; padding: 12px; border: 1px solid #243247; border-radius: 14px; background: #0d131c; }
+.set-sheet .set-item-copy { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.set-sheet .set-item-copy strong { color: #e8edf3; font-weight: 600; font-size: 16px; }
+.set-sheet .set-item-copy small { color: #8fa0b8; font-size: 13px; }
+.set-sheet .set-item-head { align-items: flex-start; }
+.set-sheet .set-thumb { width: 84px; height: 52px; flex: 0 0 auto; border-radius: 10px; background: linear-gradient(135deg, #1f3a66, #0a1220); position: relative; }
+.set-sheet .set-thumb::before { content: ""; position: absolute; left: 10px; top: 10px; width: 52%; height: 14px; border-radius: 6px; background: rgba(255, 255, 255, .18); }
+.set-sheet .set-thumb.t1 { background: linear-gradient(135deg, #27402a, #0a120c); }
+.set-sheet .set-thumb.t2 { background: linear-gradient(135deg, #3b2440, #120a16); }
+.set-sheet .toggle { position: relative; flex: 0 0 auto; width: 52px !important; height: 30px !important; min-height: 30px !important; padding: 0 !important; border: 0 !important; border-radius: 15px !important; background: #2a3646 !important; }
+.set-sheet .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.set-sheet .toggle.on { background: #2f6fb4 !important; }
+.set-sheet .toggle.on::after { transform: translateX(22px); }
+.set-sheet .badge { flex: 0 0 auto; padding: 4px 12px; border-radius: 999px; border: 1px solid #3a4658; color: #8fa0b8; font-size: 13px; }
+.set-sheet .badge.ok { color: #8fe0a0; border-color: #2f6f45; background: rgba(60, 160, 90, .15); }
+.set-sheet .set-actions { display: flex; gap: 10px; }
+.set-sheet .set-actions button { flex: 1 1 0; }
+.set-sheet .set-row button.primary, .set-sheet .about-buttons .primary { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #fff !important; font-weight: 600; }
+.set-sheet .about-head .about-ver { display: block; margin: 2px 0; font-size: 26px; font-weight: 700; color: #e8edf3; }
+.set-sheet .about-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.set-sheet .set-link { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 52px; padding: 0 14px; border: 0; border-radius: 12px; background: transparent; color: #e8edf3; font-size: 16px; text-align: left; }
+.set-sheet .set-link i { font-style: normal; color: #8fa0b8; font-size: 22px; }
+.set-sheet .set-link + .set-link { border-top: 1px solid #1e2a3c; border-radius: 0; }
+.set-sheet .set-link.danger, .set-sheet .set-link.danger i { color: #ff8a9a; }
+:root[data-theme="light"] .set-sheet .set-group { background: #f3f6fa; border-color: #d5dce6; }
+:root[data-theme="light"] .set-sheet .set-item { background: #fff; border-color: #d5dce6; }
+:root[data-theme="light"] .set-sheet .set-item-copy strong, :root[data-theme="light"] .set-sheet .set-link, :root[data-theme="light"] .set-sheet .about-head .about-ver { color: #1c2736; }
+:root[data-theme="light"] .set-sheet .set-link + .set-link { border-top-color: #d5dce6; }
+:root[data-theme="light"] .set-sheet .toggle { background: #c9d2de !important; }
+:root[data-theme="light"] .set-sheet .toggle.on { background: #2f6fb4 !important; }
+:root[data-theme="light"] .set-sheet .badge { border-color: #c9d2de; }
+:root[data-theme="light"] .set-sheet .set-link.danger, :root[data-theme="light"] .set-sheet .set-link.danger i { color: #c2394f; }
+/* Settings: real pictures in the source cards, icons in the widget rows. */
+.set-sheet .look-prev img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.set-sheet .look-prev:has(img) i { display: none; }
+.set-sheet .set-thumb.has-icon::before { display: none; }
+.set-sheet .set-thumb svg { position: absolute; inset: 0; margin: auto; width: 30px; height: 30px; fill: none; stroke: #cfe6ff; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.set-sheet .look-src-black .look-prev img { filter: grayscale(1) contrast(1.05); }
+.set-sheet .look-src-black .look-prev img.bw-cycle { filter: grayscale(1) contrast(1.05); }
