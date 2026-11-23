@@ -326,6 +326,10 @@
         <div class="set-row set-actions"><button type="button" class="primary" data-act="ym-check">Проверить</button><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-clear">Удалить</button></div>
       </div>
       <div class="set-group">
+        <div class="set-row set-actions"><button type="button" data-act="ym-playlists">Плейлисты</button><button type="button" data-act="ym-likes">Мне нравится</button></div>
+        <div class="set-list" id="ym-library"></div>
+      </div>
+      <div class="set-group">
         <p class="set-note">Визуализатор под музыкой. Коротким тапом по нему тоже можно переключить стиль.</p>
         <div class="set-grid viz-grid">${(window.vizStyles || []).map(([id, title]) => `<button type="button" class="viz-pick${(window.vizStyle && window.vizStyle()) === id ? " on" : ""}" data-viz="${id}">${title}</button>`).join("")}</div>
       </div>
@@ -360,6 +364,21 @@
       badge.classList.remove("ok");
       status.textContent = "Токен удалён.";
     });
+    const libraryBox = body.querySelector("#ym-library");
+    const showLibrary = async (load, empty) => {
+      if (!window.YmLibrary) { libraryBox.textContent = "Модуль не загружен."; return; }
+      libraryBox.textContent = "Загружаю…";
+      try {
+        const items = await load();
+        libraryBox.innerHTML = items.length
+          ? items.slice(0, 50).map(item => `<div class="set-item"><span class="set-item-copy"><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.artists || (item.trackCount ? item.trackCount + " треков" : ""))}</small></span></div>`).join("")
+          : `<p class="set-note">${empty}</p>`;
+      } catch (error) {
+        libraryBox.innerHTML = `<p class="set-note">${escapeHtml(error.message || "Не получилось загрузить")}</p>`;
+      }
+    };
+    body.querySelector('[data-act="ym-playlists"]').addEventListener("click", () => showLibrary(() => window.YmLibrary.playlists(), "Плейлистов нет."));
+    body.querySelector('[data-act="ym-likes"]').addEventListener("click", () => showLibrary(() => window.YmLibrary.likes(), "Лайкнутых треков нет."));
     body.querySelector('[data-act="ym-check"]').addEventListener("click", async () => {
       if (!saveTyped()) return;
       const value = ymToken();
