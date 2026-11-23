@@ -80,6 +80,66 @@
     return out;
   }
 
+
+  // Search tracks: GET /search?text=...&type=track -> result.tracks.results[].
+  async function search(text) {
+    const query = String(text || "").trim();
+    if (!query) return [];
+    const data = await call("/search?type=track&page=0&text=" + encodeURIComponent(query));
+    const results = (data && data.tracks && data.tracks.results) || [];
+    return results.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
+  }
+
+  // Lyrics: POST /tracks/{id}/lyrics (format TEXT) returns a download link to the text; the text is then fetched.
+  async function lyrics(trackId) {
+    const data = await call(`/tracks/${encodeURIComponent(trackId)}/lyrics`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "format=TEXT&timeStamp=" + Date.now()
+    });
+    const link = data && data.downloadUrl;
+    if (!link) throw new Error("Текст песни не найден");
+    const response = await fetch(link);
+    if (!response.ok) throw new Error("Текст песни: HTTP " + response.status);
+    return (await response.text()).trim();
+  }
+
+  // Wave: POST /rotor/session/new (seeds) -> radioSessionId and first tracks;
+  // GET /rotor/session/{id}/tracks gives the next batch. Returns { sessionId, tracks }.
+  async function wave(seed) {
+    const data = await call("/rotor/session/new", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seeds: [seed || "user:onyourwave"], includeTracksInResponse: true })
+    });
+    const sessionId = data && data.radioSessionId;
+    const tracks = trackList((data && data.sequence) || []);
+    return { sessionId, tracks };
+  }
+
+  async function waveNext(sessionId) {
+    const data = await call(`/rotor/session/${encodeURIComponent(sessionId)}/tracks`);
+    return trackList((data && data.sequence) || []);
+  }
+
+  function trackList(sequence) {
+    return sequence.map(item => item.track || item).filter(t => t && t.id).map(t => ({
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ")
+    }));
+  }
+
+  // Chart: GET /landing/block/chart -> the tracks found in the block (best effort: the block's shape varies).
+  async function chart() {
+    const data = await call("/landing/block/chart");
+    const found = [];
+    (function walk(node) {
+      if (!node || typeof node !== "object") return;
+      if (node.type === "track" && node.data) { found.push(node.data); return; }
+      if (Array.isArray(node)) node.forEach(walk); else Object.values(node).forEach(walk);
+    })(data);
+    return found.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
+  }
+
   function clearCache() { cache.playlists = null; cache.likes = null; }
 
 
@@ -148,5 +208,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, clearCache };
+  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, clearCache };
 })();
