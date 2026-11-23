@@ -488,7 +488,8 @@
     const hasClient = !!readKey(CLIENT_KEY);
     body.innerHTML = hero("note", "Вход в Яндекс Музыку", "Введите код на ya.ru/device") +
       (hasClient
-        ? '<button type="button" class="ym-action" id="ym-login-start">Получить код</button>'
+        ? '<button type="button" class="ym-action" id="ym-login-start">Получить код</button>' +
+          '<button type="button" class="ym-action" id="ym-client-reset">Сменить client_id</button>'
         : '<p class="forecast-note">Нужен client_id вашего приложения на oauth.yandex.ru</p>' +
           '<input class="ym-search" id="ym-client-input" placeholder="client_id" autocomplete="off">' +
           '<input class="ym-search" id="ym-secret-input" placeholder="client_secret (если есть)" autocomplete="off">' +
@@ -498,6 +499,12 @@
     if (save) save.addEventListener("click", () => {
       storeKey(CLIENT_KEY, body.querySelector("#ym-client-input").value.trim());
       storeKey(SECRET_KEY, body.querySelector("#ym-secret-input").value.trim());
+      renderLogin(sheet);
+    });
+    const reset = body.querySelector("#ym-client-reset");
+    if (reset) reset.addEventListener("click", () => {
+      storeKey(CLIENT_KEY, "");
+      storeKey(SECRET_KEY, "");
       renderLogin(sheet);
     });
     const start = body.querySelector("#ym-login-start");
