@@ -1822,3 +1822,7 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 body:not(.player-expanded) .player-widget .player-controls { gap: 4px; }
 body:not(.player-expanded) .player-widget .player-controls button { width: 54px; height: 54px; }
 body:not(.player-expanded) .player-widget .track-info { max-width: 240px; }
+
+
+/* The visualizer panel (fixed, z-index 4) reaches down over the top of the + Слот row on some screen sizes; keep the row above it so taps reach the button. */
+.page-controls { position: relative; z-index: 6; }
