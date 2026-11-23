@@ -329,6 +329,7 @@
         <p class="set-note">Визуализатор под музыкой. Коротким тапом по нему тоже можно переключить стиль.</p>
         <div class="set-grid viz-grid">${(window.vizStyles || []).map(([id, title]) => `<button type="button" class="viz-pick${(window.vizStyle && window.vizStyle()) === id ? " on" : ""}" data-viz="${id}">${title}</button>`).join("")}</div>
       </div>
+      <div class="set-row set-actions"><button type="button" class="primary" data-act="ym-open">Открыть Яндекс Музыку</button></div>
       <p class="set-note">Неофициальный доступ: он может перестать работать.</p>
       <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
     const status = body.querySelector("#ym-status");
@@ -359,6 +360,11 @@
       badge.textContent = "Не задан";
       badge.classList.remove("ok");
       status.textContent = "Токен удалён.";
+    });
+    body.querySelector('[data-act="ym-open"]').addEventListener("click", () => {
+      if (!window.YmLibrary || typeof window.YmLibrary.openSheet !== "function") { status.textContent = "Модуль музыки не загружен."; return; }
+      sheet.hidden = true;
+      window.YmLibrary.openSheet();
     });
     body.querySelector('[data-act="ym-check"]').addEventListener("click", async () => {
       if (!saveTyped()) return;

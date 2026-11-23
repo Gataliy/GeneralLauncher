@@ -654,5 +654,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { likedPlaylists, likedAlbums, albumTracks, likedArtists, artistTracks, startDeviceLogin, pollDeviceLogin, uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
+  window.YmLibrary = { openSheet, likedPlaylists, likedAlbums, albumTracks, likedArtists, artistTracks, startDeviceLogin, pollDeviceLogin, uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
 })();
