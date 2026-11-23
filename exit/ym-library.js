@@ -175,7 +175,7 @@
   const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><circle cx="18" cy="17" r="2.5"/><path d="M20.5 17V7"/></svg>';
   const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>';
   const RADIO_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>';
-  const SECTIONS = [["music", "Яндекс Музыка", NOTE_ICON], ["radio", "Яндекс Радио", RADIO_ICON]];
+  const SECTIONS = [["music", "Яндекс Музыка", NOTE_ICON, "Плейлисты, волна, поиск, чарт"], ["radio", "Яндекс Радио", RADIO_ICON, "Избранные станции и каталог"]];
   const MUSIC_TABS = [["playlists", "Плейлисты"], ["wave", "Волна"], ["search", "Поиск"], ["chart", "Чарт"]];
   let activeSection = "music";
   let activeTab = "playlists";
@@ -188,7 +188,14 @@
     style.textContent =
       "#ym-sheet .queue-card{width:min(1100px,94vw);max-width:94vw;max-height:88vh;height:auto;min-height:520px;padding:32px;box-sizing:border-box;overflow:auto}" +
       "#ym-sheet .queue-head h3{font-size:30px}" +
-      ".ym-tabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
+      ".ym-tabs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 16px}" +
+      ".ym-section{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:22px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);cursor:pointer;text-align:left;font:inherit}" +
+      ".ym-section.on{border-color:var(--accent);background:rgba(111,195,250,.14)}" +
+      ".ym-section-icon{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
+      ".ym-section-icon svg{width:28px;height:28px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}" +
+      ".ym-section-text{min-width:0}" +
+      ".ym-section-title{display:block;font-size:24px;font-weight:600}" +
+      ".ym-section-desc{display:block;font-size:16px;color:var(--muted);margin-top:2px}" +
       ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:20px;cursor:pointer}" +
       ".ym-tab.on{border-color:var(--accent);background:rgba(111,195,250,.14);color:var(--text)}" +
       ".ym-subtabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
@@ -242,8 +249,9 @@
   }
 
   function renderTabs(sheet) {
-    sheet.querySelector(".ym-tabs").innerHTML = SECTIONS.map(([id, title, icon]) =>
-      `<button type="button" class="ym-tab${id === activeSection ? " on" : ""}" data-section="${id}">${icon}<span>${title}</span></button>`).join("");
+    sheet.querySelector(".ym-tabs").innerHTML = SECTIONS.map(([id, title, icon, desc]) =>
+      `<button type="button" class="ym-section${id === activeSection ? " on" : ""}" data-section="${id}">` +
+      `<span class="ym-section-icon">${icon}</span><span class="ym-section-text"><span class="ym-section-title">${title}</span><span class="ym-section-desc">${desc}</span></span></button>`).join("");
     sheet.querySelectorAll("[data-section]").forEach(button => button.addEventListener("click", () => {
       if (button.dataset.section === activeSection) return;
       activeSection = button.dataset.section;
@@ -288,7 +296,7 @@
     body.innerHTML = "";
     try {
       if (activeSection === "radio") {
-        body.innerHTML = hero("radio", "Яндекс Радио", "Избранные станции и каталог") + "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = hero("radio", "Станции", "Избранные станции и весь каталог") + "<p class=\"forecast-note\">Загружаю…</p>";
         const [favourites, catalogue] = await Promise.all([
           favouriteStations().catch(() => []),
           stations().catch(() => [])
@@ -296,7 +304,7 @@
         const taken = new Set(favourites.map(item => item.seed));
         const rest = catalogue.filter(item => !taken.has(item.seed));
         const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
-        body.innerHTML = hero("radio", "Яндекс Радио", "Избранные станции и каталог") + '<div class="ym-grid">' +
+        body.innerHTML = hero("radio", "Станции", "Избранные станции и весь каталог") + '<div class="ym-grid">' +
           (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
           (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
           (!favourites.length && !rest.length ? '<p class="forecast-note">Станции не загрузились. Проверьте токен.</p>' : "") +
