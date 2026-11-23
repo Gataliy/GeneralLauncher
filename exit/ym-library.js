@@ -140,14 +140,27 @@
     return found.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
   }
 
+  // Radio stations: GET /rotor/stations/list -> [{ station: { id: { type, tag }, name } }].
+  // A station is started with wave(seed) where seed = "type:tag" (best effort: shape not yet checked on the head unit).
+  async function stations() {
+    const data = await call("/rotor/stations/list");
+    return (Array.isArray(data) ? data : []).map(item => item && item.station).filter(Boolean).map(station => {
+      const id = station.id || {};
+      return { seed: id.type && id.tag ? `${id.type}:${id.tag}` : "", title: station.name || "" };
+    }).filter(item => item.seed && item.title);
+  }
+
   function clearCache() { cache.playlists = null; cache.likes = null; }
 
 
-  // Player button and the "Музыка" sheet with four tabs: Плейлисты, Волна, Поиск, Чарт.
+  // Player button and the "Музыка" sheet: top tabs Яндекс Музыка / Яндекс Радио.
+  // Music has sub-tabs Плейлисты, Поиск, Чарт; Radio lists stations (first one is "Моя волна").
   const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><circle cx="18" cy="17" r="2.5"/><path d="M20.5 17V7"/></svg>';
-  const TABS = [["playlists", "Плейлисты"], ["wave", "Волна"], ["search", "Поиск"], ["chart", "Чарт"]];
+  const SECTIONS = [["music", "Яндекс Музыка"], ["radio", "Яндекс Радио"]];
+  const MUSIC_TABS = [["playlists", "Плейлисты"], ["search", "Поиск"], ["chart", "Чарт"]];
+  let activeSection = "music";
   let activeTab = "playlists";
-  let waveSession = null;
+  let radioSession = null;
 
   if (!document.getElementById("ym-sheet-style")) {
     const style = document.createElement("style");
@@ -156,12 +169,14 @@
       "#ym-sheet .queue-card{width:min(1100px,94vw);max-width:94vw;max-height:88vh;height:auto;min-height:520px;padding:32px;box-sizing:border-box;overflow:auto}" +
       "#ym-sheet .queue-head h3{font-size:30px}" +
       ".ym-tabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
-      ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid #243247;background:#0d131c;color:#c9d4e3;font-size:20px;cursor:pointer}" +
-      ".ym-tab.on{border-color:#6fc3fa;background:rgba(111,195,250,.14);color:#fff}" +
-      ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid rgba(255,255,255,.08);font-size:24px;color:#e8edf3}" +
-      ".ym-row-count{color:#8fa0b8;font-size:18px;white-space:nowrap}" +
-      ".ym-search{width:100%;box-sizing:border-box;padding:16px 22px;border-radius:999px;border:1px solid #243247;background:#0d131c;color:#e8edf3;font-size:22px;margin-bottom:12px}" +
-      ".ym-action{padding:18px 24px;border-radius:24px;border:1px solid #243247;background:#0d131c;color:#e8edf3;font-size:22px;cursor:pointer;margin-bottom:14px}";
+      ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:20px;cursor:pointer}" +
+      ".ym-tab.on{border-color:var(--accent);background:rgba(111,195,250,.14);color:var(--text)}" +
+      ".ym-subtabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
+      ".ym-station{cursor:pointer}" +
+      ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
+      ".ym-row-count{color:var(--muted);font-size:18px;white-space:nowrap}" +
+      ".ym-search{width:100%;box-sizing:border-box;padding:16px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:22px;margin-bottom:12px}" +
+      ".ym-action{padding:18px 24px;border-radius:24px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:22px;cursor:pointer;margin-bottom:14px}";
     document.head.appendChild(style);
   }
 
@@ -185,7 +200,7 @@
     sheet.hidden = true;
     sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Музыка">' +
       '<div class="queue-head"><h3>Музыка</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
-      '<div class="ym-tabs"></div><div id="ym-sheet-body"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
+      '<div class="ym-tabs"></div><div class="ym-subtabs"></div><div id="ym-sheet-body"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
     sheet.querySelector(".queue-close").addEventListener("click", () => { sheet.hidden = true; });
     sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
     document.body.appendChild(sheet);
@@ -193,9 +208,20 @@
   }
 
   function renderTabs(sheet) {
-    sheet.querySelector(".ym-tabs").innerHTML = TABS.map(([id, title]) =>
-      `<button type="button" class="ym-tab${id === activeTab ? " on" : ""}" data-tab="${id}">${title}</button>`).join("");
-    sheet.querySelectorAll(".ym-tab").forEach(button => button.addEventListener("click", () => {
+    sheet.querySelector(".ym-tabs").innerHTML = SECTIONS.map(([id, title]) =>
+      `<button type="button" class="ym-tab${id === activeSection ? " on" : ""}" data-section="${id}">${title}</button>`).join("");
+    sheet.querySelectorAll("[data-section]").forEach(button => button.addEventListener("click", () => {
+      if (button.dataset.section === activeSection) return;
+      activeSection = button.dataset.section;
+      activeTab = "playlists";
+      renderTabs(sheet);
+      renderTab(sheet);
+    }));
+    const sub = sheet.querySelector(".ym-subtabs");
+    sub.hidden = activeSection !== "music";
+    sub.innerHTML = activeSection === "music" ? MUSIC_TABS.map(([id, title]) =>
+      `<button type="button" class="ym-tab${id === activeTab ? " on" : ""}" data-tab="${id}">${title}</button>`).join("") : "";
+    sub.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => {
       activeTab = button.dataset.tab;
       renderTabs(sheet);
       renderTab(sheet);
@@ -214,23 +240,27 @@
     note.textContent = "";
     body.innerHTML = "";
     try {
-      if (activeTab === "playlists") {
+      if (activeSection === "radio") {
+        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+        const extra = await stations().catch(() => []);
+        const list = [{ seed: "user:onyourwave", title: "Моя волна" }].concat(extra);
+        body.innerHTML = list.map(item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`).join("") +
+          '<div id="ym-radio-tracks"></div>';
+        body.querySelectorAll("[data-seed]").forEach(row => row.addEventListener("click", async () => {
+          const out = body.querySelector("#ym-radio-tracks");
+          out.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+          try {
+            radioSession = await wave(row.dataset.seed);
+            out.innerHTML = rows(radioSession.tracks, "Станция пуста.") + '<button type="button" class="ym-action" id="ym-radio-next">Ещё треки</button>';
+            out.querySelector("#ym-radio-next").addEventListener("click", async () => {
+              const more = await waveNext(radioSession.sessionId);
+              out.insertAdjacentHTML("beforeend", rows(more, "Больше треков нет."));
+            });
+          } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        }));
+      } else if (activeTab === "playlists") {
         body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
         body.innerHTML = rows(await playlists(), "Плейлистов нет.");
-      } else if (activeTab === "wave") {
-        body.innerHTML = '<button type="button" class="ym-action" id="ym-wave-start">Моя волна</button><div id="ym-wave-list"></div>';
-        body.querySelector("#ym-wave-start").addEventListener("click", async () => {
-          const list = body.querySelector("#ym-wave-list");
-          list.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
-          try {
-            waveSession = await wave();
-            list.innerHTML = rows(waveSession.tracks, "Волна пуста.") + '<button type="button" class="ym-action" id="ym-wave-next">Ещё треки</button>';
-            list.querySelector("#ym-wave-next").addEventListener("click", async () => {
-              const more = await waveNext(waveSession.sessionId);
-              list.insertAdjacentHTML("beforeend", rows(more, "Больше треков нет."));
-            });
-          } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
-        });
       } else if (activeTab === "search") {
         body.innerHTML = '<input class="ym-search" id="ym-search-input" type="search" placeholder="Найти трек" autocomplete="off"><div id="ym-search-list"></div>';
         const input = body.querySelector("#ym-search-input");
@@ -268,5 +298,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, clearCache };
+  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, stations, clearCache };
 })();
