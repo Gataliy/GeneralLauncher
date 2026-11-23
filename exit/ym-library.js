@@ -42,8 +42,8 @@
   }
 
   // Tracks of one playlist, resolved to { id, title, artists }.
-  async function playlistTracks(kind) {
-    const id = await uid();
+  async function playlistTracks(kind, owner) {
+    const id = owner || await uid();
     const data = await call(`/users/${id}/playlists/${encodeURIComponent(kind)}`);
     const items = (data && data.tracks) || [];
     const ids = items.map(item => (item.track ? item.track.id : item.id)).filter(Boolean);
@@ -88,6 +88,23 @@
     const data = await call("/search?type=track&page=0&text=" + encodeURIComponent(query));
     const results = (data && data.tracks && data.tracks.results) || [];
     return results.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
+  }
+
+  // "Для вас": GET /landing/skeleton/main -> blocks; playlist items (personal_playlist_item, playlist_item,
+  // liked_playlist_item) carry playlist { uid, kind, title }. Other item types are skipped for now.
+  async function recommendations() {
+    const data = await call("/landing/skeleton/main?showWizard=false");
+    const blocks = (data && data.blocks) || [];
+    return blocks.filter(b => b && b.type !== "TABS").map(block => {
+      const d = block.data || {};
+      const items = (d.items || block.items || []).filter(it => /playlist_item$/.test(it.type || ""));
+      const playlists = items.map(it => {
+        const p = (it.data && (it.data.playlist || it.data)) || {};
+        const owner = p.uid || (p.owner && p.owner.uid);
+        return { owner: owner ? String(owner) : "", kind: p.kind ? String(p.kind) : "", title: p.title || "", trackCount: p.trackCount || 0 };
+      }).filter(p => p.owner && p.kind && p.title);
+      return { title: d.title || "", playlists };
+    }).filter(block => block.playlists.length);
   }
 
   // Similar tracks: GET /tracks/{id}/similar -> similarTracks[].
@@ -195,7 +212,7 @@
   const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>';
   const RADIO_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>';
   const SECTIONS = [["music", "Яндекс Музыка", NOTE_ICON, "Плейлисты, волна, поиск, чарт"], ["radio", "Яндекс Радио", RADIO_ICON, "Избранные станции и каталог"]];
-  const MUSIC_TABS = [["playlists", "Плейлисты", "note"], ["wave", "Волна", "wave"], ["search", "Поиск", "search"], ["chart", "Чарт", "chart"]];
+  const MUSIC_TABS = [["foryou", "Для вас", "star"], ["playlists", "Плейлисты", "note"], ["wave", "Волна", "wave"], ["search", "Поиск", "search"], ["chart", "Чарт", "chart"]];
   let activeSection = "music";
   let activeTab = "playlists";
   let radioSession = null;
@@ -217,7 +234,7 @@
       ".ym-section-desc{display:block;font-size:16px;color:var(--muted);margin-top:2px}" +
       ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:20px;cursor:pointer}" +
       ".ym-tab.on{border-color:var(--accent);background:rgba(111,195,250,.14);color:var(--text)}" +
-      ".ym-subtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}" +
+      ".ym-subtabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 16px}" +
       ".ym-subtab{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:20px;cursor:pointer;text-align:left;min-width:0}" +
       ".ym-subtab.on{border-color:var(--accent);background:rgba(111,195,250,.14)}" +
       ".ym-subtab-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
@@ -340,6 +357,7 @@
     wave: '<path d="M3 12h2M7 9v6M11 6v12M15 9v6M19 11v2"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
     chart: '<path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/>',
+    star: '<path d="M12 4l2.5 5 5.5.8-4 3.9.9 5.5L12 16.6 7.1 19.2l.9-5.5-4-3.9 5.5-.8z"/>',
     radio: '<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/>'
   };
   function hero(icon, title, text, action) {
@@ -405,6 +423,20 @@
             showMore();
           } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         });
+      } else if (activeTab === "foryou") {
+        body.innerHTML = hero("star", "Для вас", "Подборки Яндекс Музыки для вас") + "<p class=\"forecast-note\">Загружаю…</p>";
+        const blocks = await recommendations();
+        body.innerHTML = hero("star", "Для вас", "Подборки Яндекс Музыки для вас") +
+          (blocks.length ? blocks.map(block => '<div class="ym-subhead">' + escapeText(block.title) + '</div><div class="ym-grid">' +
+            block.playlists.map(p => `<div class="ym-row ym-station" data-owner="${escapeText(p.owner)}" data-kind="${escapeText(p.kind)}"><span>${escapeText(p.title)}</span>` +
+              (p.trackCount ? `<span class="ym-row-count">${p.trackCount} треков</span>` : "") + "</div>").join("") + "</div>").join("")
+            : '<p class="forecast-note">Подборок нет.</p>') + '<div id="ym-foryou-tracks"></div>';
+        body.querySelectorAll("[data-kind]").forEach(row => row.addEventListener("click", async () => {
+          const out = body.querySelector("#ym-foryou-tracks");
+          out.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+          try { out.innerHTML = rows(await playlistTracks(row.dataset.kind, row.dataset.owner), "В плейлисте нет треков."); }
+          catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        }));
       } else if (activeTab === "playlists") {
         body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + "<p class=\"forecast-note\">Загружаю…</p>";
         body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + rows(await playlists(), "Плейлистов нет.");
@@ -445,5 +477,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, clearCache };
+  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
 })();
