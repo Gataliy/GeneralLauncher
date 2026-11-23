@@ -257,7 +257,9 @@
     const id = source.id || {};
     if (source.name && id.type && id.tag) {
       const seed = `${id.type}:${id.tag}`;
-      if (!seen.has(seed)) { seen.add(seed); found.push({ seed, title: String(source.name) }); }
+      const icon = source.icon || {};
+      const cover = pic(icon.imageUrl || icon.coverUri || "");
+      if (!seen.has(seed)) { seen.add(seed); found.push({ seed, title: String(source.name), cover }); }
       return found;
     }
     Object.values(node).forEach(value => collectStations(value, found, seen));
@@ -490,7 +492,7 @@
         ]);
         const taken = new Set(favourites.map(item => item.seed));
         const rest = catalogue.filter(item => !taken.has(item.seed));
-        const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
+        const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}">` + (item.cover ? `<img class="ym-thumb" src="${escapeText(item.cover)}" alt="" loading="lazy">` : "") + `<span>${escapeText(item.title)}</span></div>`;
         body.innerHTML = hero("radio", "Станции", "Избранные станции и весь каталог") + '<div class="ym-grid">' +
           (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
           (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
