@@ -193,6 +193,9 @@
       ".ym-subtabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
       ".ym-tab{display:inline-flex;align-items:center;gap:10px}" +
       ".ym-tab svg{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}" +
+      ".ym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}" +
+      ".ym-grid .ym-row{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--surface-soft);margin:0}" +
+      ".ym-grid .ym-subhead,.ym-grid .forecast-note{grid-column:1/-1}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
@@ -252,8 +255,8 @@
 
   function rows(items, empty) {
     if (!items.length) return `<p class="forecast-note">${escapeText(empty)}</p>`;
-    return items.slice(0, 50).map(item => `<div class="ym-row"><span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
-      (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") + `</div>`).join("");
+    return `<div class="ym-grid">` + items.slice(0, 50).map(item => `<div class="ym-row"><span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
+      (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") + `</div>`).join("") + `</div>`;
   }
 
   async function renderTab(sheet) {
@@ -271,11 +274,11 @@
         const taken = new Set(favourites.map(item => item.seed));
         const rest = catalogue.filter(item => !taken.has(item.seed));
         const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
-        body.innerHTML = '<div class="ym-subhead">Моя волна</div>' + line({ seed: "user:onyourwave", title: "Моя волна" }) +
+        body.innerHTML = '<div class="ym-grid"><div class="ym-subhead">Моя волна</div>' + line({ seed: "user:onyourwave", title: "Моя волна" }) +
           (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
           (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
           (!favourites.length && !rest.length ? '<p class="forecast-note">Станции не загрузились. Проверьте токен.</p>' : "") +
-          '<div id="ym-radio-tracks"></div>';
+          '</div><div id="ym-radio-tracks"></div>';
         body.querySelectorAll("[data-seed]").forEach(row => row.addEventListener("click", async () => {
           const out = body.querySelector("#ym-radio-tracks");
           out.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
