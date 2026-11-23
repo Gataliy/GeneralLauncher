@@ -11,6 +11,63 @@
     try { return (localStorage.getItem(TOKEN_KEY) || "").trim(); } catch (error) { return ""; }
   }
 
+  // Sign-in by device code with the user's OWN OAuth app (client_id from oauth.yandex.ru, optional client_secret).
+  // No password is typed into the launcher and no third-party app identity is used.
+  const OAUTH = "https://oauth.yandex.ru";
+  const CLIENT_KEY = "generic_launcher_ym_client_id_v1";
+  const SECRET_KEY = "generic_launcher_ym_client_secret_v1";
+  const DEVICE_KEY = "generic_launcher_ym_device_v1";
+  const SCOPE = "music:content music:read music:write";
+
+  function readKey(key) {
+    try { return (localStorage.getItem(key) || "").trim(); } catch (error) { return ""; }
+  }
+  function storeKey(key, value) {
+    try { if (value) localStorage.setItem(key, value); else localStorage.removeItem(key); } catch (error) { /* storage unavailable */ }
+  }
+  function deviceId() {
+    let id = readKey(DEVICE_KEY);
+    if (!id) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      id = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+      storeKey(DEVICE_KEY, id);
+    }
+    return id;
+  }
+  async function oauthPost(path, fields) {
+    const response = await fetch(OAUTH + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(fields).toString()
+    });
+    const json = await response.json().catch(() => ({}));
+    return { ok: response.ok, json };
+  }
+  async function startDeviceLogin() {
+    const client = readKey(CLIENT_KEY);
+    if (!client) throw new Error("Укажите client_id приложения");
+    const { ok, json } = await oauthPost("/device/code", { client_id: client, device_id: deviceId(), device_name: "Generic Launcher", scope: SCOPE });
+    if (!ok || !json.device_code) throw new Error(json.error_description || "Яндекс не выдал код входа");
+    return json;
+  }
+  // Polls /token until the user enters the code on ya.ru/device; saves the token and returns true.
+  async function pollDeviceLogin(code, interval, expiresIn) {
+    const until = Date.now() + (expiresIn || 300) * 1000;
+    let wait = Math.max(1, interval || 5);
+    while (Date.now() < until) {
+      await new Promise(resolve => setTimeout(resolve, wait * 1000));
+      const fields = { grant_type: "device_code", code, client_id: readKey(CLIENT_KEY) };
+      const secret = readKey(SECRET_KEY);
+      if (secret) fields.client_secret = secret;
+      const { json } = await oauthPost("/token", fields);
+      if (json.access_token) { storeKey(TOKEN_KEY, json.access_token); return true; }
+      if (json.error === "slow_down") wait += 5;
+      else if (json.error !== "authorization_pending") throw new Error(json.error_description || "Вход не удался");
+    }
+    throw new Error("Код истёк, запросите новый");
+  }
+
   async function call(path, options) {
     const value = token();
     if (!value) throw new Error("Токен Яндекс Музыки не задан");
@@ -256,6 +313,7 @@
       ".ym-mini{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:22px;cursor:pointer}" +
       ".ym-mini:disabled{opacity:.5}" +
       ".ym-similar-of{grid-column:1/-1;padding-left:18px;border-left:2px solid var(--accent);margin:0 0 8px}" +
+      ".ym-code{font-size:56px;font-weight:700;letter-spacing:.12em;text-align:center;padding:18px;margin:8px 0;border-radius:20px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text)}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
@@ -273,7 +331,7 @@
     const button = document.getElementById("player-playlists");
     if (!button) return;
     button.innerHTML = ICON;
-    button.hidden = !token();
+    button.hidden = false;
   }
 
   function ensureSheet() {
@@ -365,11 +423,48 @@
       '<div class="ym-hero-text"><div class="ym-hero-title">' + escapeText(title) + '</div><div class="ym-hero-sub">' + escapeText(text) + '</div></div>' + (action || "") + '</div>';
   }
 
+
+  function renderLogin(sheet) {
+    const body = sheet.querySelector("#ym-sheet-body");
+    const note = sheet.querySelector("#ym-sheet-note");
+    note.textContent = "";
+    const hasClient = !!readKey(CLIENT_KEY);
+    body.innerHTML = hero("note", "Вход в Яндекс Музыку", "Введите код на ya.ru/device") +
+      (hasClient
+        ? '<button type="button" class="ym-action" id="ym-login-start">Получить код</button>'
+        : '<p class="forecast-note">Нужен client_id вашего приложения на oauth.yandex.ru</p>' +
+          '<input class="ym-search" id="ym-client-input" placeholder="client_id" autocomplete="off">' +
+          '<input class="ym-search" id="ym-secret-input" placeholder="client_secret (если есть)" autocomplete="off">' +
+          '<button type="button" class="ym-action" id="ym-client-save">Сохранить</button>') +
+      '<div id="ym-login-code"></div>';
+    const save = body.querySelector("#ym-client-save");
+    if (save) save.addEventListener("click", () => {
+      storeKey(CLIENT_KEY, body.querySelector("#ym-client-input").value.trim());
+      storeKey(SECRET_KEY, body.querySelector("#ym-secret-input").value.trim());
+      renderLogin(sheet);
+    });
+    const start = body.querySelector("#ym-login-start");
+    if (start) start.addEventListener("click", async () => {
+      const out = body.querySelector("#ym-login-code");
+      out.innerHTML = '<p class="forecast-note">Получаю код…</p>';
+      try {
+        const info = await startDeviceLogin();
+        out.innerHTML = `<div class="ym-code">${escapeText(info.user_code)}</div><p class="forecast-note">Откройте ${escapeText(info.verification_url || "ya.ru/device")} и введите код</p>`;
+        await pollDeviceLogin(info.device_code, info.interval, info.expires_in);
+        clearCache();
+        syncButton();
+        renderTabs(sheet);
+        renderTab(sheet);
+      } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+    });
+  }
+
   async function renderTab(sheet) {
     const body = sheet.querySelector("#ym-sheet-body");
     const note = sheet.querySelector("#ym-sheet-note");
     note.textContent = "";
     body.innerHTML = "";
+    if (!token()) { renderLogin(sheet); return; }
     try {
       if (activeSection === "radio") {
         body.innerHTML = hero("radio", "Станции", "Избранные станции и весь каталог") + "<p class=\"forecast-note\">Загружаю…</p>";
@@ -477,5 +572,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
+  window.YmLibrary = { startDeviceLogin, pollDeviceLogin, uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
 })();
