@@ -451,8 +451,24 @@ function setLevel(index, level) {
   renderSlots();
   const element = document.querySelector(`[data-slot="${index}"]`);
   pulse(element);
+  // Seats go through the documented car command (climate_set_seat_heat / _vent, seat 1 = driver, 2 = passenger).
+  // The runEnum name stays as the fallback when the bridge has no car command method.
+  const seat = SEAT_CAR_COMMANDS[group.id];
+  if (seat && bridge.has("requestCarCommandAsync")) {
+    bridge.requestCarCommandAsync(
+      "seat_" + group.id + "_" + Date.now(),
+      JSON.stringify({ cmd: seat.cmd, seat: seat.seat, value: level })
+    );
+    return;
+  }
   enqueueEnumCommand(command, group.label, group.id);
 }
+const SEAT_CAR_COMMANDS = {
+  heat_seat_l: { cmd: "climate_set_seat_heat", seat: 1 },
+  vent_seat_l: { cmd: "climate_set_seat_vent", seat: 1 },
+  heat_seat_r: { cmd: "climate_set_seat_heat", seat: 2 },
+  vent_seat_r: { cmd: "climate_set_seat_vent", seat: 2 }
+};
 
 // Fan slot: ten ticks at the bottom, tapping tick N sends the car's fan speed N (profile:climate_fan_N).
 function setFanSpeed(index, speed) {
