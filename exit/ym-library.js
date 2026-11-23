@@ -143,14 +143,39 @@
   function clearCache() { cache.playlists = null; cache.likes = null; }
 
 
-  // Player button and playlist sheet: the list of the account's playlists, shown in the media player.
+  // Player button and the "Музыка" sheet with four tabs: Плейлисты, Волна, Поиск, Чарт.
   const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><circle cx="18" cy="17" r="2.5"/><path d="M20.5 17V7"/></svg>';
+  const TABS = [["playlists", "Плейлисты"], ["wave", "Волна"], ["search", "Поиск"], ["chart", "Чарт"]];
+  let activeTab = "playlists";
+  let waveSession = null;
+
+  if (!document.getElementById("ym-sheet-style")) {
+    const style = document.createElement("style");
+    style.id = "ym-sheet-style";
+    style.textContent =
+      "#ym-sheet .queue-card{width:min(1100px,94vw);max-width:94vw;max-height:88vh;height:auto;min-height:520px;padding:32px;box-sizing:border-box;overflow:auto}" +
+      "#ym-sheet .queue-head h3{font-size:30px}" +
+      ".ym-tabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
+      ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid #243247;background:#0d131c;color:#c9d4e3;font-size:20px;cursor:pointer}" +
+      ".ym-tab.on{border-color:#6fc3fa;background:rgba(111,195,250,.14);color:#fff}" +
+      ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid rgba(255,255,255,.08);font-size:24px;color:#e8edf3}" +
+      ".ym-row-count{color:#8fa0b8;font-size:18px;white-space:nowrap}" +
+      ".ym-search{width:100%;box-sizing:border-box;padding:16px 22px;border-radius:999px;border:1px solid #243247;background:#0d131c;color:#e8edf3;font-size:22px;margin-bottom:12px}" +
+      ".ym-action{padding:18px 24px;border-radius:24px;border:1px solid #243247;background:#0d131c;color:#e8edf3;font-size:22px;cursor:pointer;margin-bottom:14px}";
+    document.head.appendChild(style);
+  }
+
+  function escapeText(value) {
+    return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
   function syncButton() {
     const button = document.getElementById("player-playlists");
     if (!button) return;
     button.innerHTML = ICON;
     button.hidden = !token();
   }
+
   function ensureSheet() {
     let sheet = document.getElementById("ym-sheet");
     if (sheet) return sheet;
@@ -158,45 +183,80 @@
     sheet.id = "ym-sheet";
     sheet.className = "forecast-sheet";
     sheet.hidden = true;
-    sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлисты Яндекс Музыки">' +
-      '<div class="queue-head"><h3>Плейлисты</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
-      '<div class="queue-list" id="ym-sheet-list"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
+    sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Музыка">' +
+      '<div class="queue-head"><h3>Музыка</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
+      '<div class="ym-tabs"></div><div id="ym-sheet-body"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
     sheet.querySelector(".queue-close").addEventListener("click", () => { sheet.hidden = true; });
     sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
     document.body.appendChild(sheet);
     return sheet;
   }
-  async function openSheet() {
-    const sheet = ensureSheet();
-    const list = sheet.querySelector("#ym-sheet-list");
+
+  function renderTabs(sheet) {
+    sheet.querySelector(".ym-tabs").innerHTML = TABS.map(([id, title]) =>
+      `<button type="button" class="ym-tab${id === activeTab ? " on" : ""}" data-tab="${id}">${title}</button>`).join("");
+    sheet.querySelectorAll(".ym-tab").forEach(button => button.addEventListener("click", () => {
+      activeTab = button.dataset.tab;
+      renderTabs(sheet);
+      renderTab(sheet);
+    }));
+  }
+
+  function rows(items, empty) {
+    if (!items.length) return `<p class="forecast-note">${escapeText(empty)}</p>`;
+    return items.slice(0, 50).map(item => `<div class="ym-row"><span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
+      (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") + `</div>`).join("");
+  }
+
+  async function renderTab(sheet) {
+    const body = sheet.querySelector("#ym-sheet-body");
     const note = sheet.querySelector("#ym-sheet-note");
-    sheet.hidden = false;
-    list.innerHTML = "";
-    note.textContent = "Загружаю…";
+    note.textContent = "";
+    body.innerHTML = "";
     try {
-      const items = await playlists();
-      note.textContent = items.length ? "" : "Плейлистов нет.";
-      list.innerHTML = items.map(item => `<div class="ym-row"><span class="ym-row-title">${escapeText(item.title)}</span><span class="ym-row-count">${item.trackCount} треков</span></div>`).join("");
+      if (activeTab === "playlists") {
+        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = rows(await playlists(), "Плейлистов нет.");
+      } else if (activeTab === "wave") {
+        body.innerHTML = '<button type="button" class="ym-action" id="ym-wave-start">Моя волна</button><div id="ym-wave-list"></div>';
+        body.querySelector("#ym-wave-start").addEventListener("click", async () => {
+          const list = body.querySelector("#ym-wave-list");
+          list.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+          try {
+            waveSession = await wave();
+            list.innerHTML = rows(waveSession.tracks, "Волна пуста.") + '<button type="button" class="ym-action" id="ym-wave-next">Ещё треки</button>';
+            list.querySelector("#ym-wave-next").addEventListener("click", async () => {
+              const more = await waveNext(waveSession.sessionId);
+              list.insertAdjacentHTML("beforeend", rows(more, "Больше треков нет."));
+            });
+          } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        });
+      } else if (activeTab === "search") {
+        body.innerHTML = '<input class="ym-search" id="ym-search-input" type="search" placeholder="Найти трек" autocomplete="off"><div id="ym-search-list"></div>';
+        const input = body.querySelector("#ym-search-input");
+        input.addEventListener("keydown", async event => {
+          if (event.key !== "Enter") return;
+          const list = body.querySelector("#ym-search-list");
+          list.innerHTML = "<p class=\"forecast-note\">Ищу…</p>";
+          try { list.innerHTML = rows(await search(input.value), "Ничего не найдено."); }
+          catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        });
+      } else if (activeTab === "chart") {
+        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = rows(await chart(), "Чарт пуст.");
+      }
     } catch (error) {
-      note.textContent = error.message || "Не получилось загрузить плейлисты.";
+      note.textContent = error.message || "Не получилось загрузить.";
     }
   }
-  // Styles for the playlist rows (one row per playlist, title left, count right).
-  if (!document.getElementById("ym-sheet-style")) {
-    const style = document.createElement("style");
-    style.id = "ym-sheet-style";
-    style.textContent = ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 6px;border-bottom:1px solid rgba(255,255,255,.08);font-size:20px;color:#e8edf3}" +
-      ".ym-row-count{color:#8fa0b8;font-size:16px;white-space:nowrap}" +
-      "#ym-sheet-list{display:block}" +
-      "#ym-sheet .queue-card{width:min(1100px,94vw);max-width:94vw;max-height:88vh;height:auto;min-height:520px;padding:32px;box-sizing:border-box;overflow:auto}" +
-      "#ym-sheet .queue-head h3{font-size:30px}" +
-      "#ym-sheet .ym-row{font-size:24px;padding:20px 8px}" +
-      "#ym-sheet .ym-row-count{font-size:18px}";
-    document.head.appendChild(style);
+
+  async function openSheet() {
+    const sheet = ensureSheet();
+    sheet.hidden = false;
+    renderTabs(sheet);
+    renderTab(sheet);
   }
-  function escapeText(value) {
-    return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  }
+
   function bindPlayer() {
     const button = document.getElementById("player-playlists");
     if (!button) return;
