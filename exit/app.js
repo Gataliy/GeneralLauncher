@@ -40,7 +40,15 @@ document.addEventListener("DOMContentLoaded", () => {
   bindWeatherForecast();
   document.getElementById("picker-close").addEventListener("click", closePicker);
   document.getElementById("picker-done").addEventListener("click", closePicker);
-  document.getElementById("add-slot").addEventListener("click", addSlot);
+  // Diagnostic: shows whether a touch reaches the "+ Слот" button, and whether the button is disabled.
+  const addSlotButton = document.getElementById("add-slot");
+  document.addEventListener("pointerdown", event => {
+    if (event.target && event.target.closest && event.target.closest("#add-slot")) showToast("+ Слот: касание дошло до кнопки", 2500);
+  }, true);
+  addSlotButton.addEventListener("click", () => {
+    showToast(`+ Слот: нажатие получено, слотов ${state.slots.length}, кнопка ${addSlotButton.disabled ? "отключена" : "активна"}`, 3000);
+    addSlot();
+  });
   document.getElementById("picker-remove").addEventListener("click", () => {
     if (state.pickerSlot != null) removeSlot(state.pickerSlot);
     closePicker();
