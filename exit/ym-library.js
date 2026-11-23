@@ -90,6 +90,25 @@
     return results.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
   }
 
+  // Similar tracks: GET /tracks/{id}/similar -> similarTracks[].
+  async function similar(trackId) {
+    const data = await call("/tracks/" + encodeURIComponent(trackId) + "/similar");
+    return ((data && data.similarTracks) || []).filter(t => t && t.id).map(t => ({
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ")
+    }));
+  }
+
+  // Like / unlike: POST /users/{uid}/likes/tracks/add-multiple or /remove, form field track-ids.
+  async function setLike(trackId, remove) {
+    const user = await uid();
+    await call(`/users/${user}/likes/tracks/${remove ? "remove" : "add-multiple"}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ "track-ids": String(trackId) }).toString()
+    });
+    cache.likes = null;
+  }
+
   // Lyrics: POST /tracks/{id}/lyrics (format TEXT) returns a download link to the text; the text is then fetched.
   async function lyrics(trackId) {
     const data = await call(`/tracks/${encodeURIComponent(trackId)}/lyrics`, {
@@ -216,6 +235,10 @@
       ".ym-hero-sub{font-size:18px;color:var(--muted);margin-top:4px}" +
       ".ym-hero-go{margin:0;white-space:nowrap}" +
       ".ym-wave-more{width:100%;margin:14px 0 0;text-align:center}" +
+      ".ym-actions{display:flex;gap:8px;flex:none}" +
+      ".ym-mini{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:22px;cursor:pointer}" +
+      ".ym-mini:disabled{opacity:.5}" +
+      ".ym-similar-of{grid-column:1/-1;padding-left:18px;border-left:2px solid var(--accent);margin:0 0 8px}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
@@ -248,6 +271,34 @@
       '<div class="ym-tabs"></div><div class="ym-subtabs"></div><div id="ym-sheet-body"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
     sheet.querySelector(".queue-close").addEventListener("click", () => { sheet.hidden = true; });
     sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
+    sheet.addEventListener("click", async event => {
+      const like = event.target.closest && event.target.closest("[data-like]");
+      const similarBtn = event.target.closest && event.target.closest("[data-similar]");
+      if (like) {
+        const removing = like.dataset.liked === "1";
+        like.disabled = true;
+        try {
+          await setLike(like.dataset.like, removing);
+          like.dataset.liked = removing ? "0" : "1";
+          like.textContent = removing ? "♡" : "♥";
+        } catch (error) { like.title = error.message; }
+        like.disabled = false;
+      } else if (similarBtn) {
+        const row = similarBtn.closest(".ym-row");
+        const host = row && row.parentElement;
+        if (!host) return;
+        const existing = host.querySelector(".ym-similar-of[data-of=\"" + similarBtn.dataset.similar + "\"]");
+        if (existing) { existing.remove(); return; }
+        const box = document.createElement("div");
+        box.className = "ym-similar-of ym-grid";
+        box.dataset.of = similarBtn.dataset.similar;
+        box.innerHTML = '<p class="forecast-note">Загружаю…</p>';
+        row.after(box);
+        try {
+          box.innerHTML = rows(await similar(similarBtn.dataset.similar), "Похожих нет.");
+        } catch (error) { box.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+      }
+    });
     document.body.appendChild(sheet);
     return sheet;
   }
@@ -278,7 +329,9 @@
   function rows(items, empty) {
     if (!items.length) return `<p class="forecast-note">${escapeText(empty)}</p>`;
     return `<div class="ym-grid">` + items.slice(0, 50).map(item => `<div class="ym-row"><span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
-      (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") + `</div>`).join("") + `</div>`;
+      (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") +
+      (item.id && !item.trackCount ? `<span class="ym-actions"><button type="button" class="ym-mini" data-like="${escapeText(item.id)}" aria-label="Лайк">♡</button><button type="button" class="ym-mini" data-similar="${escapeText(item.id)}" aria-label="Похожие">≈</button></span>` : "") +
+      `</div>`).join("") + `</div>`;
   }
 
   // Same header card for every tab: icon, title, one line of text, optional action on the right.
@@ -392,5 +445,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, clearCache };
+  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, clearCache };
 })();
