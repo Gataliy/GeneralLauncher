@@ -7,6 +7,13 @@
   const TOKEN_KEY = "generic_launcher_ym_token_v1";
   const cache = { uid: null, playlists: null, likes: null };
 
+  // Yandex image: "avatars.yandex.net/.../%%" -> https://.../200x200
+  function pic(uri, size) {
+    if (!uri) return "";
+    const clean = String(uri).replace(/^https?:\/\//, "");
+    return "https://" + clean.replace("%%", `${size || 200}x${size || 200}`);
+  }
+
   function token() {
     try { return (localStorage.getItem(TOKEN_KEY) || "").trim(); } catch (error) { return ""; }
   }
@@ -94,7 +101,10 @@
     if (cache.playlists) return cache.playlists;
     const id = await uid();
     const list = await call(`/users/${id}/playlists/list`);
-    cache.playlists = (Array.isArray(list) ? list : []).map(p => ({ kind: String(p.kind), title: p.title || "", trackCount: p.trackCount || 0 }));
+    cache.playlists = (Array.isArray(list) ? list : []).map(p => ({
+      kind: String(p.kind), title: p.title || "", trackCount: p.trackCount || 0,
+      cover: pic((p.cover && (p.cover.uri || (p.cover.itemsUri || [])[0])) || p.ogImage || "")
+    }));
     return cache.playlists;
   }
 
@@ -131,7 +141,8 @@
       (Array.isArray(tracks) ? tracks : []).forEach(t => out.push({
         id: String(t.id),
         title: t.title || "",
-        artists: (t.artists || []).map(a => a.name).join(", ")
+        artists: (t.artists || []).map(a => a.name).join(", "),
+        cover: pic(t.coverUri || "")
       }));
     }
     return out;
@@ -144,7 +155,7 @@
     if (!query) return [];
     const data = await call("/search?type=track&page=0&text=" + encodeURIComponent(query));
     const results = (data && data.tracks && data.tracks.results) || [];
-    return results.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
+    return results.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", "), cover: pic(t.coverUri || "") }));
   }
 
   // "Для вас": GET /landing/skeleton/main -> blocks; playlist items (personal_playlist_item, playlist_item,
@@ -158,7 +169,8 @@
       const playlists = items.map(it => {
         const p = (it.data && (it.data.playlist || it.data)) || {};
         const owner = p.uid || (p.owner && p.owner.uid);
-        return { owner: owner ? String(owner) : "", kind: p.kind ? String(p.kind) : "", title: p.title || "", trackCount: p.trackCount || 0 };
+        return { owner: owner ? String(owner) : "", kind: p.kind ? String(p.kind) : "", title: p.title || "", trackCount: p.trackCount || 0,
+          cover: pic((p.cover && (p.cover.uri || (p.cover.itemsUri || [])[0])) || p.ogImage || "") };
       }).filter(p => p.owner && p.kind && p.title);
       return { title: d.title || "", playlists };
     }).filter(block => block.playlists.length);
@@ -168,7 +180,7 @@
   async function similar(trackId) {
     const data = await call("/tracks/" + encodeURIComponent(trackId) + "/similar");
     return ((data && data.similarTracks) || []).filter(t => t && t.id).map(t => ({
-      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ")
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", "), cover: pic(t.coverUri || "")
     }));
   }
 
@@ -217,7 +229,7 @@
 
   function trackList(sequence) {
     return sequence.map(item => item.track || item).filter(t => t && t.id).map(t => ({
-      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ")
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", "), cover: pic(t.coverUri || "")
     }));
   }
 
@@ -314,6 +326,10 @@
       ".ym-mini:disabled{opacity:.5}" +
       ".ym-similar-of{grid-column:1/-1;padding-left:18px;border-left:2px solid var(--accent);margin:0 0 8px}" +
       ".ym-code{font-size:56px;font-weight:700;letter-spacing:.12em;text-align:center;padding:18px;margin:8px 0;border-radius:20px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text)}" +
+      ".ym-thumb{width:56px;height:56px;border-radius:12px;object-fit:cover;flex:none;background:var(--surface-soft)}" +
+      ".ym-row{gap:14px}" +
+      ".ym-row>span:not(.ym-row-count){flex:1;min-width:0}" +
+      ".ym-row-count{flex:none;white-space:nowrap}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
@@ -403,7 +419,7 @@
 
   function rows(items, empty) {
     if (!items.length) return `<p class="forecast-note">${escapeText(empty)}</p>`;
-    return `<div class="ym-grid">` + items.slice(0, 50).map(item => `<div class="ym-row"><span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
+    return `<div class="ym-grid">` + items.slice(0, 50).map(item => `<div class="ym-row">` + (item.cover ? `<img class="ym-thumb" src="${escapeText(item.cover)}" alt="" loading="lazy">` : "") + `<span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span>` +
       (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") +
       (item.id && !item.trackCount ? `<span class="ym-actions"><button type="button" class="ym-mini" data-like="${escapeText(item.id)}" aria-label="Лайк">♡</button><button type="button" class="ym-mini" data-similar="${escapeText(item.id)}" aria-label="Похожие">≈</button></span>` : "") +
       `</div>`).join("") + `</div>`;
@@ -523,7 +539,7 @@
         const blocks = await recommendations();
         body.innerHTML = hero("star", "Для вас", "Подборки Яндекс Музыки для вас") +
           (blocks.length ? blocks.map(block => '<div class="ym-subhead">' + escapeText(block.title) + '</div><div class="ym-grid">' +
-            block.playlists.map(p => `<div class="ym-row ym-station" data-owner="${escapeText(p.owner)}" data-kind="${escapeText(p.kind)}"><span>${escapeText(p.title)}</span>` +
+            block.playlists.map(p => `<div class="ym-row ym-station" data-owner="${escapeText(p.owner)}" data-kind="${escapeText(p.kind)}">` + (p.cover ? `<img class="ym-thumb" src="${escapeText(p.cover)}" alt="" loading="lazy">` : "") + `<span>${escapeText(p.title)}</span>` +
               (p.trackCount ? `<span class="ym-row-count">${p.trackCount} треков</span>` : "") + "</div>").join("") + "</div>").join("")
             : '<p class="forecast-note">Подборок нет.</p>') + '<div id="ym-foryou-tracks"></div>';
         body.querySelectorAll("[data-kind]").forEach(row => row.addEventListener("click", async () => {
