@@ -197,13 +197,13 @@
       ".ym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}" +
       ".ym-grid .ym-row{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--surface-soft);margin:0}" +
       ".ym-grid .ym-subhead,.ym-grid .forecast-note{grid-column:1/-1}" +
-      ".ym-wave-hero{display:flex;align-items:center;gap:20px;padding:20px;border-radius:24px;border:1px solid var(--line);background:var(--surface-soft);margin-bottom:16px}" +
-      ".ym-wave-art{width:88px;height:88px;border-radius:20px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
-      ".ym-wave-art svg{width:44px;height:44px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}" +
-      ".ym-wave-text{flex:1;min-width:0}" +
-      ".ym-wave-title{font-size:30px;font-weight:600;color:var(--text)}" +
-      ".ym-wave-sub{font-size:18px;color:var(--muted);margin-top:4px}" +
-      ".ym-wave-go{margin:0;white-space:nowrap}" +
+      ".ym-hero{display:flex;align-items:center;gap:20px;padding:20px;border-radius:24px;border:1px solid var(--line);background:var(--surface-soft);margin-bottom:16px}" +
+      ".ym-art{width:88px;height:88px;border-radius:20px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
+      ".ym-art svg{width:44px;height:44px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}" +
+      ".ym-hero-text{flex:1;min-width:0}" +
+      ".ym-hero-title{font-size:30px;font-weight:600;color:var(--text)}" +
+      ".ym-hero-sub{font-size:18px;color:var(--muted);margin-top:4px}" +
+      ".ym-hero-go{margin:0;white-space:nowrap}" +
       ".ym-wave-more{width:100%;margin:14px 0 0;text-align:center}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
@@ -268,6 +268,19 @@
       (item.trackCount ? `<span class="ym-row-count">${item.trackCount} треков</span>` : "") + `</div>`).join("") + `</div>`;
   }
 
+  // Same header card for every tab: icon, title, one line of text, optional action on the right.
+  const PATHS = {
+    note: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    wave: '<path d="M3 12h2M7 9v6M11 6v12M15 9v6M19 11v2"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+    chart: '<path d="M4 19V5M4 19h16M8 15l4-4 3 3 5-6"/>',
+    radio: '<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/>'
+  };
+  function hero(icon, title, text, action) {
+    return '<div class="ym-hero"><div class="ym-art" aria-hidden="true"><svg viewBox="0 0 24 24">' + PATHS[icon] + '</svg></div>' +
+      '<div class="ym-hero-text"><div class="ym-hero-title">' + escapeText(title) + '</div><div class="ym-hero-sub">' + escapeText(text) + '</div></div>' + (action || "") + '</div>';
+  }
+
   async function renderTab(sheet) {
     const body = sheet.querySelector("#ym-sheet-body");
     const note = sheet.querySelector("#ym-sheet-note");
@@ -275,7 +288,7 @@
     body.innerHTML = "";
     try {
       if (activeSection === "radio") {
-        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = hero("radio", "Яндекс Радио", "Избранные станции и каталог") + "<p class=\"forecast-note\">Загружаю…</p>";
         const [favourites, catalogue] = await Promise.all([
           favouriteStations().catch(() => []),
           stations().catch(() => [])
@@ -283,7 +296,7 @@
         const taken = new Set(favourites.map(item => item.seed));
         const rest = catalogue.filter(item => !taken.has(item.seed));
         const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
-        body.innerHTML = '<div class="ym-grid">' +
+        body.innerHTML = hero("radio", "Яндекс Радио", "Избранные станции и каталог") + '<div class="ym-grid">' +
           (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
           (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
           (!favourites.length && !rest.length ? '<p class="forecast-note">Станции не загрузились. Проверьте токен.</p>' : "") +
@@ -301,10 +314,8 @@
           } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         }));
       } else if (activeTab === "wave") {
-        body.innerHTML = '<div class="ym-wave-hero">' +
-          '<div class="ym-wave-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h2M7 9v6M11 6v12M15 9v6M19 11v2"/></svg></div>' +
-          '<div class="ym-wave-text"><div class="ym-wave-title">Моя волна</div><div class="ym-wave-sub">Поток по вашим лайкам и прослушанному</div></div>' +
-          '<button type="button" class="ym-action ym-wave-go" id="ym-wave-start">' + (waveSession ? "Новая волна" : "Запустить") + '</button></div>' +
+        body.innerHTML = hero("wave", "Моя волна", "Поток по вашим лайкам и прослушанному",
+          '<button type="button" class="ym-action ym-hero-go" id="ym-wave-start">' + (waveSession ? "Новая волна" : "Запустить") + '</button>') +
           '<div id="ym-wave-list"></div>';
         const list = body.querySelector("#ym-wave-list");
         const showMore = () => {
@@ -329,10 +340,10 @@
           } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         });
       } else if (activeTab === "playlists") {
-        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
-        body.innerHTML = rows(await playlists(), "Плейлистов нет.");
+        body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + rows(await playlists(), "Плейлистов нет.");
       } else if (activeTab === "search") {
-        body.innerHTML = '<input class="ym-search" id="ym-search-input" type="search" placeholder="Найти трек" autocomplete="off"><div id="ym-search-list"></div>';
+        body.innerHTML = hero("search", "Поиск", "Треки по названию и исполнителю") + '<input class="ym-search" id="ym-search-input" type="search" placeholder="Найти трек" autocomplete="off"><div id="ym-search-list"></div>';
         const input = body.querySelector("#ym-search-input");
         input.addEventListener("keydown", async event => {
           if (event.key !== "Enter") return;
@@ -342,8 +353,8 @@
           catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         });
       } else if (activeTab === "chart") {
-        body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
-        body.innerHTML = rows(await chart(), "Чарт пуст.");
+        body.innerHTML = hero("chart", "Чарт", "Популярное сейчас") + "<p class=\"forecast-note\">Загружаю…</p>";
+        body.innerHTML = hero("chart", "Чарт", "Популярное сейчас") + rows(await chart(), "Чарт пуст.");
       }
     } catch (error) {
       note.textContent = error.message || "Не получилось загрузить.";
