@@ -1818,3 +1818,9 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 
 .local-close-row { justify-content: flex-end; }
 .local-close { width: 48px; height: 48px; border-radius: 50%; padding: 0; font-size: 28px; line-height: 1; }
+
+/* Five controls (prev, play, next, Yandex Music, queue when shown) must fit the compact player card:
+   smaller buttons and a narrower track title move the row left instead of pushing it past the card's edge. */
+body:not(.player-expanded) .player-widget .player-controls { gap: 4px; }
+body:not(.player-expanded) .player-widget .player-controls button { width: 54px; height: 54px; }
+body:not(.player-expanded) .player-widget .track-info { max-width: 240px; }
