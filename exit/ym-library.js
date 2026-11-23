@@ -82,5 +82,67 @@
 
   function clearCache() { cache.playlists = null; cache.likes = null; }
 
+
+  // Player button and playlist sheet: the list of the account's playlists, shown in the media player.
+  const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><circle cx="18" cy="17" r="2.5"/><path d="M20.5 17V7"/></svg>';
+  function syncButton() {
+    const button = document.getElementById("player-playlists");
+    if (!button) return;
+    button.innerHTML = ICON;
+    button.hidden = !token();
+  }
+  function ensureSheet() {
+    let sheet = document.getElementById("ym-sheet");
+    if (sheet) return sheet;
+    sheet = document.createElement("div");
+    sheet.id = "ym-sheet";
+    sheet.className = "forecast-sheet";
+    sheet.hidden = true;
+    sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлисты Яндекс Музыки">' +
+      '<div class="queue-head"><h3>Плейлисты</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
+      '<div class="queue-list" id="ym-sheet-list"></div><p class="forecast-note" id="ym-sheet-note"></p></div>';
+    sheet.querySelector(".queue-close").addEventListener("click", () => { sheet.hidden = true; });
+    sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
+    document.body.appendChild(sheet);
+    return sheet;
+  }
+  async function openSheet() {
+    const sheet = ensureSheet();
+    const list = sheet.querySelector("#ym-sheet-list");
+    const note = sheet.querySelector("#ym-sheet-note");
+    sheet.hidden = false;
+    list.innerHTML = "";
+    note.textContent = "Загружаю…";
+    try {
+      const items = await playlists();
+      note.textContent = items.length ? "" : "Плейлистов нет.";
+      list.innerHTML = items.map(item => `<div class="ym-row"><span class="ym-row-title">${escapeText(item.title)}</span><span class="ym-row-count">${item.trackCount} треков</span></div>`).join("");
+    } catch (error) {
+      note.textContent = error.message || "Не получилось загрузить плейлисты.";
+    }
+  }
+  // Styles for the playlist rows (one row per playlist, title left, count right).
+  if (!document.getElementById("ym-sheet-style")) {
+    const style = document.createElement("style");
+    style.id = "ym-sheet-style";
+    style.textContent = ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 6px;border-bottom:1px solid rgba(255,255,255,.08);font-size:20px;color:#e8edf3}" +
+      ".ym-row-count{color:#8fa0b8;font-size:16px;white-space:nowrap}" +
+      "#ym-sheet-list{display:block}";
+    document.head.appendChild(style);
+  }
+  function escapeText(value) {
+    return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  function bindPlayer() {
+    const button = document.getElementById("player-playlists");
+    if (!button) return;
+    button.addEventListener("click", openSheet);
+    syncButton();
+    window.addEventListener("storage", event => { if (event.key === TOKEN_KEY) syncButton(); });
+    window.setInterval(syncButton, 3000);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
+  else bindPlayer();
+
   window.YmLibrary = { uid, playlists, playlistTracks, likes, clearCache };
 })();
