@@ -176,7 +176,7 @@
   const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>';
   const RADIO_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>';
   const SECTIONS = [["music", "Яндекс Музыка", NOTE_ICON, "Плейлисты, волна, поиск, чарт"], ["radio", "Яндекс Радио", RADIO_ICON, "Избранные станции и каталог"]];
-  const MUSIC_TABS = [["playlists", "Плейлисты"], ["wave", "Волна"], ["search", "Поиск"], ["chart", "Чарт"]];
+  const MUSIC_TABS = [["playlists", "Плейлисты", "note"], ["wave", "Волна", "wave"], ["search", "Поиск", "search"], ["chart", "Чарт", "chart"]];
   let activeSection = "music";
   let activeTab = "playlists";
   let radioSession = null;
@@ -198,7 +198,11 @@
       ".ym-section-desc{display:block;font-size:16px;color:var(--muted);margin-top:2px}" +
       ".ym-tab{padding:12px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:20px;cursor:pointer}" +
       ".ym-tab.on{border-color:var(--accent);background:rgba(111,195,250,.14);color:var(--text)}" +
-      ".ym-subtabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
+      ".ym-subtabs{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 16px}" +
+      ".ym-subtab{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font:inherit;font-size:20px;cursor:pointer;text-align:left;min-width:0}" +
+      ".ym-subtab.on{border-color:var(--accent);background:rgba(111,195,250,.14)}" +
+      ".ym-subtab-icon{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
+      ".ym-subtab-icon svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}" +
       ".ym-tab{display:inline-flex;align-items:center;gap:10px}" +
       ".ym-tab svg{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}" +
       ".ym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}" +
@@ -261,8 +265,9 @@
     }));
     const sub = sheet.querySelector(".ym-subtabs");
     sub.hidden = activeSection !== "music";
-    sub.innerHTML = activeSection === "music" ? MUSIC_TABS.map(([id, title]) =>
-      `<button type="button" class="ym-tab${id === activeTab ? " on" : ""}" data-tab="${id}">${title}</button>`).join("") : "";
+    sub.innerHTML = activeSection === "music" ? MUSIC_TABS.map(([id, title, icon]) =>
+      `<button type="button" class="ym-subtab${id === activeTab ? " on" : ""}" data-tab="${id}">` +
+      `<span class="ym-subtab-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${PATHS[icon]}</svg></span><span>${title}</span></button>`).join("") : "";
     sub.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => {
       activeTab = button.dataset.tab;
       renderTabs(sheet);
