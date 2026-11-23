@@ -641,7 +641,12 @@
     }
   }
 
-  async function openSheet() {
+  // section: "music" or "radio" opens that section (the playlist's source buttons); anything else keeps the current one.
+  async function openSheet(section) {
+    if (section === "music" || section === "radio") {
+      activeSection = section;
+      activeTab = "playlists";
+    }
     const sheet = ensureSheet();
     sheet.hidden = false;
     renderTabs(sheet);
