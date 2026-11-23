@@ -24,7 +24,7 @@
   const CLIENT_KEY = "generic_launcher_ym_client_id_v1";
   const SECRET_KEY = "generic_launcher_ym_client_secret_v1";
   const DEVICE_KEY = "generic_launcher_ym_device_v1";
-  const SCOPE = "music:api-public";
+  const SCOPE = "music:api-public music:major-public-api";
 
   function readKey(key) {
     try { return (localStorage.getItem(key) || "").trim(); } catch (error) { return ""; }
