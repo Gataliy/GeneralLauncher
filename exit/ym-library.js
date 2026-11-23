@@ -140,14 +140,31 @@
     return found.map(t => ({ id: String(t.id), title: t.title || "", artists: (t.artists || []).map(a => a.name).join(", ") }));
   }
 
-  // Radio stations: GET /rotor/stations/list -> [{ station: { id: { type, tag }, name } }].
-  // A station is started with wave(seed) where seed = "type:tag" (best effort: shape not yet checked on the head unit).
+  // Radio stations. Favourites: GET /rotor/stations/dashboard (the user's saved stations).
+  // Catalogue: GET /rotor/stations/list (grouped by Жанры, Настроение, ...). Both are read by walking
+  // the response for objects with station.id {type, tag} and station.name, because the exact nesting
+  // is not verified on the head unit yet. A station is started with wave(seed), seed = "type:tag".
+  function collectStations(node, found, seen) {
+    if (!node || typeof node !== "object") return found;
+    if (Array.isArray(node)) { node.forEach(item => collectStations(item, found, seen)); return found; }
+    const station = node.station && typeof node.station === "object" ? node.station : null;
+    const source = station || node;
+    const id = source.id || {};
+    if (source.name && id.type && id.tag) {
+      const seed = `${id.type}:${id.tag}`;
+      if (!seen.has(seed)) { seen.add(seed); found.push({ seed, title: String(source.name) }); }
+      return found;
+    }
+    Object.values(node).forEach(value => collectStations(value, found, seen));
+    return found;
+  }
+
+  async function favouriteStations() {
+    return collectStations(await call("/rotor/stations/dashboard"), [], new Set());
+  }
+
   async function stations() {
-    const data = await call("/rotor/stations/list");
-    return (Array.isArray(data) ? data : []).map(item => item && item.station).filter(Boolean).map(station => {
-      const id = station.id || {};
-      return { seed: id.type && id.tag ? `${id.type}:${id.tag}` : "", title: station.name || "" };
-    }).filter(item => item.seed && item.title);
+    return collectStations(await call("/rotor/stations/list"), [], new Set());
   }
 
   function clearCache() { cache.playlists = null; cache.likes = null; }
@@ -173,6 +190,7 @@
       ".ym-tab.on{border-color:var(--accent);background:rgba(111,195,250,.14);color:var(--text)}" +
       ".ym-subtabs{display:flex;gap:10px;margin:0 0 18px;flex-wrap:wrap}" +
       ".ym-station{cursor:pointer}" +
+      ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
       ".ym-row-count{color:var(--muted);font-size:18px;white-space:nowrap}" +
       ".ym-search{width:100%;box-sizing:border-box;padding:16px 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface-soft);color:var(--text);font-size:22px;margin-bottom:12px}" +
@@ -242,9 +260,17 @@
     try {
       if (activeSection === "radio") {
         body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
-        const extra = await stations().catch(() => []);
-        const list = [{ seed: "user:onyourwave", title: "Моя волна" }].concat(extra);
-        body.innerHTML = list.map(item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`).join("") +
+        const [favourites, catalogue] = await Promise.all([
+          favouriteStations().catch(() => []),
+          stations().catch(() => [])
+        ]);
+        const taken = new Set(favourites.map(item => item.seed));
+        const rest = catalogue.filter(item => !taken.has(item.seed));
+        const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
+        body.innerHTML = '<div class="ym-subhead">Моя волна</div>' + line({ seed: "user:onyourwave", title: "Моя волна" }) +
+          (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
+          (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
+          (!favourites.length && !rest.length ? '<p class="forecast-note">Станции не загрузились. Проверьте токен.</p>' : "") +
           '<div id="ym-radio-tracks"></div>';
         body.querySelectorAll("[data-seed]").forEach(row => row.addEventListener("click", async () => {
           const out = body.querySelector("#ym-radio-tracks");
@@ -298,5 +324,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, stations, clearCache };
+  window.YmLibrary = { uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, clearCache };
 })();
