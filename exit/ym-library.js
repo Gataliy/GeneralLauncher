@@ -176,6 +176,45 @@
     }).filter(block => block.playlists.length);
   }
 
+  // Saved (liked) playlists of other owners: GET /users/{uid}/likes/playlists -> [{ playlist: { uid, kind, title, ... } }].
+  async function likedPlaylists() {
+    const data = await call(`/users/${await uid()}/likes/playlists`);
+    return (Array.isArray(data) ? data : []).map(item => item && item.playlist).filter(Boolean).map(p => ({
+      owner: String(p.uid || (p.owner && p.owner.uid) || ""), kind: String(p.kind || ""), title: p.title || "",
+      trackCount: p.trackCount || 0, cover: pic((p.cover && (p.cover.uri || (p.cover.itemsUri || [])[0])) || p.ogImage || "")
+    })).filter(p => p.owner && p.kind);
+  }
+
+  // Liked albums: GET /users/{uid}/likes/albums -> [album]. Album tracks: GET /albums/{id}/with-tracks -> volumes[][].
+  async function likedAlbums() {
+    const data = await call(`/users/${await uid()}/likes/albums`);
+    return (Array.isArray(data) ? data : []).filter(a => a && a.id).map(a => ({
+      id: String(a.id), title: a.title || "", artists: (a.artists || []).map(x => x.name).join(", "), cover: pic(a.coverUri || "")
+    }));
+  }
+  async function albumTracks(albumId) {
+    const data = await call(`/albums/${encodeURIComponent(albumId)}/with-tracks`);
+    const volumes = (data && data.volumes) || [];
+    return volumes.flat().filter(t => t && t.id).map(t => ({
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(x => x.name).join(", "), cover: pic(t.coverUri || "")
+    }));
+  }
+
+  // Liked artists: GET /users/{uid}/likes/artists/page?page=0&pageSize=100 -> { artists: [...] }.
+  // Artist tracks: GET /artists/{id}/tracks?page=0&page-size=100 -> { tracks: [...] }.
+  async function likedArtists() {
+    const data = await call(`/users/${await uid()}/likes/artists/page?page=0&pageSize=100`);
+    return ((data && data.artists) || []).filter(a => a && a.id).map(a => ({
+      id: String(a.id), title: a.name || "", cover: pic((a.cover && a.cover.uri) || a.coverUri || "")
+    }));
+  }
+  async function artistTracks(artistId) {
+    const data = await call(`/artists/${encodeURIComponent(artistId)}/tracks?page=0&page-size=100`);
+    return ((data && data.tracks) || []).filter(t => t && t.id).map(t => ({
+      id: String(t.id), title: t.title || "", artists: (t.artists || []).map(x => x.name).join(", "), cover: pic(t.coverUri || "")
+    }));
+  }
+
   // Similar tracks: GET /tracks/{id}/similar -> similarTracks[].
   async function similar(trackId) {
     const data = await call("/tracks/" + encodeURIComponent(trackId) + "/similar");
@@ -552,7 +591,30 @@
         }));
       } else if (activeTab === "playlists") {
         body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + "<p class=\"forecast-note\">Загружаю…</p>";
-        body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты из Яндекс Музыки") + rows(await playlists(), "Плейлистов нет.");
+        const [own, savedPl, savedAl, savedAr, me] = await Promise.all([
+          playlists(), likedPlaylists().catch(() => []), likedAlbums().catch(() => []), likedArtists().catch(() => []), uid()
+        ]);
+        const tile = (item, attrs) => `<div class="ym-row ym-station" ${attrs}>` + (item.cover ? `<img class="ym-thumb" src="${escapeText(item.cover)}" alt="" loading="lazy">` : "") +
+          `<span>${escapeText(item.title)}${item.artists ? " — " + escapeText(item.artists) : ""}</span></div>`;
+        body.innerHTML = hero("note", "Плейлисты", "Ваши плейлисты и сохранённое из Яндекс Музыки") +
+          '<div class="ym-subhead">Мои плейлисты</div>' + (own.length ? '<div class="ym-grid">' +
+            own.map(p => tile(Object.assign({ cover: "" }, p), `data-owner="${escapeText(String(me))}" data-kind="${escapeText(p.kind)}"`)).join("") + "</div>" : '<p class="forecast-note">Плейлистов нет.</p>') +
+          (savedPl.length ? '<div class="ym-subhead">Сохранённые плейлисты</div><div class="ym-grid">' +
+            savedPl.map(p => tile(p, `data-owner="${escapeText(p.owner)}" data-kind="${escapeText(p.kind)}"`)).join("") + "</div>" : "") +
+          (savedAl.length ? '<div class="ym-subhead">Сохранённые альбомы</div><div class="ym-grid">' +
+            savedAl.map(a => tile(a, `data-album="${escapeText(a.id)}"`)).join("") + "</div>" : "") +
+          (savedAr.length ? '<div class="ym-subhead">Исполнители</div><div class="ym-grid">' +
+            savedAr.map(a => tile(a, `data-artist="${escapeText(a.id)}"`)).join("") + "</div>" : "") +
+          '<div id="ym-saved-tracks"></div>';
+        const showTracks = async (load) => {
+          const out = body.querySelector("#ym-saved-tracks");
+          out.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+          try { out.innerHTML = rows(await load(), "Треков нет."); }
+          catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        };
+        body.querySelectorAll("[data-kind]").forEach(el => el.addEventListener("click", () => showTracks(() => playlistTracks(el.dataset.kind, el.dataset.owner))));
+        body.querySelectorAll("[data-album]").forEach(el => el.addEventListener("click", () => showTracks(() => albumTracks(el.dataset.album))));
+        body.querySelectorAll("[data-artist]").forEach(el => el.addEventListener("click", () => showTracks(() => artistTracks(el.dataset.artist))));
       } else if (activeTab === "search") {
         body.innerHTML = hero("search", "Поиск", "Треки по названию и исполнителю") + '<input class="ym-search" id="ym-search-input" type="search" placeholder="Найти трек" autocomplete="off"><div id="ym-search-list"></div>';
         const input = body.querySelector("#ym-search-input");
@@ -590,5 +652,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindPlayer);
   else bindPlayer();
 
-  window.YmLibrary = { startDeviceLogin, pollDeviceLogin, uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
+  window.YmLibrary = { likedPlaylists, likedAlbums, albumTracks, likedArtists, artistTracks, startDeviceLogin, pollDeviceLogin, uid, playlists, playlistTracks, likes, search, lyrics, wave, waveNext, chart, favouriteStations, stations, similar, setLike, recommendations, clearCache };
 })();
