@@ -1,5 +1,5 @@
-// Playlist of the media player: the car's music queue (getMusicQueue) in a sheet, tap a track to switch to it
-// (selectMusicQueueItem). The button stays hidden when the player does not report a queue (available: false).
+// Playlist of the media player: source buttons (Яндекс Музыка / Яндекс Радио) and the car's music queue (getMusicQueue)
+// in a sheet; tap a track to switch to it (selectMusicQueueItem). The button is always shown, so the sources stay reachable.
 const QUEUE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><path d="M18 15v6M18 15l3-1"/></svg>';
 let queueData = null;
 let queueQuery = "";
@@ -14,7 +14,8 @@ function readQueue() {
 function syncQueueButton() {
   const button = document.getElementById("player-queue");
   if (!button) return;
-  button.hidden = !readQueue();
+  readQueue();
+  button.hidden = false;
 }
 
 function ensureQueueSheet() {
@@ -26,6 +27,7 @@ function ensureQueueSheet() {
   sheet.hidden = true;
   sheet.innerHTML = '<div class="forecast-card queue-card" role="dialog" aria-label="Плейлист">' +
     '<div class="queue-head"><h3>Плейлист</h3><button type="button" class="queue-close" aria-label="Закрыть">×</button></div>' +
+    '<div class="queue-sources"><button type="button" class="queue-source" data-source="music">Яндекс Музыка</button><button type="button" class="queue-source" data-source="radio">Яндекс Радио</button></div>' +
     '<div class="queue-top"><div class="search-field queue-search"><span>⌕</span><input id="queue-search-input" type="search" placeholder="Найти трек" autocomplete="off"></div>' +
     '<button type="button" class="queue-open" id="queue-open">Открыть плеер</button></div>' +
     '<div class="queue-list"></div><p class="forecast-note"></p></div>';
@@ -36,6 +38,13 @@ function ensureQueueSheet() {
     if (!pkg) return;
     bridge.call("runApp", TOKEN, pkg);
     sheet.hidden = true;
+  });
+  // A source button closes the playlist and opens the Yandex sheet on that section.
+  sheet.querySelector(".queue-sources").addEventListener("click", event => {
+    const button = event.target.closest("[data-source]");
+    if (!button) return;
+    sheet.hidden = true;
+    if (window.YmLibrary) window.YmLibrary.openSheet(button.dataset.source);
   });
   // No auto-focus: focusing the search field would bring up the on-screen keyboard.
   sheet.querySelector("#queue-search-input").addEventListener("input", event => { queueQuery = event.target.value; renderQueueList(); });
@@ -88,9 +97,9 @@ function bindQueue() {
   const button = document.getElementById("player-queue");
   if (!button) return;
   button.innerHTML = QUEUE_ICON;
-  button.hidden = true;
+  button.hidden = false;
   button.addEventListener("click", () => {
-    if (!readQueue()) { syncQueueButton(); return; }
+    readQueue();
     renderQueueSheet();
     ensureQueueSheet().hidden = false;
   });
