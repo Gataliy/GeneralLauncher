@@ -197,6 +197,14 @@
       ".ym-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}" +
       ".ym-grid .ym-row{border:1px solid var(--line);border-radius:16px;padding:16px 18px;background:var(--surface-soft);margin:0}" +
       ".ym-grid .ym-subhead,.ym-grid .forecast-note{grid-column:1/-1}" +
+      ".ym-wave-hero{display:flex;align-items:center;gap:20px;padding:20px;border-radius:24px;border:1px solid var(--line);background:var(--surface-soft);margin-bottom:16px}" +
+      ".ym-wave-art{width:88px;height:88px;border-radius:20px;background:linear-gradient(135deg,#6fc3fa,#7b5cff);display:flex;align-items:center;justify-content:center;flex:none}" +
+      ".ym-wave-art svg{width:44px;height:44px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round}" +
+      ".ym-wave-text{flex:1;min-width:0}" +
+      ".ym-wave-title{font-size:30px;font-weight:600;color:var(--text)}" +
+      ".ym-wave-sub{font-size:18px;color:var(--muted);margin-top:4px}" +
+      ".ym-wave-go{margin:0;white-space:nowrap}" +
+      ".ym-wave-more{width:100%;margin:14px 0 0;text-align:center}" +
       ".ym-station{cursor:pointer}" +
       ".ym-subhead{margin:18px 0 6px;color:var(--muted);font-size:18px;letter-spacing:.02em}" +
       ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 8px;border-bottom:1px solid var(--line);font-size:24px;color:var(--text)}" +
@@ -293,17 +301,31 @@
           } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         }));
       } else if (activeTab === "wave") {
-        body.innerHTML = '<button type="button" class="ym-action" id="ym-wave-start">Моя волна</button><div id="ym-wave-list"></div>';
+        body.innerHTML = '<div class="ym-wave-hero">' +
+          '<div class="ym-wave-art" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h2M7 9v6M11 6v12M15 9v6M19 11v2"/></svg></div>' +
+          '<div class="ym-wave-text"><div class="ym-wave-title">Моя волна</div><div class="ym-wave-sub">Поток по вашим лайкам и прослушанному</div></div>' +
+          '<button type="button" class="ym-action ym-wave-go" id="ym-wave-start">' + (waveSession ? "Новая волна" : "Запустить") + '</button></div>' +
+          '<div id="ym-wave-list"></div>';
+        const list = body.querySelector("#ym-wave-list");
+        const showMore = () => {
+          const more = list.querySelector("#ym-wave-next");
+          if (more) more.remove();
+          list.insertAdjacentHTML("beforeend", '<button type="button" class="ym-action ym-wave-more" id="ym-wave-next">Ещё треки</button>');
+          list.querySelector("#ym-wave-next").addEventListener("click", async () => {
+            try {
+              const extra = await waveNext(waveSession.sessionId);
+              list.querySelector("#ym-wave-next").insertAdjacentHTML("beforebegin", rows(extra, "Больше треков нет."));
+            } catch (error) { list.insertAdjacentHTML("beforeend", `<p class="forecast-note">${escapeText(error.message)}</p>`); }
+          });
+        };
+        if (waveSession) { list.innerHTML = rows(waveSession.tracks, "Волна пуста."); showMore(); }
         body.querySelector("#ym-wave-start").addEventListener("click", async () => {
-          const list = body.querySelector("#ym-wave-list");
           list.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
           try {
             waveSession = await wave();
-            list.innerHTML = rows(waveSession.tracks, "Волна пуста.") + '<button type="button" class="ym-action" id="ym-wave-next">Ещё треки</button>';
-            list.querySelector("#ym-wave-next").addEventListener("click", async () => {
-              const more = await waveNext(waveSession.sessionId);
-              list.insertAdjacentHTML("beforeend", rows(more, "Больше треков нет."));
-            });
+            body.querySelector("#ym-wave-start").textContent = "Новая волна";
+            list.innerHTML = rows(waveSession.tracks, "Волна пуста.");
+            showMore();
           } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         });
       } else if (activeTab === "playlists") {
