@@ -244,7 +244,6 @@ function setPage(name) {
 function renderPage() {
   document.getElementById("action-slots").hidden = false;
   document.getElementById("app-drawer").hidden = true;
-  document.getElementById("add-slot").hidden = false;
   renderSlots();
 }
 
