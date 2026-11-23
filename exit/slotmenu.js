@@ -1,12 +1,15 @@
-// Меню слота по долгому нажатию: «Заменить», «Переставить» (режим перестановки) и «Удалить» (только у занятого слота).
+// Меню слота по долгому нажатию: «Заменить», «Переставить» (режим перестановки), «Удалить» (только у занятого слота)
+// и «Добавить слот» (в конец вкладки, пока есть место).
 function openSlotMenu(index, element) {
   document.querySelectorAll(".slot-menu-backdrop").forEach(node => node.remove());
   const filled = !!(state.slots[index] && state.slots[index].type !== "empty");
+  const canAdd = state.slots.length < MAX_SLOTS;
   const backdrop = document.createElement("div");
   backdrop.className = "slot-menu-backdrop";
   backdrop.innerHTML = `<div class="slot-menu" role="menu" aria-label="Слот">` +
     `<button type="button" role="menuitem" data-act="replace">Заменить</button>` +
     `<button type="button" role="menuitem" data-act="move">Переставить</button>` +
+    (canAdd ? `<button type="button" role="menuitem" data-act="add">Добавить слот</button>` : "") +
     (filled ? `<button type="button" role="menuitem" class="danger" data-act="delete">Удалить</button>` : "") +
     `</div>`;
   document.body.appendChild(backdrop);
@@ -26,6 +29,7 @@ function openSlotMenu(index, element) {
     backdrop.remove();
     if (act === "replace") openPicker(index);
     else if (act === "move") enterSlotOrder();
+    else if (act === "add") addSlot();
     else if (act === "delete") removeSlot(index);
   });
 }

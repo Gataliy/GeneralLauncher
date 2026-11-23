@@ -154,7 +154,6 @@ function expandPlayer() {
   stage.hidden = false;
   document.getElementById("action-slots").hidden = true;
   document.getElementById("app-drawer").hidden = true;
-  document.getElementById("add-slot").hidden = true;
   state.playerExpanded = true;
   // Only the clock, weather and the player stay on screen while the player is open.
   document.body.classList.add("player-expanded");

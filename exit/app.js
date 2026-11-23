@@ -40,19 +40,6 @@ document.addEventListener("DOMContentLoaded", () => {
   bindWeatherForecast();
   document.getElementById("picker-close").addEventListener("click", closePicker);
   document.getElementById("picker-done").addEventListener("click", closePicker);
-  // "+ Слот" is handled by touch position: something on screen can sit above the button and take its clicks,
-  // while a document-level listener still sees every touch. A touch inside the button's box adds a slot.
-  const addSlotButton = document.getElementById("add-slot");
-  document.addEventListener("click", event => {
-    const rect = addSlotButton.getBoundingClientRect();
-    const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
-    if (!inside || addSlotButton.hidden) return;
-    if (addSlotButton.disabled) {
-      showToast(`Слотов ${state.slots.length}: на вкладке нет места`, 2500);
-      return;
-    }
-    addSlot();
-  }, true);
   document.getElementById("picker-remove").addEventListener("click", () => {
     if (state.pickerSlot != null) removeSlot(state.pickerSlot);
     closePicker();
