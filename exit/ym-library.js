@@ -127,7 +127,11 @@
     style.id = "ym-sheet-style";
     style.textContent = ".ym-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 6px;border-bottom:1px solid rgba(255,255,255,.08);font-size:20px;color:#e8edf3}" +
       ".ym-row-count{color:#8fa0b8;font-size:16px;white-space:nowrap}" +
-      "#ym-sheet-list{display:block}";
+      "#ym-sheet-list{display:block}" +
+      "#ym-sheet .queue-card{width:min(1100px,94vw);max-width:94vw;max-height:88vh;height:auto;min-height:520px;padding:32px;box-sizing:border-box;overflow:auto}" +
+      "#ym-sheet .queue-head h3{font-size:30px}" +
+      "#ym-sheet .ym-row{font-size:24px;padding:20px 8px}" +
+      "#ym-sheet .ym-row-count{font-size:18px}";
     document.head.appendChild(style);
   }
   function escapeText(value) {
