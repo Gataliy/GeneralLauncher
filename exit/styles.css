@@ -1404,8 +1404,6 @@ body:not(.player-expanded) .hero-bottom .hero-clock .clock { font-family: "Exit 
 /* Playlist of the media player (queue.js): a button next to next-track, and a sheet with the car's queue. */
 .player-controls .player-queue { width: 52px !important; height: 52px !important; font-size: 0 !important; color: var(--muted); opacity: .75; }
 .player-controls .player-queue[hidden] { display: none !important; }
-/* The Yandex Music button takes the queue's place: the control row is too narrow for both. */
-.player-controls #player-queue { display: none !important; }
 .player-controls .player-queue svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .queue-list { display: flex; flex-direction: column; }
 .queue-row { display: flex; flex-direction: column; align-items: flex-start; width: 100%; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .08); background: transparent; color: inherit; padding: 12px 4px; text-align: left; cursor: pointer; font: inherit; }

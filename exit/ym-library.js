@@ -642,6 +642,8 @@
   }
 
   function bindPlayer() {
+    const tab = document.getElementById("ym-tab");
+    if (tab) tab.addEventListener("click", openSheet);
     const button = document.getElementById("player-playlists");
     if (!button) return;
     button.addEventListener("click", openSheet);
