@@ -171,15 +171,16 @@
 
 
   // Player button and the "Музыка" sheet: top tabs Яндекс Музыка / Яндекс Радио.
-  // Music has sub-tabs Плейлисты, Поиск, Чарт; Radio lists stations (first one is "Моя волна").
+  // Music has sub-tabs Плейлисты, Волна, Поиск, Чарт; Radio lists favourite and catalogue stations.
   const ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h12M4 12h12M4 18h8"/><circle cx="18" cy="17" r="2.5"/><path d="M20.5 17V7"/></svg>';
   const NOTE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>';
   const RADIO_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></svg>';
   const SECTIONS = [["music", "Яндекс Музыка", NOTE_ICON], ["radio", "Яндекс Радио", RADIO_ICON]];
-  const MUSIC_TABS = [["playlists", "Плейлисты"], ["search", "Поиск"], ["chart", "Чарт"]];
+  const MUSIC_TABS = [["playlists", "Плейлисты"], ["wave", "Волна"], ["search", "Поиск"], ["chart", "Чарт"]];
   let activeSection = "music";
   let activeTab = "playlists";
   let radioSession = null;
+  let waveSession = null;
 
   if (!document.getElementById("ym-sheet-style")) {
     const style = document.createElement("style");
@@ -274,7 +275,7 @@
         const taken = new Set(favourites.map(item => item.seed));
         const rest = catalogue.filter(item => !taken.has(item.seed));
         const line = item => `<div class="ym-row ym-station" data-seed="${escapeText(item.seed)}"><span>${escapeText(item.title)}</span></div>`;
-        body.innerHTML = '<div class="ym-grid"><div class="ym-subhead">Моя волна</div>' + line({ seed: "user:onyourwave", title: "Моя волна" }) +
+        body.innerHTML = '<div class="ym-grid">' +
           (favourites.length ? '<div class="ym-subhead">Избранные станции</div>' + favourites.map(line).join("") : "") +
           (rest.length ? '<div class="ym-subhead">Все станции</div>' + rest.map(line).join("") : "") +
           (!favourites.length && !rest.length ? '<p class="forecast-note">Станции не загрузились. Проверьте токен.</p>' : "") +
@@ -291,6 +292,20 @@
             });
           } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
         }));
+      } else if (activeTab === "wave") {
+        body.innerHTML = '<button type="button" class="ym-action" id="ym-wave-start">Моя волна</button><div id="ym-wave-list"></div>';
+        body.querySelector("#ym-wave-start").addEventListener("click", async () => {
+          const list = body.querySelector("#ym-wave-list");
+          list.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
+          try {
+            waveSession = await wave();
+            list.innerHTML = rows(waveSession.tracks, "Волна пуста.") + '<button type="button" class="ym-action" id="ym-wave-next">Ещё треки</button>';
+            list.querySelector("#ym-wave-next").addEventListener("click", async () => {
+              const more = await waveNext(waveSession.sessionId);
+              list.insertAdjacentHTML("beforeend", rows(more, "Больше треков нет."));
+            });
+          } catch (error) { list.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+        });
       } else if (activeTab === "playlists") {
         body.innerHTML = "<p class=\"forecast-note\">Загружаю…</p>";
         body.innerHTML = rows(await playlists(), "Плейлистов нет.");
