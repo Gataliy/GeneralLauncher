@@ -109,7 +109,7 @@
     }
   }
 
-  // Choosing: a long press (about 0.6 s) on the visualizer opens the list of styles. A short tap does nothing, so it cannot change the style by accident.
+  // Choosing: a short tap moves to the next style; a long press (about 0.6 s) opens the list of styles.
   const chooser = document.createElement("div");
   chooser.id = "viz-chooser";
   chooser.className = "viz-chooser";
@@ -143,9 +143,16 @@
     if (event.target.closest("[data-viz-close]") || event.target === chooser) chooser.hidden = true;
   });
   let pressTimer = 0;
+  let longPressed = false;
   el.addEventListener("pointerdown", () => {
     clearTimeout(pressTimer);
-    pressTimer = setTimeout(openChooser, 600);
+    longPressed = false;
+    pressTimer = setTimeout(() => { longPressed = true; openChooser(); }, 600);
+  });
+  // A tap moves to the next style. The click that ends a long press is not a tap: it only clears the flag.
+  el.addEventListener("click", () => {
+    if (longPressed) { longPressed = false; return; }
+    next();
   });
   const cancelPress = () => clearTimeout(pressTimer);
   el.addEventListener("pointerup", cancelPress);
