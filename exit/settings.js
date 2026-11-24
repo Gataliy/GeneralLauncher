@@ -246,6 +246,17 @@
     });
   }
 
+  // Compares dotted versions ("1.2.10" > "1.2.9"): negative when a is older, positive when newer, 0 when equal.
+  function compareLauncherVersions(a, b) {
+    const left = String(a || "").split(".").map(part => parseInt(part, 10) || 0);
+    const right = String(b || "").split(".").map(part => parseInt(part, 10) || 0);
+    for (let i = 0; i < Math.max(left.length, right.length); i++) {
+      const diff = (left[i] || 0) - (right[i] || 0);
+      if (diff) return diff;
+    }
+    return 0;
+  }
+
   // First press: look for a newer version. Second press (the button then says the version): download it and restart.
   async function checkUpdateClicked(event) {
     const button = event.currentTarget;
@@ -261,12 +272,12 @@
       }
       status.textContent = "Проверяю…";
       const info = await checkForUpdate();
-      if (compareLauncherVersions(info.version, window.LAUNCHER_VERSION) > 0) {
+      if (compareLauncherVersions(info.version, BUILD) > 0) {
         pendingUpdate = info;
         button.textContent = "Обновить до " + info.version;
         status.textContent = "Есть новая версия " + info.version + ". Нажмите кнопку, чтобы скачать.";
       } else {
-        status.textContent = "Установлена последняя версия " + window.LAUNCHER_VERSION + ".";
+        status.textContent = "Установлена последняя версия " + BUILD + ".";
       }
     } catch (error) {
       status.textContent = "Не получилось: " + error.message;

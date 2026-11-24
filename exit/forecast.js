@@ -50,10 +50,6 @@ function fillForecastNow() {
     `<div class="forecast-now-cond">${escapeHtml(condition)}</div></div>`;
 }
 
-function escapeHtml(text) {
-  return String(text ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[ch]);
-}
-
 // The car's forecast (getWeather → forecast): per day a label and four periods with temp and condition.
 // Max and min are taken over the periods that have a temperature.
 function renderCarForecast(list, note, days) {
