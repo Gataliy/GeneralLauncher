@@ -210,7 +210,48 @@ function renderMonths() {
   return `<div class="calendar-grid calendar-months">${items.join("")}</div>`;
 }
 
+// On the home screen, under the date in the clock card: the next event of today that has not started yet.
+// Created here (not in index.html), so it also appears on a head unit that gets the launcher only from an update.
+const NEXT_EVENT_STYLE = ".next-event{margin-top:8px;max-width:100%;font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 12px rgba(0,0,0,.65)}" +
+  ".next-event b{font-weight:600;color:var(--text)}";
+
+function ensureNextEvent() {
+  let box = document.getElementById("next-event");
+  if (box) return box;
+  if (!document.getElementById("next-event-style")) {
+    const style = document.createElement("style");
+    style.id = "next-event-style";
+    style.textContent = NEXT_EVENT_STYLE;
+    document.head.appendChild(style);
+  }
+  const host = document.querySelector(".hero-clock");
+  if (!host) return null;
+  box = document.createElement("div");
+  box.id = "next-event";
+  box.className = "next-event";
+  box.hidden = true;
+  host.appendChild(box);
+  return box;
+}
+
+function renderNextEvent() {
+  const box = ensureNextEvent();
+  if (!box) return;
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const next = eventsOn(now).find(item => {
+    const [hours, minutes] = String(item.start || "").split(":").map(Number);
+    return Number.isFinite(hours) && Number.isFinite(minutes) && hours * 60 + minutes >= nowMinutes;
+  });
+  box.hidden = !next;
+  if (!next) { box.textContent = ""; return; }
+  const time = escapeText(next.start);
+  box.innerHTML = `<b>${time}</b> ${escapeText(next.title)}`;
+  box.title = next.end ? `${next.start}–${next.end} ${next.title}` : `${next.start} ${next.title}`;
+}
+
 function renderCalendar() {
+  renderNextEvent();
   const title = document.getElementById("calendar-title");
   const body = document.getElementById("calendar-body");
   const events = document.getElementById("calendar-events");
@@ -271,6 +312,7 @@ const CAL_REMIND_MINUTES = 10;
 const calRemindedKeys = new Set();
 
 function checkReminders() {
+  renderNextEvent();
   const now = new Date();
   for (const item of eventsOn(now)) {
     const [hours, minutes] = String(item.start || "").split(":").map(Number);
