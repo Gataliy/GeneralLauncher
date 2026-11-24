@@ -211,6 +211,7 @@ function renderMonths() {
 }
 
 function renderCalendar() {
+  renderHomeCalendar();
   const title = document.getElementById("calendar-title");
   const body = document.getElementById("calendar-body");
   const events = document.getElementById("calendar-events");
@@ -263,7 +264,84 @@ function bindCalendar() {
   bindClockInCover();
 }
 
+// Home screen card under the clock and weather: "Календарь · события" with today's and tomorrow's events.
+// It sits in the row under those cards, at the same height as the visualizer (viz.js), and a tap opens the calendar.
+// Created here, not in index.html, so it also appears on a head unit that gets the launcher only from an update.
+// Compact on purpose: three lines must fit the strip between the cards and the tab row (60 px at the smallest).
+const HOME_CAL_STYLE = ".home-cal{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 20px;line-height:1.1;color:var(--text);text-align:left}" +
+  ".home-cal-title{font-size:12px;color:#8fa0b8;white-space:nowrap}" +
+  ".home-cal-line{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
+  ".home-cal-line span{color:var(--muted)}" +
+  ".home-cal-line.tomorrow{font-size:13px;color:#6fc3fa}" +
+  ".home-cal-line.tomorrow span{color:#6fc3fa}";
+
+function ensureHomeCalendar() {
+  let card = document.getElementById("home-calendar");
+  if (card) return card;
+  if (!document.getElementById("home-calendar-style")) {
+    const style = document.createElement("style");
+    style.id = "home-calendar-style";
+    style.textContent = HOME_CAL_STYLE;
+    document.head.appendChild(style);
+  }
+  card = document.createElement("div");
+  card.id = "home-calendar";
+  card.className = "viz home-cal";
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", "Открыть календарь");
+  card.hidden = true;
+  card.innerHTML = '<div class="home-cal-title">Календарь · события</div>' +
+    '<div class="home-cal-line" id="home-cal-today"></div>' +
+    '<div class="home-cal-line tomorrow" id="home-cal-tomorrow"></div>';
+  card.addEventListener("click", openCalendar);
+  document.body.appendChild(card);
+  return card;
+}
+
+// "18:30 Встреча · 20:00 Ужин · ещё 1", or "событий нет".
+function dayEventsText(date) {
+  const list = eventsOn(date);
+  if (!list.length) return "событий нет";
+  const shown = list.slice(0, 2).map(item => `${escapeText(item.start)} ${escapeText(item.title)}`).join(" · ");
+  return list.length > 2 ? `${shown} · ещё ${list.length - 2}` : shown;
+}
+
+function renderHomeCalendar() {
+  const card = ensureHomeCalendar();
+  const today = new Date();
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+  const todayLine = document.getElementById("home-cal-today");
+  const tomorrowLine = document.getElementById("home-cal-tomorrow");
+  if (todayLine) todayLine.innerHTML = `<span>Сегодня:</span> ${dayEventsText(today)}`;
+  if (tomorrowLine) tomorrowLine.innerHTML = `<span>Завтра:</span> ${dayEventsText(tomorrow)}`;
+  card.title = "Календарь";
+}
+
+// Same rules as the visualizer: the card is in the row under the clock and weather, and hidden in cover mode.
+function placeHomeCalendar() {
+  const card = ensureHomeCalendar();
+  const clock = document.querySelector(".hero-clock");
+  const weather = document.getElementById("weather-widget");
+  const player = document.querySelector(".player-widget");
+  const tabs = document.querySelector(".actions-title-row");
+  const hidden = !clock || !player || document.body.classList.contains("player-expanded") || document.body.classList.contains("trip-sheet-open");
+  card.hidden = hidden;
+  if (hidden) return;
+  const c = clock.getBoundingClientRect();
+  const weatherVisible = weather && weather.offsetWidth > 0;
+  const right = weatherVisible ? Math.max(c.right, weather.getBoundingClientRect().right) : c.right;
+  const p = player.getBoundingClientRect();
+  const top = p.bottom + 20;
+  const limit = tabs ? tabs.getBoundingClientRect().top - 12 : p.bottom + 120;
+  card.style.left = c.left + "px";
+  card.style.width = Math.max(0, right - c.left) + "px";
+  card.style.top = top + "px";
+  card.style.height = Math.max(60, Math.min(100, limit - top)) + "px";
+}
+
 bindCalendar();
+setInterval(placeHomeCalendar, 500);
+window.addEventListener("resize", placeHomeCalendar);
 
 // Reminders: while the launcher is on screen, a toast shows CAL_REMIND_MINUTES before an event today.
 // Each event is reminded once per launcher session. Reminders need the launcher open (see the notes on system notifications).
@@ -271,6 +349,7 @@ const CAL_REMIND_MINUTES = 10;
 const calRemindedKeys = new Set();
 
 function checkReminders() {
+  renderHomeCalendar();
   const now = new Date();
   for (const item of eventsOn(now)) {
     const [hours, minutes] = String(item.start || "").split(":").map(Number);
