@@ -268,7 +268,7 @@ function bindCalendar() {
 // It sits in the row under those cards, at the same height as the visualizer (viz.js), and a tap opens the calendar.
 // Created here, not in index.html, so it also appears on a head unit that gets the launcher only from an update.
 // Compact on purpose: three lines must fit the strip between the cards and the tab row (60 px at the smallest).
-const HOME_CAL_STYLE = ".home-cal{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 20px;line-height:1.1;color:var(--text);text-align:left}" +
+const HOME_CAL_STYLE = ".home-cal{display:flex;flex-direction:column;justify-content:center;gap:2px;padding:6px 20px 6px 36px;line-height:1.1;color:var(--text);text-align:left}" +
   ".home-cal-title{font-size:12px;color:#8fa0b8;white-space:nowrap}" +
   ".home-cal-line{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
   ".home-cal-line span{color:var(--muted)}" +
