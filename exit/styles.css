@@ -112,7 +112,7 @@ button { color: inherit; }
 
 .sheet-backdrop { position: fixed; inset: 0; z-index: 30; display: flex; align-items: flex-end; justify-content: center; padding: 24px; background: rgba(0, 0, 0, .7); backdrop-filter: blur(10px); }
 .sheet-backdrop[hidden] { display: none; }
-.picker-sheet { width: min(1180px, 100%); max-height: min(790px, calc(100vh - 48px)); border: 1px solid var(--line); border-radius: 28px; padding: 24px; background: #1a1a1e; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); overflow: auto; }
+.picker-sheet { width: min(1180px, 100%); max-height: min(790px, calc(100vh - 48px - var(--safe-bottom))); margin-bottom: var(--safe-bottom); border: 1px solid var(--line); border-radius: 28px; padding: 24px; background: #1a1a1e; box-shadow: 0 30px 90px rgba(0, 0, 0, .55); overflow: auto; }
 .picker-header { display: flex; justify-content: space-between; align-items: center; }
 .picker-header h2 { margin: 5px 0 0; font-size: 27px; font-weight: 560; }
 .picker-header-actions { display: flex; align-items: center; gap: 10px; }
