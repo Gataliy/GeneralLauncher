@@ -2,6 +2,8 @@
 initPages();
 
 document.addEventListener("DOMContentLoaded", () => {
+  // The «+ Слот» button left the page in 1.2.562, but the head unit keeps the old markup from flash, which updates do not replace.
+  document.getElementById("add-slot")?.remove();
   updateClock();
   applyWeather(localStorage.getItem(WEATHER_STORAGE_KEY), false);
   setInterval(updateClock, 30_000);
