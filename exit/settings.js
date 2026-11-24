@@ -9,7 +9,7 @@
     { id: "look", title: "Внешний вид" },
     { id: "wallpapers", title: "Обои" },
     { id: "cards", title: "Карточки" },
-    { id: "music", title: "Музыка" },
+    { id: "viz", title: "Визуализатор" },
     { id: "about", title: "О программе" }
   ];
   const sheet = document.createElement("div");
@@ -36,7 +36,7 @@
     if (tab === "look") renderLook();
     if (tab === "wallpapers") renderWallpapers();
     if (tab === "cards") renderCards();
-    if (tab === "music") renderMusic();
+    if (tab === "viz") renderViz();
     if (tab === "about") renderAbout();
   }
 
@@ -319,75 +319,18 @@
     };
     place();
   }
-  // Yandex Music token test (1.2.528 working copy). The token is kept only in this head unit's storage, never in the repository.
-  const YM_TOKEN_KEY = "generic_launcher_ym_token_v1";
-  function ymToken() {
-    try { return localStorage.getItem(YM_TOKEN_KEY) || ""; } catch (e) { return ""; }
-  }
-  function renderMusic() {
+  // Visualizer styles: the same list as the long press on the visualizer (viz.js).
+  function renderViz() {
     resetArmed = false;
-    const token = ymToken();
     body.innerHTML = `
       <div class="set-group">
-        <div class="set-item set-item-head">
-          <span class="set-item-copy"><strong>Яндекс Музыка</strong><small>Токен хранится только на этом ГУ</small></span>
-          <span class="badge${token ? " ok" : ""}" id="ym-badge">${token ? "Сохранён" : "Не задан"}</span>
-        </div>
-        <div class="set-row set-custom"><input type="password" id="ym-token" placeholder="Токен OAuth" autocomplete="off" value="${escapeHtml(token)}"></div>
-        <div class="set-row set-actions"><button type="button" class="primary" data-act="ym-check">Проверить</button><button type="button" data-act="ym-eye">Показать</button><button type="button" data-act="ym-clear">Удалить</button></div>
-      </div>
-      <div class="set-group">
-        <p class="set-note">Визуализатор под музыкой. Коротким тапом по нему тоже можно переключить стиль.</p>
+        <p class="set-note">Визуализатор под музыкой. Коротким тапом по нему переключается стиль, долгим нажатием открывается список.</p>
         <div class="set-grid viz-grid">${(window.vizStyles || []).map(([id, title]) => `<button type="button" class="viz-pick${(window.vizStyle && window.vizStyle()) === id ? " on" : ""}" data-viz="${id}">${title}</button>`).join("")}</div>
-      </div>
-      <p class="set-note">Неофициальный доступ: он может перестать работать.</p>
-      <p class="set-note" id="ym-status">${token ? "Токен сохранён." : "Токен не задан."}</p>`;
-    const status = body.querySelector("#ym-status");
-    const badge = body.querySelector("#ym-badge");
+      </div>`;
     body.querySelectorAll("[data-viz]").forEach(button => button.addEventListener("click", () => {
       if (window.setVizStyle) window.setVizStyle(button.dataset.viz);
       body.querySelectorAll("[data-viz]").forEach(b => b.classList.toggle("on", b === button));
     }));
-    const saveTyped = () => {
-      const value = body.querySelector("#ym-token").value.trim();
-      try { localStorage.setItem(YM_TOKEN_KEY, value); } catch (e) { status.textContent = "Токен не сохранён: нет памяти."; return false; }
-      badge.textContent = value ? "Сохранён" : "Не задан";
-      badge.classList.toggle("ok", !!value);
-      return true;
-    };
-    // The token is saved when the field loses focus or when "Проверить" is pressed.
-    body.querySelector("#ym-token").addEventListener("change", () => { if (saveTyped()) status.textContent = "Токен сохранён."; });
-    // Shows the typed token so the user can check a paste; hides it again on the next tap.
-    body.querySelector('[data-act="ym-eye"]').addEventListener("click", event => {
-      const input = body.querySelector("#ym-token");
-      const shown = input.type === "text";
-      input.type = shown ? "password" : "text";
-      event.currentTarget.textContent = shown ? "Показать" : "Скрыть";
-    });
-    body.querySelector('[data-act="ym-clear"]').addEventListener("click", () => {
-      try { localStorage.removeItem(YM_TOKEN_KEY); } catch (e) { /* nothing stored */ }
-      body.querySelector("#ym-token").value = "";
-      badge.textContent = "Не задан";
-      badge.classList.remove("ok");
-      status.textContent = "Токен удалён.";
-    });
-    body.querySelector('[data-act="ym-check"]').addEventListener("click", async () => {
-      if (!saveTyped()) return;
-      const value = ymToken();
-      if (!value) { status.textContent = "Сначала введите токен."; return; }
-      status.textContent = "Проверяю…";
-      try {
-        const response = await fetch("https://api.music.yandex.net/account/status", { headers: { Authorization: "OAuth " + value } });
-        if (!response.ok) { status.textContent = `Яндекс ответил ${response.status}. Токен не принят или запрос закрыт.`; return; }
-        const data = await response.json();
-        const name = data && data.result && data.result.account && data.result.account.login;
-        status.textContent = name ? `Подключено: ${name}.` : "Подключено, но логин не получен.";
-      } catch (error) {
-        // Backup when the WebView blocks the request (CORS or no network): check only the token's shape, and say that the server was not reached.
-        const shape = /^y0_[\w-]{20,}$/.test(value) ? "похож на OAuth-токен Яндекса" : "не похож на OAuth-токен (обычно начинается с y0_)";
-        status.textContent = `Сервер Яндекса не проверен: WebView не пустил запрос (CORS или сеть). Формат токена ${shape}.`;
-      }
-    });
   }
   function renderAbout() {
     resetArmed = false;
