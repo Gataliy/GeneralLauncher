@@ -82,7 +82,18 @@
       ...(options || {}),
       headers: { Authorization: "OAuth " + value, ...((options && options.headers) || {}) }
     });
-    if (!response.ok) throw new Error("Яндекс Музыка: HTTP " + response.status);
+    if (!response.ok) {
+      // Keep Yandex's own reason (the response body), so the screen shows why the request was refused.
+      const text = await response.text().catch(() => "");
+      let detail = text;
+      try {
+        const body = JSON.parse(text);
+        const reason = (body && body.error) || (body && body.message) || body;
+        detail = typeof reason === "string" ? reason : (reason.message || reason.name || JSON.stringify(reason));
+      } catch (error) { /* not JSON: show the raw text */ }
+      detail = String(detail || "").trim().slice(0, 300);
+      throw new Error(`Яндекс Музыка: HTTP ${response.status}${detail ? " — " + detail : ""} (${path})`);
+    }
     const json = await response.json();
     return json.result !== undefined ? json.result : json;
   }
