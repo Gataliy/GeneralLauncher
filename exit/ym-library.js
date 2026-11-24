@@ -48,29 +48,41 @@
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams(fields).toString()
     });
-    const json = await response.json().catch(() => ({}));
-    return { ok: response.ok, json };
+    const text = await response.text().catch(() => "");
+    let json = {};
+    try { json = JSON.parse(text) || {}; } catch (error) { json = {}; }
+    return { ok: response.ok, status: response.status, json, text };
+  }
+  // The reason Yandex gave, with its status and the start of its raw answer, so nothing is hidden.
+  function oauthReason(result, fallback) {
+    const reason = result.json.error_description || result.json.error || (result.text || "").slice(0, 200) || fallback;
+    return `${reason} (HTTP ${result.status})`;
   }
   async function startDeviceLogin() {
     const client = readKey(CLIENT_KEY);
     if (!client) throw new Error("Укажите client_id приложения");
-    const { ok, json } = await oauthPost("/device/code", { client_id: client, device_id: deviceId(), device_name: "Generic Launcher", scope: SCOPE });
-    if (!ok || !json.device_code) throw new Error(json.error_description || "Яндекс не выдал код входа");
-    return json;
+    const result = await oauthPost("/device/code", { client_id: client, device_id: deviceId(), device_name: "Generic Launcher", scope: SCOPE });
+    if (!result.ok || !result.json.device_code) throw new Error(oauthReason(result, "Яндекс не выдал код входа"));
+    return result.json;
   }
   // Polls /token until the user enters the code on ya.ru/device; saves the token and returns true.
+  // Temporary failures (429, 5xx, no JSON) are retried with a longer pause; other errors stop the login with their reason.
   async function pollDeviceLogin(code, interval, expiresIn) {
     const until = Date.now() + (expiresIn || 300) * 1000;
     let wait = Math.max(1, interval || 5);
+    let temporary = 0;
     while (Date.now() < until) {
       await new Promise(resolve => setTimeout(resolve, wait * 1000));
       const fields = { grant_type: "device_code", code, client_id: readKey(CLIENT_KEY) };
       const secret = readKey(SECRET_KEY);
       if (secret) fields.client_secret = secret;
-      const { json } = await oauthPost("/token", fields);
-      if (json.access_token) { storeKey(TOKEN_KEY, json.access_token); return true; }
-      if (json.error === "slow_down") wait += 5;
-      else if (json.error !== "authorization_pending") throw new Error(json.error_description || "Вход не удался");
+      const result = await oauthPost("/token", fields);
+      if (result.json.access_token) { storeKey(TOKEN_KEY, result.json.access_token); return true; }
+      if (result.json.error === "authorization_pending") { temporary = 0; continue; }
+      if (result.json.error === "slow_down") { wait += 5; temporary = 0; continue; }
+      const transient = result.status === 429 || result.status >= 500 || !result.json.error;
+      if (transient && temporary < 3) { temporary += 1; wait += 5; continue; }
+      throw new Error(oauthReason(result, "Вход не удался"));
     }
     throw new Error("Код истёк, запросите новый");
   }
@@ -522,15 +534,22 @@
     if (start) start.addEventListener("click", async () => {
       const out = body.querySelector("#ym-login-code");
       out.innerHTML = '<p class="forecast-note">Получаю код…</p>';
+      let codeShown = false;
       try {
         const info = await startDeviceLogin();
         out.innerHTML = `<div class="ym-code">${escapeText(info.user_code)}</div><p class="forecast-note">Откройте ${escapeText(info.verification_url || "ya.ru/device")} и введите код</p>`;
+        codeShown = true;
         await pollDeviceLogin(info.device_code, info.interval, info.expires_in);
         clearCache();
         syncButton();
         renderTabs(sheet);
         renderTab(sheet);
-      } catch (error) { out.innerHTML = `<p class="forecast-note">${escapeText(error.message)}</p>`; }
+      } catch (error) {
+        // Once the code is on screen, the reason goes under it: the code itself stays readable.
+        const line = `<p class="forecast-note ym-login-error">${escapeText(error.message)}</p>`;
+        if (codeShown) out.insertAdjacentHTML("beforeend", line);
+        else out.innerHTML = line;
+      }
     });
   }
 
