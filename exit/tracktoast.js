@@ -93,7 +93,7 @@ function syncRadarStrip() {
     const dist = radarDistText(hud.dist);
     strip.querySelector(".ns-radar").textContent = `Радар${limit}${dist ? " · " + dist : ""}`;
   } else if (showCam) {
-    const label = (typeof TYPE_LABELS !== "undefined" && TYPE_LABELS[cam.cam[2]]) || "Камера";
+    const label = (window.CAMERA_TYPE_LABELS && window.CAMERA_TYPE_LABELS[cam.cam[2]]) || "Камера";
     const dist = radarDistText(cam.dist);
     strip.querySelector(".ns-radar").textContent = `${label}${dist ? " · " + dist : ""}`;
   }

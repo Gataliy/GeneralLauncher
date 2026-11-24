@@ -4,7 +4,8 @@
   const ALERT_RADIUS = 600;      // м: показываем камеру, если она ближе
   const DIRECTION_TOLERANCE = 75;
   const MIN_MOVE = 15;           // м: минимальное смещение для расчёта курса
-  const TYPE_LABELS = {
+  // Also published as window.CAMERA_TYPE_LABELS, so the radar strip (tracktoast.js) can show the camera kind.
+  const TYPE_LABELS = window.CAMERA_TYPE_LABELS = {
     speed_camera: "Камера скорости",
     red_light: "Камера на светофоре",
     stop_line: "Контроль стоп-линии",
