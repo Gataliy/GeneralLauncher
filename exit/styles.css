@@ -1827,7 +1827,3 @@ body:not(.player-expanded) .player-widget .track-info { max-width: 240px; }
 /* The visualizer panel (fixed, z-index 4) reaches down over the top of the + Слот row on some screen sizes; keep the row above it so taps reach the button. */
 .page-controls { position: relative; z-index: 6; }
 
-/* Playlist sheet: the source buttons above the queue search. */
-.queue-sources { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 16px; }
-.queue-source { padding: 16px 18px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface-soft); color: var(--text); font: inherit; font-size: 22px; cursor: pointer; }
-.queue-source:active { border-color: var(--accent); }
