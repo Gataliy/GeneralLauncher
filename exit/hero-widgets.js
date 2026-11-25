@@ -51,6 +51,12 @@
 
   function renderChips() {
     const chips = [];
+    // Doors: the head unit reports no door state, so the label follows the last central-lock command sent from the launcher.
+    // It is placed first so the six-chip limit below never cuts it off.
+    let lastLock = null;
+    try { lastLock = localStorage.getItem(CENTRAL_STATE_KEY); } catch (error) { lastLock = null; }
+    if (lastLock === "locked") chips.push({ label: "Двери", value: "закрыты", open: false });
+    else if (lastLock === "unlocked") chips.push({ label: "Двери", value: "открыты", open: true });
     const OPEN_STATES = ["open", "partial", "tilted"];
     const STATE_WORDS = { closed: "закрыт", open: "открыт", partial: "частично", tilted: "наклон", ajar: "приоткрыт" };
     // Sunroof and trunk from the car's own state commands (see core_manifest). Old data is used only when these are missing.
@@ -217,7 +223,7 @@
   // Which car tiles are shown (the state card). Chosen in Settings > Карточки; all five by default.
   const TILE_KEYS_STORAGE = "generic_launcher_tiles_v1";
   window.hwTileDefs = () => [
-    { key: "lock", label: "Двери", match: null, title: "Двери" },
+    { key: "lock", label: "Двери", match: "Двери", title: "Двери" },
     { key: "roof", label: "Люк", match: "Люк", title: "Люк" },
     { key: "window", label: "Окна", match: "Окна", title: "Окна" },
     { key: "trunk", label: "Багаж.", match: "Багажник", title: "Багажник" },
