@@ -1620,6 +1620,15 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 :root[data-theme="light"] .picker-sheet { background: #f7f9fc !important; border-color: #d5dce6 !important; }
 :root[data-theme="light"] .picker-header h2, :root[data-theme="light"] .picker-item-copy strong { color: #1c2736; }
 .picker-sheet .search-field { margin-bottom: 14px; min-height: 44px; border-radius: 12px; border: 1px solid #243247; background: #0d131c; }
+/* Light theme: the dark block above is !important, so the picker's pills, cards, icons and footer need their own light values. */
+:root[data-theme="light"] .picker-tabs button { background: #ffffff !important; border-color: #d5dce6 !important; color: #5d7189 !important; }
+:root[data-theme="light"] .picker-tabs button.active { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; }
+:root[data-theme="light"] .picker-item { background: #ffffff !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .picker-item:hover, :root[data-theme="light"] .picker-item:focus-visible { background: rgba(47, 111, 180, .08) !important; border-color: #2f6fb4 !important; box-shadow: 0 0 0 3px rgba(47, 111, 180, .14); }
+:root[data-theme="light"] .picker-item-icon { background: #e9eef6 !important; }
+:root[data-theme="light"] .picker-item-copy span { color: #5d7189 !important; }
+:root[data-theme="light"] .picker-sheet .search-field { background: #ffffff; border-color: #c9d2de; }
+:root[data-theme="light"] .picker-foot { background: #f7f9fc; }
 .picker-foot { position: sticky; bottom: 0; background: #111824; padding-top: 12px; }
 /* Slot action menu (short tap / long press on a slot): same sheet, pill-free buttons and colours as the slot picker. */
 .slot-menu { width: 220px !important; padding: 10px !important; border-radius: 16px !important; background: #111824 !important; border: 1px solid #243247 !important; box-shadow: 0 20px 50px rgba(0, 0, 0, .5) !important; backdrop-filter: none !important; gap: 8px !important; }
