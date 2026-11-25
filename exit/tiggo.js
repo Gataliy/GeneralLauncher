@@ -321,6 +321,8 @@ function applyNavHud(raw) {
     return;
   }
   if (sender !== "NAVI") return;
+  // Route running flag: the home editor's "При навигации" rule reads it.
+  window.navRouteOn = Boolean(data.naviOn);
   const turn = document.getElementById("tg-turn-icon");
   const dist = document.getElementById("tg-turn-dist");
   const road = document.getElementById("tg-next-road");
