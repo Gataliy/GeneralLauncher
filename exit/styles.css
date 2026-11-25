@@ -63,7 +63,7 @@ button { color: inherit; }
 body:not(.player-expanded) .player-widget .source-controls { flex: 0 0 auto; order: 3; margin-left: auto; }
 body.player-expanded .player-widget.expanded .source-controls { grid-column: 3; grid-row: 1; }
 .source-switch { display: flex; flex: none; gap: 6px; }
-.source-button { min-height: 26px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 13px; background: rgba(255, 255, 255, .08); color: inherit; font: inherit; font-size: 13px; white-space: nowrap; }
+.source-button { min-height: 40px; padding: 0 16px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 20px; background: rgba(255, 255, 255, .08); color: inherit; font: inherit; font-size: 15px; white-space: nowrap; }
 .source-button:active { transform: scale(.97); }
 :root[data-theme="light"] .source-button { background: #ffffff; border-color: #d5dce6; color: #1d2a3a; }
 .track-artist { display: block; margin-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 21px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
