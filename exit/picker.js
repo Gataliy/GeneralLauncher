@@ -1,5 +1,5 @@
 // The slot picker: the sheet that assigns an action, app, combination or seat control to a slot.
-// Each page offers its own group; the apps page offers installed apps and combinations.
+// Each page offers its own group; the apps page offers installed apps only.
 // Loaded before app.js; the functions stay plain globals.
 
 // Which group of actions each page offers.
@@ -117,14 +117,11 @@ function pickerItems() {
     };
   }).filter(split => split.raw && !hidden.includes(split.raw));
 
-  // Each page offers its own group; the screen page also offers combinations and the installed apps.
+  // Each page offers its own group. The apps page lists only the installed apps; the menu actions are the tile after the slots.
   const group = PAGE_GROUPS[state.page];
   const groupItems = [...shownLevels, ...fanItems, ...tempItems, ...actions].filter(item => pickerGroup(item) === group);
   if (state.page === "combos") return splits;
-  if (state.page === "apps") {
-    const appActions = actions.filter(item => pickerGroup(item) === "apps");
-    return [...appActions, ...pickerApps()];
-  }
+  if (state.page === "apps") return pickerApps();
   return groupItems;
 }
 
