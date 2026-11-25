@@ -262,39 +262,43 @@
 
 
 
-// Режим редактирования главной. Состояние, навигация и компас можно переносить между верхним и нижним рядом,
-// а также менять ширину и высоту. Часы и погода остаются в нижнем ряду (в развёрнутом плеере они видны вместе с ним).
-// Плеер не трогаем. Режим открывается долгим нажатием на стоянке.
+// Режим редактирования главной (v5). Два ряда по 20 колонок. Карточки можно переставлять, менять ширину и высоту ряда,
+// задавать правило показа (всегда / при навигации / при радаре / кроме радара), сдвигать на X/Y и собирать в группу
+// (столбик или строка). Пока раскладку не меняли, главный экран держится на CSS, как и раньше.
+// Режим открывается долгим нажатием на карточке на стоянке.
 (function () {
-  const KEY = "generic_launcher_hw_layout_v4";
-  const ALL = ["state", "nav", "compass", "clock", "weather", "heatWheel", "heatGlass", "fan"];
-  const CROSS = ["state", "nav", "compass", "heatWheel", "heatGlass", "fan"];
-  const BASE_IDS = ["state", "nav", "compass", "clock", "weather"];
-  const RESIZABLE = ALL;
-  const DEFAULT = {
-    top: ["state", "nav", "compass"],
-    bottom: ["clock", "weather"],
-    hidden: ["heatWheel", "heatGlass", "fan"],
-    memory: { heatWheel: { row: "bottom", index: 0 }, heatGlass: { row: "bottom", index: 1 }, fan: { row: "bottom", index: 2 } },
-    widths: { state: 515, nav: 420, compass: 206, clock: 250, weather: 250, heatWheel: 190, heatGlass: 190, fan: 190 },
-    heights: { state: 170, nav: 170, compass: 170, clock: 171, weather: 171, heatWheel: 170, heatGlass: 170, fan: 170 }
-  };
-  const CARD_NAMES = { state: "Состояние автомобиля", nav: "Навигация", compass: "Компас", clock: "Часы", weather: "Погода" };  // heater and fan cards removed from the list (1.2.508)
-  const MIN_W = 160;
-  const MIN_H = 120;
-  const MAX_H = { top: 190, bottom: 171 };
-  const FILL_MIN = { top: 300, bottom: 480 };   // the flexible card of a row never shrinks below this
-  const GAP = 15;
-  const MOVABLE = {
-    state: ".hw-state", nav: ".hw-nav", compass: ".hw-compass",
-    clock: ".hero-clock", weather: "#weather-widget",
-    heatWheel: ".hw-heat-wheel", heatGlass: ".hw-heat-glass", fan: ".hw-fan"
-  };
-  const topBox = document.getElementById("hero-widgets");
   const bottomBox = document.querySelector(".hero-bottom");
   const hero = document.getElementById("hero");
   const player = bottomBox ? bottomBox.querySelector(".player-widget") : null;
-  if (!topBox || !bottomBox || !hero || !player) return;
+  if (!bottomBox || !hero || !player) return;
+
+  const KEY = "generic_launcher_hw_layout_v5";
+  const KEY_V4 = "generic_launcher_hw_layout_v4";
+  const COLS = 20;
+  const EDITABLE = ["state", "nav", "clock", "weather", "player"];
+  const CARD_NAMES = { state: "Состояние автомобиля", nav: "Навигация", clock: "Часы", weather: "Погода" };
+  const MOVABLE = { state: ".hw-state", nav: ".hw-nav", clock: ".hero-clock", weather: "#weather-widget", player: ".player-widget" };
+  const MIN_SPAN = { state: 4, nav: 4, clock: 3, weather: 3, player: 8 };
+  const MIN_ROW_H = 100;
+  const MAX_ROW_H = 260;
+  const MAX_OFFSET = 300;
+  const RULES = [["always", "Всегда"], ["nav", "При навигации"], ["radar", "При радаре"], ["noRadar", "Кроме радара"]];
+  const ALIGNS = [["start", "К началу"], ["center", "По центру"], ["end", "К концу"], ["stretch", "Растянуть"]];
+  const ALIGN_CSS = { start: "flex-start", center: "center", end: "flex-end", stretch: "stretch" };
+  // Same placement as the CSS home screen (20 columns, rows 150 px, gaps 14 px across and 28 px between rows).
+  const DEFAULT = {
+    colGap: 14,
+    rowGap: 28,
+    rowH: [150, 150],
+    rows: [
+      { justify: "start", items: [{ id: "state", span: 8 }, { id: "nav", span: 12 }] },
+      { justify: "start", items: [{ id: "clock", span: 4 }, { id: "weather", span: 4 }, { id: "player", span: 12 }] }
+    ]
+  };
+  // The heater and fan cards stay hidden by CSS (1.2.508), so the fan is not read from the car.
+  const FAN_CARD_SHOWN = false;
+  const PLACE_PROPS = ["grid-column", "grid-row", "height", "min-height", "max-height", "transform", "flex", "width", "min-width", "align-self"];
+
   // Heater cards: a tap toggles the heater, the state comes from the slot bar. They are created here, hidden by default.
   const HEAT_CARDS = [
     { id: "heatWheel", cls: "hw-heat-wheel", title: "Обогрев руля", command: "TOGGLE_HEAT_WHEEL", key: "rulHeat" },
@@ -365,7 +369,7 @@
     setTimeout(readFan, 2600);
   }
   function readFan() {
-    if (!bridge.has("requestCarCommandAsync") || layout.hidden.includes("fan")) return;
+    if (!bridge.has("requestCarCommandAsync") || !FAN_CARD_SHOWN) return;
     bridge.requestCarCommandAsync("fan_get_" + Date.now(), JSON.stringify({ cmd: "climate_get_state" }));
   }
   // Answer to "climate_get_state" (routed from commands.js by the fan_get_ request id).
@@ -383,203 +387,482 @@
   renderFan();
   setTimeout(readFan, 1500);
 
-  const elOf = id => document.querySelector(MOVABLE[id]);
-  const rowOfId = id => (layout.top.includes(id) ? "top" : "bottom");
-  const fillId = row => (row === "top" && layout.top.includes("nav") ? "nav" : null);
-  const boxOf = row => (row === "top" ? topBox : bottomBox);
+  // ---- Модель раскладки ----
+  // Строка: { justify, items }. Элемент строки — карточка { id, span, when, x, y, hidden }
+  // или группа { group: true, span, mode, gap, align, members: [карточка с grow] }.
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const clone = v => JSON.parse(JSON.stringify(v));
+  const ruleIds = RULES.map(r => r[0]);
+  const alignIds = ALIGNS.map(a => a[0]);
+  let layout = null;
 
-  function clone(v) { return JSON.parse(JSON.stringify(v)); }
-  function validLayout(v) {
-    if (!v || !Array.isArray(v.top) || !Array.isArray(v.bottom)) return false;
-    const hidden = Array.isArray(v.hidden) ? v.hidden : [];
-    const all = [...v.top, ...v.bottom, ...hidden];
-    return new Set(all).size === all.length && all.every(id => ALL.includes(id)) && BASE_IDS.every(id => all.includes(id));
+  function cardProps(c) {
+    const player = c.id === "player";
+    return {
+      id: c.id,
+      when: !player && ruleIds.includes(c.when) ? c.when : "always",
+      x: clamp(Math.round(Number(c.x) || 0), -MAX_OFFSET, MAX_OFFSET),
+      y: clamp(Math.round(Number(c.y) || 0), -MAX_OFFSET, MAX_OFFSET),
+      hidden: !player && c.hidden === true
+    };
   }
+  function toSingle(c, span) {
+    const p = cardProps(c);
+    return { id: p.id, span, when: p.when, x: p.x, y: p.y, hidden: p.hidden };
+  }
+  function toMember(c) {
+    const p = cardProps(c);
+    return { id: p.id, grow: clamp(Math.round(Number(c.grow) || 1), 1, 6), when: p.when, x: p.x, y: p.y, hidden: p.hidden };
+  }
+  const minSpanOf = item => (item.group ? Math.max(...item.members.map(m => MIN_SPAN[m.id])) : MIN_SPAN[item.id]);
+  const rowSpan = row => row.items.reduce((sum, it) => sum + it.span, 0);
+  const rowIndexOf = item => layout.rows.findIndex(row => row.items.includes(item));
+
+  // Shrinks the widest items (never the kept one first) until the row fits into COLS columns.
+  function fitRow(row, keep) {
+    while (rowSpan(row) > COLS) {
+      const cands = row.items.filter(it => it !== keep && it.span > minSpanOf(it)).sort((a, b) => b.span - a.span);
+      if (cands.length) cands[0].span--;
+      else if (keep && keep.span > minSpanOf(keep)) keep.span--;
+      else break;
+    }
+  }
+  // Drops empty groups, turns a one-member group back into a card, keeps spans in range and the row within COLS.
+  function tidyRow(row) {
+    row.items = row.items.filter(it => !it.group || it.members.length)
+      .map(it => (it.group && it.members.length === 1 ? toSingle(it.members[0], it.span) : it));
+    row.items.forEach(it => { it.span = clamp(Math.round(it.span), minSpanOf(it), COLS); });
+    fitRow(row, null);
+  }
+  function normalize(input) {
+    if (!input || !Array.isArray(input.rows) || input.rows.length !== 2) return null;
+    const seen = new Set();
+    const take = c => {
+      if (!c || !EDITABLE.includes(c.id) || seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    };
+    const rows = input.rows.map(row => ({
+      justify: alignIds.includes(row.justify) ? row.justify : "start",
+      items: (Array.isArray(row.items) ? row.items : []).map(it => {
+        if (it.group) {
+          const members = (Array.isArray(it.members) ? it.members : []).filter(take).map(toMember);
+          return {
+            group: true,
+            span: Number(it.span) || 4,
+            mode: it.mode === "row" ? "row" : "stack",
+            gap: clamp(Math.round(Number(it.gap) || 0), 0, 80),
+            align: alignIds.includes(it.align) ? it.align : "stretch",
+            members
+          };
+        }
+        return take(it) ? toSingle(it, Number(it.span) || 4) : null;
+      }).filter(Boolean)
+    }));
+    if (seen.size !== EDITABLE.length) return null;
+    const out = {
+      colGap: clamp(Math.round(Number(input.colGap) || 0), 0, 60),
+      rowGap: clamp(Math.round(Number(input.rowGap) || 0), 0, 80),
+      rowH: [0, 1].map(i => clamp(Math.round(Number(input.rowH && input.rowH[i]) || 150), MIN_ROW_H, MAX_ROW_H)),
+      rows
+    };
+    out.rows.forEach(tidyRow);
+    return out;
+  }
+  const DEFAULT_N = normalize(clone(DEFAULT));
+
   function loadLayout() {
-    const base = clone(DEFAULT);
     try {
-      const saved = JSON.parse(localStorage.getItem(KEY));
-      if (validLayout(saved)) {
-        base.top = saved.top;
-        base.bottom = saved.bottom;
-        base.hidden = saved.hidden || [];
-        base.memory = { ...base.memory, ...(saved.memory || {}) };
-        // Cards added in a later build start hidden, unless the saved layout already places them.
-        ALL.forEach(id => {
-          if (!base.top.includes(id) && !base.bottom.includes(id) && !base.hidden.includes(id)) base.hidden.push(id);
-        });
-        ALL.forEach(id => {
-          const w = Number(saved.widths && saved.widths[id]);
-          if (Number.isFinite(w) && w >= MIN_W) base.widths[id] = Math.round(w);
-          const h = Number(saved.heights && saved.heights[id]);
-          if (Number.isFinite(h) && h >= MIN_H) base.heights[id] = Math.round(h);
-        });
+      const saved = normalize(JSON.parse(localStorage.getItem(KEY)));
+      if (saved) return saved;
+    } catch (error) { /* broken value: use the default */ }
+    const base = normalize(clone(DEFAULT));
+    // The old editor's hidden cards carry over once.
+    try {
+      const v4 = JSON.parse(localStorage.getItem(KEY_V4));
+      if (v4 && Array.isArray(v4.hidden)) {
+        base.rows.forEach(row => row.items.forEach(it => (it.group ? it.members : [it]).forEach(c => {
+          if (v4.hidden.includes(c.id) && c.id !== "player") c.hidden = true;
+        })));
       }
-    } catch (error) { /* broken value: keep defaults */ }
+    } catch (error) { /* no old value */ }
     return base;
   }
-  let layout = loadLayout();
-
   function saveLayout() {
     try { localStorage.setItem(KEY, JSON.stringify(layout)); }
     catch (error) { console.warn("Раскладка не сохранена", error); }
   }
+  const isDefault = () => JSON.stringify(layout) === JSON.stringify(DEFAULT_N);
 
-  // Each row keeps its cards in the DOM container of that row, so moving a card between rows moves its element too.
-  function placeCards() {
-    layout.top.forEach(id => { const el = elOf(id); if (el.parentNode !== topBox) topBox.appendChild(el); });
-    layout.bottom.forEach(id => { const el = elOf(id); if (el.parentNode !== bottomBox) bottomBox.insertBefore(el, player); });
+  function allCards(l) {
+    const out = [];
+    l.rows.forEach(row => row.items.forEach(it => (it.group ? it.members : [it]).forEach(c => out.push(c))));
+    return out;
   }
-
-  function applyLayout() {
-    // In the home port the cards stay where the markup puts them (navigation and car state on the bottom row).
-    if (!document.body.classList.contains("home-port")) placeCards();
-    ALL.forEach(id => { elOf(id).style.display = layout.hidden.includes(id) ? "none" : ""; });
-    // The home port (body.home-port) sets the sizes and places in CSS, so the saved sizes do not override it.
-    if (document.body.classList.contains("home-port")) {
-      topBox.style.gridTemplateColumns = "";
-      ALL.forEach(id => { const el = elOf(id); el.style.gridColumn = ""; el.style.order = ""; el.style.flex = ""; el.style.width = ""; el.style.height = ""; });
-      return;
+  // Where a card sits: row index r, item index i in the row, member index m in its group (-1 when it is a plain card).
+  function locate(id) {
+    for (let r = 0; r < layout.rows.length; r++) {
+      const items = layout.rows[r].items;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (!it.group) { if (it.id === id) return { r, i, item: it, m: -1 }; }
+        else {
+          const m = it.members.findIndex(c => c.id === id);
+          if (m >= 0) return { r, i, item: it, m };
+        }
+      }
     }
-    const fill = fillId("top");
-    layout.top.forEach((id, index) => {
-      const el = elOf(id);
-      el.style.gridColumn = String(index + 1);
-      el.style.order = "";
-      el.style.flex = "";
-      el.style.width = id === fill ? "" : `${layout.widths[id]}px`;
-      el.style.height = `${layout.heights[id]}px`;
-    });
-    topBox.style.gridTemplateColumns = layout.top
-      .map(id => (id === fill ? "minmax(0, 1fr)" : `${layout.widths[id]}px`)).join(" ");
-    layout.bottom.forEach((id, index) => {
-      const el = elOf(id);
-      el.style.gridColumn = "";
-      el.style.order = String(index + 1);
-      el.style.flex = `0 0 ${layout.widths[id]}px`;
-      el.style.width = `${layout.widths[id]}px`;
-      el.style.height = `${layout.heights[id]}px`;
-    });
-    player.style.order = "99";
+    return null;
   }
-  // Hiding a card keeps its row and place; showing it puts it back there.
-  function hideCard(id) {
-    const row = rowOfId(id);
-    layout.memory[id] = { row, index: layout[row].indexOf(id) };
-    layout[row] = layout[row].filter(other => other !== id);
-    layout.hidden.push(id);
-    applyLayout();
-    saveLayout();
+  const cardOf = id => {
+    const loc = locate(id);
+    return loc ? (loc.m >= 0 ? loc.item.members[loc.m] : loc.item) : null;
+  };
+  // Takes a card out of its row or group. Returns a record that can be put back as a card or a member.
+  function takeOut(id) {
+    const loc = locate(id);
+    if (!loc) return null;
+    if (loc.m < 0) {
+      layout.rows[loc.r].items.splice(loc.i, 1);
+      return { ...loc.item, grow: 1 };
+    }
+    const [c] = loc.item.members.splice(loc.m, 1);
+    return { ...c, span: clamp(Math.min(loc.item.span, 4), MIN_SPAN[id], COLS) };
   }
-  function showCard(id) {
-    const memo = layout.memory[id] || { row: "bottom", index: layout.bottom.length };
-    layout.hidden = layout.hidden.filter(other => other !== id);
-    const row = memo.row === "top" || memo.row === "bottom" ? memo.row : "bottom";
-    const index = Math.min(Math.max(0, memo.index), layout[row].length);
-    layout[row].splice(index, 0, id);
-    delete layout.memory[id];
-    applyLayout();
-    saveLayout();
-  }
-  applyLayout();
 
-  // Largest width a card may take in its row: the row minus gaps, the other fixed cards and the flexible card.
-  function maxWidth(id) {
-    const row = rowOfId(id);
-    const ids = layout[row];
-    const fill = fillId(row) || (row === "bottom" ? "player" : null);
-    const others = ids.filter(other => other !== id && other !== fill).reduce((sum, other) => sum + layout.widths[other], 0);
-    const gaps = GAP * ids.length;
-    return Math.max(MIN_W, boxOf(row).clientWidth - gaps - others - (FILL_MIN[row] || 0));
+  // ---- Видимость ----
+  const radarOn = () => !!(window.navWarning && window.navWarning.hud);
+  const stageMode = () => {
+    const b = document.body.classList;
+    return b.contains("player-expanded") || b.contains("night-mode") || bottomBox.classList.contains("in-stage");
+  };
+  // In the cover and night screens only the manual hide counts: the rules do not change what those screens show.
+  function cardVisible(c, stage) {
+    if (c.hidden) return false;
+    if (stage) return true;
+    if (c.when === "nav") return window.navRouteOn === true;
+    if (c.when === "radar") return radarOn();
+    if (c.when === "noRadar") return !radarOn();
+    return true;
+  }
+  const itemVisible = (it, stage) => (it.group ? it.members.some(c => cardVisible(c, stage)) : cardVisible(it, stage));
+
+  // Visible items of a row with their columns. Justify moves them to the start, the centre or the end, or stretches them.
+  function planRow(row, stage) {
+    const vis = row.items.filter(it => itemVisible(it, stage));
+    const spans = vis.map(it => it.span);
+    const total = spans.reduce((a, b) => a + b, 0);
+    if (row.justify === "stretch" && total > 0) {
+      let used = 0;
+      for (let k = 0; k < spans.length; k++) {
+        if (k === spans.length - 1) spans[k] = Math.max(1, COLS - used);
+        else { spans[k] = Math.max(1, Math.round(spans[k] * COLS / total)); used += spans[k]; }
+      }
+    }
+    const shown = spans.reduce((a, b) => a + b, 0);
+    let col = 1;
+    if (row.justify === "center") col += Math.floor((COLS - shown) / 2);
+    else if (row.justify === "end") col += COLS - shown;
+    return vis.map((item, k) => {
+      const p = { item, col, span: spans[k] };
+      col += spans[k];
+      return p;
+    });
+  }
+
+  // ---- Применение модели к странице ----
+  const elOf = id => document.querySelector(MOVABLE[id]);
+  const wrapOf = new WeakMap();
+  function wrapperFor(group) {
+    let w = wrapOf.get(group);
+    if (!w) {
+      w = document.createElement("div");
+      w.className = "hw-group";
+      const handle = document.createElement("span");
+      handle.className = "hw-resize";
+      handle.setAttribute("aria-hidden", "true");
+      w.appendChild(handle);
+      wrapOf.set(group, w);
+    }
+    w._group = group;
+    return w;
+  }
+  const memberEls = w => [...w.children].filter(ch => ch.dataset && ch.dataset.hw);
+  function setHidden(el, hide) {
+    if (!el) return;
+    if (hide) el.style.setProperty("display", "none", "important");
+    else el.style.removeProperty("display");
+  }
+  function clearPlace(el) { PLACE_PROPS.forEach(p => el.style.removeProperty(p)); }
+  function placeCell(el, r, col, span, h) {
+    el.style.setProperty("grid-row", String(r + 1), "important");
+    el.style.setProperty("grid-column", `${col} / span ${span}`, "important");
+    el.style.setProperty("height", h + "px", "important");
+    el.style.setProperty("min-height", "0", "important");
+    el.style.setProperty("max-height", "none", "important");
+    el.style.setProperty("min-width", "0", "important");
+  }
+  function setOffset(el, c) {
+    if (c.x || c.y) el.style.setProperty("transform", `translate(${c.x}px, ${c.y}px)`, "important");
+    else el.style.removeProperty("transform");
+  }
+  function styleMember(el, c) {
+    clearPlace(el);
+    el.style.setProperty("flex", `${c.grow} 1 0px`, "important");
+    el.style.setProperty("min-width", "0", "important");
+    el.style.setProperty("min-height", "0", "important");
+    el.style.setProperty("height", "auto", "important");
+    el.style.setProperty("max-height", "none", "important");
+    setOffset(el, c);
+  }
+  // Keeps the members of a group in their order inside its wrapper.
+  function syncMembers(w, members) {
+    members.forEach((c, k) => {
+      const el = elOf(c.id);
+      if (!el) return;
+      const kids = memberEls(w);
+      if (kids[k] !== el) w.insertBefore(el, kids[k] || null);
+    });
+  }
+  function releaseWrapper(w) {
+    memberEls(w).forEach(el => { clearPlace(el); bottomBox.appendChild(el); });
+    w.remove();
+  }
+  function apply() {
+    if (!layout) return;
+    const stage = stageMode();
+    const plain = stage || isDefault();
+    allCards(layout).forEach(c => setHidden(elOf(c.id), !cardVisible(c, stage)));
+    const live = new Set();
+    if (plain) {
+      // The CSS places the cards: no inline placement, no wrappers.
+      allCards(layout).forEach(c => {
+        const el = elOf(c.id);
+        if (!el) return;
+        clearPlace(el);
+        if (el.parentNode !== bottomBox) bottomBox.appendChild(el);
+      });
+      ["grid-template-rows", "row-gap", "column-gap"].forEach(p => bottomBox.style.removeProperty(p));
+    } else {
+      bottomBox.style.setProperty("grid-template-rows", `${layout.rowH[0]}px ${layout.rowH[1]}px`, "important");
+      bottomBox.style.setProperty("row-gap", layout.rowGap + "px", "important");
+      bottomBox.style.setProperty("column-gap", layout.colGap + "px", "important");
+      layout.rows.forEach((row, r) => {
+        planRow(row, false).forEach(p => {
+          const h = layout.rowH[r];
+          if (!p.item.group) {
+            const el = elOf(p.item.id);
+            if (!el) return;
+            if (el.parentNode !== bottomBox) bottomBox.appendChild(el);
+            clearPlace(el);
+            placeCell(el, r, p.col, p.span, h);
+            setOffset(el, p.item);
+            return;
+          }
+          const g = p.item;
+          const w = wrapperFor(g);
+          live.add(w);
+          if (w.parentNode !== bottomBox) bottomBox.appendChild(w);
+          placeCell(w, r, p.col, p.span, h);
+          w.style.setProperty("display", "flex", "important");
+          w.style.setProperty("flex-direction", g.mode === "row" ? "row" : "column", "important");
+          w.style.setProperty("gap", g.gap + "px", "important");
+          w.style.setProperty("align-items", ALIGN_CSS[g.align], "important");
+          w.style.setProperty("position", "relative");
+          syncMembers(w, g.members);
+          g.members.forEach(c => { const el = elOf(c.id); if (el) styleMember(el, c); });
+        });
+      });
+    }
+    // Wrappers that are not placed (no visible member, or the plain layout) give their cards back.
+    bottomBox.querySelectorAll(":scope > .hw-group").forEach(w => { if (!live.has(w)) releaseWrapper(w); });
+  }
+
+  // ---- Редактирование: состояние, панель, инспектор ----
+  let editing = false;
+  let selectedId = null;
+  let press = null;      // { id, x, y, moved, longFired }
+  let dragId = null;
+  let dropInfo = null;
+  let resize = null;     // { item, r, x, y, span, h, node }
+  let pressTimer = null;
+  let suppressClickUntil = 0;
+  let resetArmed = false;
+  let resetTimer = null;
+
+  // Every change: tidy the rows, apply to the page, save, redraw the panel and the inspector.
+  function commit() {
+    layout.rows.forEach(tidyRow);
+    apply();
+    saveLayout();
+    renderInspector();
+    renderPanel();
+  }
+  function setCardHidden(id, hidden) {
+    const c = cardOf(id);
+    if (!c || id === "player") return;
+    c.hidden = hidden;
+    if (hidden && selectedId === id) selectedId = null;
+    commit();
   }
 
   const bar = document.createElement("div");
   bar.className = "hw-edit-bar";
-  bar.innerHTML = `<span class="hw-edit-hint">Перетащи карточку · потяни угол — размер</span><button type="button" data-act="cards">Карточки</button><button type="button" data-act="reset">Сбросить</button><button type="button" data-act="done">Готово</button>`;
+  bar.innerHTML = '<span class="hw-edit-hint">Нажми карточку · перетащи · угол — размер</span><button type="button" data-act="cards">Карточки</button><button type="button" data-act="reset">Сбросить</button><button type="button" data-act="done">Готово</button>';
   hero.appendChild(bar);
-  // Panel with one switch per card: a hidden card keeps its place for when it is shown again.
+  const resetButton = bar.querySelector('[data-act="reset"]');
   const panel = document.createElement("div");
   panel.className = "hw-panel";
+  hero.appendChild(panel);
+  const inspector = document.createElement("div");
+  inspector.className = "hw-inspector";
+  inspector.hidden = true;
+  document.body.appendChild(inspector);   // on the body: the dock below the hero paints over elements inside it
+
+  // Panel: one switch per card, and the gaps between cards and rows.
+  const stepRow = (key, label, value, s) => `<div class="hw-step-row"><span>${label}</span><span>`
+    + `<button type="button" class="hw-step" data-gap="${key}" data-d="${-s}">−</button><b>${value} px</b>`
+    + `<button type="button" class="hw-step" data-gap="${key}" data-d="${s}">+</button></span></div>`;
   function renderPanel() {
-    panel.innerHTML = ALL.map(id => {
-      const shown = !layout.hidden.includes(id);
+    panel.innerHTML = Object.keys(CARD_NAMES).map(id => {
+      const shown = !cardOf(id).hidden;
       return `<button type="button" data-card="${id}">${CARD_NAMES[id]}<b>${shown ? "показана" : "скрыта"}</b></button>`;
-    }).join("");
+    }).join("") + stepRow("colGap", "Зазор между карточками", layout.colGap, 2) + stepRow("rowGap", "Зазор между рядами", layout.rowGap, 4);
   }
   panel.addEventListener("click", event => {
-    const id = event.target.closest("button")?.dataset.card;
-    if (!id) return;
-    if (layout.hidden.includes(id)) showCard(id); else hideCard(id);
-    renderPanel();
-  });
-  hero.appendChild(panel);
-  renderPanel();
-  const resetButton = bar.querySelector('[data-act="reset"]');
-  let resetArmed = false;
-  let resetTimer = null;
-
-  ALL.forEach(id => {
-    const handle = document.createElement("span");
-    handle.className = "hw-resize";
-    handle.setAttribute("aria-hidden", "true");
-    elOf(id).appendChild(handle);
-    const hide = document.createElement("span");
-    hide.className = "hw-hide";
-    hide.textContent = "×";
-    hide.setAttribute("role", "button");
-    elOf(id).appendChild(hide);
-    hide.addEventListener("pointerdown", event => event.stopPropagation());
-    hide.addEventListener("click", event => {
-      event.stopPropagation();
-      if (editing) { hideCard(id); renderPanel(); }
-    });
-    handle.addEventListener("pointerdown", event => {
-      if (!editing) return;
-      event.stopPropagation();
-      event.preventDefault();
-      resizing = { id, x: event.clientX, y: event.clientY, w: layout.widths[id], h: layout.heights[id] };
-      elOf(id).classList.add("hw-resizing");
-    });
+    const b = event.target.closest("button");
+    if (!b) return;
+    if (b.dataset.card) { setCardHidden(b.dataset.card, !cardOf(b.dataset.card).hidden); return; }
+    if (b.dataset.gap) {
+      const d = Number(b.dataset.d);
+      if (b.dataset.gap === "colGap") layout.colGap = clamp(layout.colGap + d, 0, 60);
+      else layout.rowGap = clamp(layout.rowGap + d, 0, 80);
+      commit();
+    }
   });
 
-  let editing = false;
-  let pressTimer = null;
-  let dragId = null;
-  let hoverLock = null;
-  let longPressActive = false;
-  let resizing = null;
-  let startX = 0;
-  let startY = 0;
-  let suppressClickUntil = 0;
+  // Inspector: the settings of the selected card (its group when it is in one).
+  function renderInspector() {
+    document.querySelectorAll(".hw-selected").forEach(el => el.classList.remove("hw-selected"));
+    const loc = editing && selectedId ? locate(selectedId) : null;
+    if (!loc) { selectedId = null; inspector.hidden = true; return; }
+    const card = cardOf(selectedId);
+    const cell = loc.item;
+    const row = layout.rows[loc.r];
+    const group = loc.m >= 0 ? cell : null;
+    const isPlayer = selectedId === "player";
+    const btns = (act, list, current) => list.map(([v, label]) =>
+      `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === current}">${label}</button>`).join("");
+    const step = (act, value, label, s) => `<span class="hw-ins-lab">${label}</span>`
+      + `<button type="button" data-act="${act}" data-d="${-s}">−</button><b class="hw-ins-value">${value}</b>`
+      + `<button type="button" data-act="${act}" data-d="${s}">+</button>`;
+    const parts = [`<div class="hw-ins-title">${CARD_NAMES[selectedId]}${group ? " · в группе" : ""}</div>`];
+    if (!isPlayer) parts.push(`<div class="hw-ins-row"><span class="hw-ins-lab">Показывать</span>${btns("rule", RULES, card.when)}</div>`);
+    parts.push(`<div class="hw-ins-row">${step("span", cell.span, "Ширина, колонок", 1)}${step("rowH", layout.rowH[loc.r], "Высота ряда", 10)}`
+      + `<span class="hw-ins-lab">Ряд</span>${btns("justify", ALIGNS, row.justify)}</div>`);
+    if (group) {
+      parts.push(`<div class="hw-ins-row"><span class="hw-ins-lab">Группа</span>${btns("mode", [["stack", "Столбик"], ["row", "Строка"]], group.mode)}`
+        + `${step("gap", group.gap, "Зазор", 2)}<span class="hw-ins-lab">Выравнивание</span>${btns("align", ALIGNS, group.align)}`
+        + `${step("grow", card.grow, "Доля", 1)}<button type="button" data-act="out">Вынести из группы</button></div>`);
+    }
+    const hasLeft = !!row.items[loc.i - 1];
+    const hasRight = !!row.items[loc.i + 1];
+    parts.push(`<div class="hw-ins-row">${step("x", card.x, "Сдвиг X", 10)}${step("y", card.y, "Сдвиг Y", 10)}`
+      + `<button type="button" data-act="merge" data-d="-1"${hasLeft ? "" : " disabled"}>← В группу слева</button>`
+      + `<button type="button" data-act="merge" data-d="1"${hasRight ? "" : " disabled"}>В группу справа →</button>`
+      + `${isPlayer ? "" : '<button type="button" data-act="hide">Скрыть</button>'}</div>`);
+    inspector.innerHTML = parts.join("");
+    inspector.hidden = false;
+    elOf(selectedId).classList.add("hw-selected");
+  }
+  inspector.addEventListener("click", event => {
+    const b = event.target.closest("button");
+    if (!b || !selectedId || !locate(selectedId)) return;
+    inspectorAction(b.dataset.act, b.dataset.v, Number(b.dataset.d));
+  });
+  function inspectorAction(act, v, d) {
+    const loc = locate(selectedId);
+    const card = cardOf(selectedId);
+    const cell = loc.item;
+    const row = layout.rows[loc.r];
+    if (act === "merge") { mergeInto(selectedId, d); return; }
+    if (act === "out") { extract(selectedId); return; }
+    if (act === "hide") { setCardHidden(selectedId, true); return; }
+    switch (act) {
+      case "rule": card.when = v; break;
+      case "span": cell.span = clamp(cell.span + d, minSpanOf(cell), COLS - (rowSpan(row) - cell.span)); break;
+      case "rowH": layout.rowH[loc.r] = clamp(layout.rowH[loc.r] + d, MIN_ROW_H, MAX_ROW_H); break;
+      case "justify": row.justify = v; break;
+      case "mode": cell.mode = v; break;
+      case "gap": cell.gap = clamp(cell.gap + d, 0, 80); break;
+      case "align": cell.align = v; break;
+      case "grow": card.grow = clamp(card.grow + d, 1, 6); break;
+      case "x": card.x = clamp(card.x + d, -MAX_OFFSET, MAX_OFFSET); break;
+      case "y": card.y = clamp(card.y + d, -MAX_OFFSET, MAX_OFFSET); break;
+      default: return;
+    }
+    commit();
+  }
 
+  // Groups: "в группу слева/справа" joins the neighbour in the row (a stack, or the neighbour's group).
+  function mergeInto(id, dir) {
+    const loc = locate(id);
+    if (!loc) return;
+    const row = layout.rows[loc.r];
+    const other = row.items[loc.i + dir];
+    if (!other) return;
+    const card = takeOut(id);
+    if (other.group) other.members.push(toMember(card));
+    else {
+      const members = dir < 0 ? [toMember(other), toMember(card)] : [toMember(card), toMember(other)];
+      row.items.splice(row.items.indexOf(other), 1, { group: true, span: other.span, mode: "stack", gap: 14, align: "stretch", members });
+    }
+    commit();
+  }
+  // "Вынести из группы": the card goes right after its group in the same row.
+  function extract(id) {
+    const loc = locate(id);
+    if (!loc || loc.m < 0) return;
+    const group = loc.item;
+    const row = layout.rows[loc.r];
+    const card = takeOut(id);
+    row.items.splice(row.items.indexOf(group) + 1, 0, toSingle(card, card.span));
+    commit();
+  }
+
+  // ---- Вход, выход, перетаскивание и размер ----
   function enterEdit() {
-    // The expanded player shows a fixed set of cards: the layout is changed only on the main screen.
-    if (document.body.classList.contains("player-expanded")) return false;
+    const body = document.body.classList;
+    if (body.contains("player-expanded") || body.contains("night-mode")) return false;
     if (typeof state !== "undefined" && typeof state.speedKmh === "number" && state.speedKmh > 0) {
       if (typeof showToast === "function") showToast("На ходу раскладку не меняем");
       return false;
     }
     editing = true;
-    document.body.classList.add("hw-edit");
+    body.add("hw-edit");
+    renderPanel();
     return true;
   }
-
   function exitEdit() {
     editing = false;
     dragId = null;
-    resizing = null;
-    hoverLock = null;
+    dropInfo = null;
+    resize = null;
+    press = null;
+    selectedId = null;
     resetArmed = false;
     clearTimeout(resetTimer);
     resetButton.textContent = "Сбросить";
+    panel.classList.remove("open");
     document.body.classList.remove("hw-edit");
-    document.querySelectorAll(".hw-dragging, .hw-resizing").forEach(el => el.classList.remove("hw-dragging", "hw-resizing"));
+    document.querySelectorAll(".hw-dragging, .hw-resizing, .hw-drop, .hw-selected").forEach(el => el.classList.remove("hw-dragging", "hw-resizing", "hw-drop", "hw-selected"));
+    renderInspector();
     saveLayout();
   }
 
   bar.addEventListener("click", event => {
-    const act = event.target.closest("button")?.dataset.act;
-    if (act === "done") { exitEdit(); panel.classList.remove("open"); }
+    const act = event.target.closest("button") ? event.target.closest("button").dataset.act : null;
+    if (act === "done") exitEdit();
     if (act === "cards") { renderPanel(); panel.classList.toggle("open"); }
     if (act === "reset") {
       if (!resetArmed) {
@@ -591,112 +874,195 @@
       clearTimeout(resetTimer);
       resetArmed = false;
       resetButton.textContent = "Сбросить";
-      layout = clone(DEFAULT);
       panel.classList.remove("open");
-      applyLayout();
-      renderPanel();
-      saveLayout();
+      selectedId = null;
+      layout = clone(DEFAULT_N);
+      commit();
     }
   });
 
-  // The click that ends a long press must not also trigger the card's own action (for example the weather refresh).
-  document.addEventListener("click", event => {
-    if (Date.now() < suppressClickUntil) {
-      event.stopPropagation();
-      event.preventDefault();
+  // The row of a point: the top half or the bottom half of the box (split between the rows).
+  function rowAtY(y) {
+    const box = bottomBox.getBoundingClientRect();
+    return y < box.top + layout.rowH[0] + layout.rowGap / 2 ? 0 : 1;
+  }
+  // Where a dragged card would go: before or after a card, or a slot in a row (before the first item to the right).
+  function computeDrop(x, y, id) {
+    const under = document.elementFromPoint(x, y);
+    const el = under && under.closest ? under.closest("[data-hw]") : null;
+    const loc = el ? locate(el.dataset.hw) : null;
+    if (el && el.dataset.hw !== id && loc) {
+      const r = el.getBoundingClientRect();
+      const before = loc.m >= 0 ? y < r.top + r.height / 2 : x < r.left + r.width / 2;
+      return { kind: "card", id: el.dataset.hw, before };
     }
-  }, true);
-
-  ALL.forEach(id => {
-    const el = elOf(id);
-    el.addEventListener("pointerdown", event => {
-      if (event.target.classList.contains("hw-resize")) return;
-      startX = event.clientX;
-      startY = event.clientY;
-      if (editing) {
-        dragId = id;
-        el.classList.add("hw-dragging");
-        return;
-      }
-      clearTimeout(pressTimer);
-      pressTimer = setTimeout(() => {
-        if (!enterEdit()) return;
-        longPressActive = true;
-        dragId = id;
-        el.classList.add("hw-dragging");
-      }, 700);
-    });
-  });
-
-  // Which row the pointer is over: the top band or the bottom band (split at the middle of the gap between them).
-  function rowAt(y) {
-    const top = topBox.getBoundingClientRect();
-    const bottom = bottomBox.getBoundingClientRect();
-    return y < (top.bottom + bottom.top) / 2 ? "top" : "bottom";
+    const row = rowAtY(y);
+    let beforeItem = null;
+    for (const p of planRow(layout.rows[row], false)) {
+      const node = p.item.group ? wrapOf.get(p.item) : elOf(p.item.id);
+      if (!node) continue;
+      const b = node.getBoundingClientRect();
+      if (b.left + b.width / 2 > x) { beforeItem = p.item; break; }
+    }
+    return { kind: "slot", row, beforeItem };
+  }
+  function markDrop(info) {
+    document.querySelectorAll(".hw-drop").forEach(el => el.classList.remove("hw-drop"));
+    if (info && info.kind === "card") { const el = elOf(info.id); if (el) el.classList.add("hw-drop"); }
+  }
+  function moveCard(id, target) {
+    if (target.kind === "card" && target.id === id) return;
+    const card = takeOut(id);
+    if (!card) return;
+    if (target.kind === "card") {
+      const loc = locate(target.id);
+      if (!loc) return;
+      if (loc.m >= 0) loc.item.members.splice(loc.m + (target.before ? 0 : 1), 0, toMember(card));
+      else layout.rows[loc.r].items.splice(loc.i + (target.before ? 0 : 1), 0, toSingle(card, card.span));
+    } else {
+      const row = layout.rows[target.row];
+      const at = target.beforeItem ? row.items.indexOf(target.beforeItem) : -1;
+      row.items.splice(at < 0 ? row.items.length : at, 0, toSingle(card, card.span));
+    }
+    commit();
   }
 
-  document.addEventListener("pointermove", event => {
-    if (resizing) {
-      const { id, x, y, w, h } = resizing;
-      const row = rowOfId(id);
-      if (fillId(row) !== id) {
-        const nextW = Math.min(maxWidth(id), Math.max(MIN_W, w + (event.clientX - x)));
-        layout.widths[id] = Math.round(nextW);
-      }
-      const nextH = Math.min(MAX_H[row], Math.max(MIN_H, h + (event.clientY - y)));
-      layout.heights[id] = Math.round(nextH);
-      applyLayout();
-      return;
+  // Corner handle: the width in columns (the card or the group), the height of its row.
+  function startResize(event, handle) {
+    event.preventDefault();
+    event.stopPropagation();
+    const wrap = handle.closest(".hw-group");
+    let item = null;
+    let node = null;
+    if (wrap && wrap.parentNode === bottomBox) { item = wrap._group; node = wrap; }
+    else {
+      const el = handle.closest("[data-hw]");
+      const loc = el ? locate(el.dataset.hw) : null;
+      if (!loc || loc.m >= 0) return;
+      item = loc.item;
+      node = el;
     }
-    if (!editing) {
-      if (pressTimer && Math.hypot(event.clientX - startX, event.clientY - startY) > 12) clearTimeout(pressTimer);
-      return;
-    }
-    if (!dragId) return;
-    const under = document.elementFromPoint(event.clientX, event.clientY)?.closest(".hw-card, .hero-clock, #weather-widget");
-    const targetId = ALL.find(id => elOf(id) === under) || null;
-    if (!targetId) hoverLock = null;
-    const from = rowOfId(dragId);
-    const to = rowAt(event.clientY);
-    if (to !== from) {
-      if (!CROSS.includes(dragId)) return;
-      layout[from] = layout[from].filter(id => id !== dragId);
-      const index = targetId && layout[to].includes(targetId) ? layout[to].indexOf(targetId) : layout[to].length;
-      layout[to].splice(index, 0, dragId);
-      hoverLock = null;
-      applyLayout();
-      return;
-    }
-    if (!targetId || targetId === dragId || !layout[from].includes(targetId)) return;
-    // After a swap the dragged card sits where the target was, so the pointer is over the target again: wait until it leaves.
-    if (targetId === hoverLock) return;
-    hoverLock = targetId;
-    const row = layout[from];
-    const a = row.indexOf(dragId);
-    const b = row.indexOf(targetId);
-    [row[a], row[b]] = [row[b], row[a]];
-    applyLayout();
-  });
+    const r = rowIndexOf(item);
+    if (r < 0) return;
+    resize = { item, r, x: event.clientX, y: event.clientY, span: item.span, h: layout.rowH[r], node };
+    node.classList.add("hw-resizing");
+  }
+  function updateResize(event) {
+    const unit = (bottomBox.clientWidth - (COLS - 1) * layout.colGap) / COLS + layout.colGap;
+    const others = rowSpan(layout.rows[resize.r]) - resize.item.span;
+    const dx = event.clientX - resize.x;
+    const dy = event.clientY - resize.y;
+    const min = minSpanOf(resize.item);
+    resize.item.span = clamp(Math.round(resize.span + dx / unit), min, Math.max(min, COLS - others));
+    layout.rowH[resize.r] = clamp(Math.round(resize.h + dy), MIN_ROW_H, MAX_ROW_H);
+    apply();
+  }
+  function finishResize() {
+    resize.node.classList.remove("hw-resizing");
+    resize = null;
+    commit();
+  }
 
-  function endPointer() {
-    clearTimeout(pressTimer);
-    if (resizing) {
-      elOf(resizing.id).classList.remove("hw-resizing");
-      resizing = null;
-      saveLayout();
+  // Pointer: a press on a card selects it (in edit mode) or starts the long press that opens edit mode.
+  bottomBox.addEventListener("pointerdown", event => {
+    const t = event.target;
+    if (!(t instanceof Element)) return;
+    if (editing && t.closest(".hw-resize")) { startResize(event, t.closest(".hw-resize")); return; }
+    if (t.closest(".hw-hide")) return;
+    const el = t.closest("[data-hw]");
+    if (!el) return;
+    press = { id: el.dataset.hw, x: event.clientX, y: event.clientY, moved: false, longFired: false };
+    if (!editing) {
+      clearTimeout(pressTimer);
+      pressTimer = setTimeout(() => {
+        if (!press || !enterEdit()) return;
+        press.longFired = true;
+        dragId = press.id;
+        elOf(dragId).classList.add("hw-dragging");
+      }, 700);
+    }
+  });
+  document.addEventListener("pointermove", event => {
+    if (resize) { updateResize(event); return; }
+    if (press && !press.moved && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) {
+      press.moved = true;
+      if (!editing) { clearTimeout(pressTimer); press = null; return; }
+      dragId = press.id;
+      elOf(dragId).classList.add("hw-dragging");
     }
     if (dragId) {
-      elOf(dragId).classList.remove("hw-dragging");
-      dragId = null;
-      hoverLock = null;
+      dropInfo = computeDrop(event.clientX, event.clientY, dragId);
+      markDrop(dropInfo);
     }
-    if (longPressActive) { suppressClickUntil = Date.now() + 300; longPressActive = false; }
+  });
+  function endPointer() {
+    clearTimeout(pressTimer);
+    if (resize) finishResize();
+    if (dragId) {
+      const id = dragId;
+      const target = dropInfo;
+      dragId = null;
+      dropInfo = null;
+      markDrop(null);
+      const el = elOf(id);
+      if (el) el.classList.remove("hw-dragging");
+      if (target) moveCard(id, target);
+    } else if (press && editing && !press.moved && !press.longFired) {
+      selectedId = press.id;
+      renderInspector();
+    }
+    if (press && (press.longFired || press.moved)) suppressClickUntil = Date.now() + 300;
+    press = null;
   }
   document.addEventListener("pointerup", endPointer);
   document.addEventListener("pointercancel", endPointer);
 
-  window.hwToggleCard = id => (layout.hidden.includes(id) ? showCard(id) : hideCard(id));
-  window.hwIsHidden = id => layout.hidden.includes(id);
+  // In edit mode a tap on a card does not run the card's own action; the hide button and the editor's controls still work.
+  document.addEventListener("click", event => {
+    if (Date.now() < suppressClickUntil) { event.stopPropagation(); event.preventDefault(); return; }
+    if (!editing) return;
+    const t = event.target;
+    if (!(t instanceof Element) || t.closest(".hw-hide, .hw-resize, .hw-inspector, .hw-edit-bar, .hw-panel")) return;
+    if (t.closest("[data-hw], .hw-group")) { event.stopPropagation(); event.preventDefault(); }
+  }, true);
+  bottomBox.addEventListener("click", event => {
+    const hide = event.target instanceof Element ? event.target.closest(".hw-hide") : null;
+    if (!hide || !editing) return;
+    event.stopPropagation();
+    const el = hide.closest("[data-hw]");
+    if (el) setCardHidden(el.dataset.hw, true);
+  });
+
+  // ---- Старт ----
+  layout = loadLayout();
+  Object.keys(MOVABLE).forEach(id => {
+    const el = elOf(id);
+    if (!el) return;
+    el.dataset.hw = id;
+    if (!el.querySelector(":scope > .hw-resize")) {
+      const handle = document.createElement("span");
+      handle.className = "hw-resize";
+      handle.setAttribute("aria-hidden", "true");
+      el.appendChild(handle);
+    }
+    if (id !== "player" && !el.querySelector(":scope > .hw-hide")) {
+      const hide = document.createElement("span");
+      hide.className = "hw-hide";
+      hide.textContent = "×";
+      hide.setAttribute("role", "button");
+      el.appendChild(hide);
+    }
+  });
+  apply();
+  renderPanel();
+  renderInspector();
+  // The cover, the night screen, the edit mode and the car's route/radar state all change the placement: re-apply on each change.
+  setInterval(apply, 1000);
+  new MutationObserver(apply).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  new MutationObserver(apply).observe(bottomBox, { attributes: true, attributeFilter: ["class"] });
+  window.addEventListener("load", apply);
+  window.hwToggleCard = id => setCardHidden(id, !(cardOf(id) && cardOf(id).hidden));
+  window.hwIsHidden = id => { const c = cardOf(id); return !!(c && c.hidden); };
   window.hwCardNames = CARD_NAMES;
-  window.hwResetLayout = () => { layout = clone(DEFAULT); applyLayout(); saveLayout(); };
+  window.hwResetLayout = () => { layout = clone(DEFAULT_N); selectedId = null; commit(); };
 })();
