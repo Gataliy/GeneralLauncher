@@ -3,6 +3,9 @@
 // diagnostics log, otherwise the log fills with lines. Background polls of car data (veh_, sun_, state_) are skipped too.
 const DIAG_QUIET_EVENTS = ["minimapframe", "gps", "speed", "rpm", "musicinfo", "hud"];
 const DIAG_QUIET_REQUESTS = /"requestId"\s*:\s*"(veh|sun|state|carst|fan)_/;
+// Once the head unit sends a "theme" event, that event is the source. The values read by probeTheme() below
+// then only feed the diagnostic toast, so a static property (for example a fixed "light") cannot overwrite the car's day/night.
+let themeFromEvent = false;
 window.onAndroidEvent = function onAndroidEvent(type, data) {
   const quiet = DIAG_QUIET_EVENTS.includes(String(type).toLowerCase())
     || (type === "carResponse" && DIAG_QUIET_REQUESTS.test(typeof data === "string" ? data : JSON.stringify(data) || ""));
@@ -11,7 +14,7 @@ window.onAndroidEvent = function onAndroidEvent(type, data) {
   if (type === "launcherCatalog") applyLauncherCatalog(data);
   if (type === "musicInfo") applyMusicInfo(data);
   if (type === "weather") applyWeather(data);
-  if (type === "theme") applyTheme(data);
+  if (type === "theme") { themeFromEvent = true; applyTheme(data); }
   if (type === "speed") noteSpeed(data);
   if (type === "rpm") applyRpm(data);
   if (String(type).toLowerCase() === "minimapframe") applyNavFrame(data);
@@ -142,7 +145,7 @@ function probeTheme() {
     seen.push(`${method}()=${JSON.stringify(value)}`);
     if (!found && themeFromPayload(value)) found = value;
   }
-  if (found !== null) applyTheme(found);
+  if (found !== null && !themeFromEvent) applyTheme(found);
   // Diagnostic: show once what the head unit returned, so the theme source can be checked on the car.
   if (!window.__themeShown) {
     window.__themeShown = true;
