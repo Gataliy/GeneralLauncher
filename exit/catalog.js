@@ -195,7 +195,10 @@ const CATALOG_FALLBACK_MS = 2500;
 
 function readHostLists() {
   state.actions = normalizeActionList(bridge.getRunEnum());
-  state.apps = appListFrom(bridge.getUserApps());
+  // Kept for the Приложения debug view: what the head unit actually returned for the app list.
+  const rawApps = bridge.call("getUserApps", TOKEN);
+  state.userAppsRaw = (typeof rawApps === "string" ? rawApps : String(JSON.stringify(rawApps ?? null))).slice(0, 300);
+  state.apps = appListFrom(parseJson(rawApps, []));
   const splits = bridge.getSavedSplitActions();
   state.splits = Array.isArray(splits) ? splits : [];
 }
@@ -217,6 +220,7 @@ function refreshAppList() {
   state.appListAskedAt = now;
   if (bridge.has("requestLauncherCatalogAsync")) {
     state.catalogAsync = bridge.requestLauncherCatalogAsync(nextRequestId("catalog"));
+    state.catalogAcceptedAt = `${new Date().toTimeString().slice(0, 8)} accepted=${state.catalogAsync}`;
   }
   readHostLists();
   scheduleCatalogRender();
@@ -226,6 +230,9 @@ function applyLauncherCatalog(raw) {
   const data = parseJson(raw, raw) || {};
   state.catalogReceived = true;
   const items = Array.isArray(data.items) ? data.items : [];
+  // Kept for the Приложения debug view: every catalog part, with its error if the head unit sent one.
+  state.catalogLog = [...(state.catalogLog || []), { section: data.section, items: items.length, append: !!data.append, complete: !!data.complete, error: data.error || "" }].slice(-20);
+  if (data.error) showToast(`Каталог «${data.section}»: ${data.error}`, 6000);
   if (data.section === "actions") {
     const commands = normalizeActionList(items);
     state.actions = data.append ? [...new Set([...state.actions, ...commands])] : commands;

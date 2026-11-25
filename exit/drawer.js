@@ -80,7 +80,7 @@ function renderAppDrawer() {
   if (state.appsDebug) {
     const pre = document.createElement("pre");
     pre.className = "app-debug";
-    pre.textContent = JSON.stringify({ apps: state.apps || [], lastMusic: state.lastMusicRaw || null }, null, 1);
+    pre.textContent = JSON.stringify({ apps: state.apps || [], userAppsRaw: state.userAppsRaw || "", catalogAccepted: state.catalogAcceptedAt || "", catalog: state.catalogLog || [], lastMusic: state.lastMusicRaw || null }, null, 1);
     drawer.appendChild(pre);
     return;
   }
