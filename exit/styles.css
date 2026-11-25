@@ -50,7 +50,7 @@ button { color: inherit; }
 @keyframes weather-spin { to { transform: rotate(360deg); } }
 
 .player-widget { flex: 1 0 480px; min-width: 0; width: auto; max-width: 930px; min-height: 168px; padding: 21px; display: flex; align-items: center; gap: 24px; }
-.album-art { width: 126px; height: 126px; flex: 0 0 auto; border-radius: 23px; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 68% 28%, var(--accent), transparent 28%), linear-gradient(145deg, #4c5045, #151517 68%); }
+.album-art { width: 126px; height: 126px; flex: 0 0 auto; border-radius: 23px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(circle at 68% 28%, var(--accent), transparent 28%), linear-gradient(145deg, #4c5045, #151517 68%); }
 .album-art span { font-size: 33px; font-weight: 850; }
 .album-art.has-image { background-size: cover; background-position: center; }
 .album-art.has-image span { display: none; }
@@ -1273,7 +1273,7 @@ body.player-expanded #player-stage .hero-bottom.in-stage > .hero-clock .clock { 
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget { flex-direction: column !important; justify-content: center !important; padding: 18px 16px !important; gap: 10px !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > #weather-widget .weather-icon { width: 58px !important; height: 58px !important; font-size: 30px !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget { padding: 16px 22px !important; gap: 22px !important; }
-body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .album-art { display: block !important; width: 168px !important; height: 168px !important; flex: 0 0 168px !important; }
+body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .album-art { display: flex !important; width: 168px !important; height: 168px !important; flex: 0 0 168px !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .player-controls button { width: 56px !important; height: 56px !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .player-controls svg { width: 28px !important; height: 28px !important; }
 body.player-expanded #player-stage .hero-bottom.in-stage > .player-widget .track-info { grid-column: auto !important; min-width: 0 !important; }
