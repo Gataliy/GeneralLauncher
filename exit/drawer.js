@@ -51,7 +51,18 @@ function launchApp(packageName, element) {
 // Diagnostic: a long press on the "Приложения" tab shows the raw list the head unit sent.
 function toggleAppsDebug() {
   state.appsDebug = !state.appsDebug;
+  document.getElementById("app-drawer").hidden = !state.appsDebug;
   renderAppDrawer();
+}
+
+// On the Приложения page, after the slots: every app the head unit reports (installed first, then built-in), then the system menu.
+function appendAppTiles(fragment) {
+  // Apps already placed as slots on this page are not repeated.
+  const placed = new Set(state.slots.filter(slot => slot.type === "app").map(slot => slot.packageName));
+  const apps = (state.apps || []).filter(app => app && appPackage(app) && !placed.has(appPackage(app)));
+  apps.filter(app => !isBuiltInApp(app)).forEach(app => fragment.appendChild(appTile(app)));
+  apps.filter(isBuiltInApp).forEach(app => fragment.appendChild(appTile(app)));
+  fragment.appendChild(systemMenuTile());
 }
 
 function bindAppsDebug() {
