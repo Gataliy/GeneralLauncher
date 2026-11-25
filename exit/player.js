@@ -119,9 +119,12 @@ const SOURCE_APPS = [
   { label: "Радио", packageName: "ru.yandex.radio" }
 ];
 
+// The buttons sit above the prev / play / next row. A wrapper keeps the row's place in every player layout.
 function bindSourceButtons() {
-  const info = document.querySelector(".track-info");
-  if (!info || document.getElementById("source-switch")) return;
+  const controls = document.querySelector(".player-controls");
+  if (!controls || document.getElementById("source-switch")) return;
+  const column = document.createElement("div");
+  column.className = "source-controls";
   const row = document.createElement("div");
   row.id = "source-switch";
   row.className = "source-switch";
@@ -133,14 +136,9 @@ function bindSourceButtons() {
     button.addEventListener("click", () => launchApp(source.packageName, button));
     row.appendChild(button);
   });
-  // The artist line and the buttons share one row, so the buttons take no height from the progress bar.
-  const head = document.createElement("div");
-  head.className = "source-head";
-  const artist = info.querySelector(".track-artist");
-  if (artist) info.insertBefore(head, artist);
-  else info.appendChild(head);
-  if (artist) head.appendChild(artist);
-  head.appendChild(row);
+  controls.parentNode.insertBefore(column, controls);
+  column.appendChild(row);
+  column.appendChild(controls);
 }
 bindSourceButtons();
 
