@@ -240,10 +240,10 @@ function setPage(name) {
   }, PAGE_SWITCH_MS);
 }
 
-// Every page is a row of slots; the app drawer is no longer shown.
+// Every page is a row of slots. On the Приложения page the apps the head unit reports follow the slots in the same row.
 function renderPage() {
   document.getElementById("action-slots").hidden = false;
-  document.getElementById("app-drawer").hidden = true;
+  document.getElementById("app-drawer").hidden = !state.appsDebug;
   renderSlots();
 }
 
@@ -267,6 +267,7 @@ function renderSlots() {
   container.classList.toggle("climate-page", state.page === "climate");
   const fragment = document.createDocumentFragment();
   state.slots.forEach((slot, index) => fragment.appendChild(renderSlot(slot, index)));
+  if (state.page === "apps") appendAppTiles(fragment);
   container.replaceChildren(fragment);
   fitSlotLabels(container);
 }
