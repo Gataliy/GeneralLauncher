@@ -73,6 +73,21 @@ function pickerApps() {
   })).filter(app => app.packageName);
 }
 
+// The name of an installed app from the head unit's list; empty when the list does not have it.
+function splitAppName(packageName) {
+  if (!packageName) return "";
+  const app = (state.apps || []).find(item => (item.package || item.packageName || item.id) === packageName);
+  return app ? (app.name || app.label || "") : "";
+}
+
+// "VK Видео + Кинопоиск · 50/50" when both names are known; otherwise the old "Комбинация · 50/50".
+function splitDetail(ratio, packageName, packageName2) {
+  const first = splitAppName(packageName);
+  const second = splitAppName(packageName2);
+  const pair = first && second ? `${first} + ${second}` : "Комбинация";
+  return `${pair} · ${ratio}/${100 - ratio}`;
+}
+
 function pickerItems() {
   const source = state.actions.length ? state.actions : FALLBACK_ACTIONS;
   const available = [...new Set([
@@ -111,7 +126,7 @@ function pickerItems() {
       orient: Number(split.orient) === 2 ? 2 : 1,
       ratio,
       label: split.label || "Сохранённая комбинация",
-      detail: `Комбинация · ${ratio}/${100 - ratio}`,
+      detail: splitDetail(ratio, split.packageName, split.packageName2),
       icon: split.icon || "",
       symbol: "▥"
     };
