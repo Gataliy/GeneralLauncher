@@ -386,7 +386,6 @@
   setInterval(readFan, 4000);
   renderFan();
   setTimeout(readFan, 1500);
-
   // ---- Модель раскладки ----
   // Строка: { justify, items }. Элемент строки — карточка { id, span, when, x, y, hidden }
   // или группа { group: true, span, mode, gap, align, members: [карточка с grow] }.
@@ -690,13 +689,14 @@
   let resetArmed = false;
   let resetTimer = null;
 
-  // Every change: tidy the rows, apply to the page, save, redraw the panel and the inspector.
+  // Every change: tidy the rows, apply to the page, save, redraw the panel, the inspector and the card labels.
   function commit() {
     layout.rows.forEach(tidyRow);
     apply();
     saveLayout();
     renderInspector();
     renderPanel();
+    renderTags();
   }
   function setCardHidden(id, hidden) {
     const c = cardOf(id);
@@ -708,16 +708,17 @@
 
   const bar = document.createElement("div");
   bar.className = "hw-edit-bar";
-  bar.innerHTML = '<span class="hw-edit-hint">Нажми карточку · перетащи · угол — размер</span><button type="button" data-act="cards">Карточки</button><button type="button" data-act="reset">Сбросить</button><button type="button" data-act="done">Готово</button>';
+  bar.innerHTML = '<span class="hw-edit-hint">Нажми карточку · ⋮ — меню · угол — размер</span><button type="button" data-act="cards">Карточки</button><button type="button" data-act="reset">Сбросить</button><button type="button" data-act="done">Готово</button>';
   hero.appendChild(bar);
   const resetButton = bar.querySelector('[data-act="reset"]');
   const panel = document.createElement("div");
   panel.className = "hw-panel";
   hero.appendChild(panel);
+  // On the body: the dock below the hero paints over elements inside it.
   const inspector = document.createElement("div");
   inspector.className = "hw-inspector";
   inspector.hidden = true;
-  document.body.appendChild(inspector);   // on the body: the dock below the hero paints over elements inside it
+  document.body.appendChild(inspector);
 
   // Panel: one switch per card, and the gaps between cards and rows.
   const stepRow = (key, label, value, s) => `<div class="hw-step-row"><span>${label}</span><span>`
@@ -741,7 +742,7 @@
     }
   });
 
-  // Inspector: the settings of the selected card (its group when it is in one).
+  // Inspector: the settings of the selected card (its group when it is in one), and the order arrows.
   function renderInspector() {
     document.querySelectorAll(".hw-selected").forEach(el => el.classList.remove("hw-selected"));
     const loc = editing && selectedId ? locate(selectedId) : null;
@@ -756,20 +757,28 @@
     const step = (act, value, label, s) => `<span class="hw-ins-lab">${label}</span>`
       + `<button type="button" data-act="${act}" data-d="${-s}">−</button><b class="hw-ins-value">${value}</b>`
       + `<button type="button" data-act="${act}" data-d="${s}">+</button>`;
+    const off = ok => (ok ? "" : " disabled");
     const parts = [`<div class="hw-ins-title">${CARD_NAMES[selectedId]}${group ? " · в группе" : ""}</div>`];
     if (!isPlayer) parts.push(`<div class="hw-ins-row"><span class="hw-ins-lab">Показывать</span>${btns("rule", RULES, card.when)}</div>`);
     parts.push(`<div class="hw-ins-row">${step("span", cell.span, "Ширина, колонок", 1)}${step("rowH", layout.rowH[loc.r], "Высота ряда", 10)}`
-      + `<span class="hw-ins-lab">Ряд</span>${btns("justify", ALIGNS, row.justify)}</div>`);
+      + `<span class="hw-ins-lab">Распределение</span>${btns("justify", ALIGNS, row.justify)}</div>`);
+    parts.push(`<div class="hw-ins-row"><span class="hw-ins-lab">Порядок</span>`
+      + `<button type="button" data-act="swap" data-d="-1"${off(!!row.items[loc.i - 1])}>◀ раньше</button>`
+      + `<button type="button" data-act="swap" data-d="1"${off(!!row.items[loc.i + 1])}>позже ▶</button>`
+      + (group ? `<span class="hw-ins-lab">В группе</span>`
+        + `<button type="button" data-act="memberSwap" data-d="-1"${off(loc.m > 0)}>${group.mode === "row" ? "◀ левее" : "▲ выше"}</button>`
+        + `<button type="button" data-act="memberSwap" data-d="1"${off(loc.m < group.members.length - 1)}>${group.mode === "row" ? "правее ▶" : "▼ ниже"}</button>` : "")
+      + `<span class="hw-ins-lab">Ряд</span>`
+      + `<button type="button" data-act="toRow" data-v="0"${off(loc.r !== 0)}>▲ верхний</button>`
+      + `<button type="button" data-act="toRow" data-v="1"${off(loc.r !== 1)}>▼ нижний</button></div>`);
     if (group) {
       parts.push(`<div class="hw-ins-row"><span class="hw-ins-lab">Группа</span>${btns("mode", [["stack", "Столбик"], ["row", "Строка"]], group.mode)}`
         + `${step("gap", group.gap, "Зазор", 2)}<span class="hw-ins-lab">Выравнивание</span>${btns("align", ALIGNS, group.align)}`
         + `${step("grow", card.grow, "Доля", 1)}<button type="button" data-act="out">Вынести из группы</button></div>`);
     }
-    const hasLeft = !!row.items[loc.i - 1];
-    const hasRight = !!row.items[loc.i + 1];
     parts.push(`<div class="hw-ins-row">${step("x", card.x, "Сдвиг X", 10)}${step("y", card.y, "Сдвиг Y", 10)}`
-      + `<button type="button" data-act="merge" data-d="-1"${hasLeft ? "" : " disabled"}>← В группу слева</button>`
-      + `<button type="button" data-act="merge" data-d="1"${hasRight ? "" : " disabled"}>В группу справа →</button>`
+      + `<button type="button" data-act="merge" data-d="-1"${off(!!row.items[loc.i - 1])}>← В группу слева</button>`
+      + `<button type="button" data-act="merge" data-d="1"${off(!!row.items[loc.i + 1])}>В группу справа →</button>`
       + `${isPlayer ? "" : '<button type="button" data-act="hide">Скрыть</button>'}</div>`);
     inspector.innerHTML = parts.join("");
     inspector.hidden = false;
@@ -782,12 +791,16 @@
   });
   function inspectorAction(act, v, d) {
     const loc = locate(selectedId);
-    const card = cardOf(selectedId);
-    const cell = loc.item;
-    const row = layout.rows[loc.r];
+    if (!loc) return;
+    if (act === "swap") { swapItems(selectedId, d); return; }
+    if (act === "memberSwap") { swapMember(selectedId, d); return; }
+    if (act === "toRow") { moveToRow(selectedId, Number(v)); return; }
     if (act === "merge") { mergeInto(selectedId, d); return; }
     if (act === "out") { extract(selectedId); return; }
     if (act === "hide") { setCardHidden(selectedId, true); return; }
+    const card = cardOf(selectedId);
+    const cell = loc.item;
+    const row = layout.rows[loc.r];
     switch (act) {
       case "rule": card.when = v; break;
       case "span": cell.span = clamp(cell.span + d, minSpanOf(cell), COLS - (rowSpan(row) - cell.span)); break;
@@ -830,6 +843,131 @@
     commit();
   }
 
+  // ---- Порядок: стрелки в инспекторе ----
+  // The selected item swaps with its neighbour in the row (a group moves as one item).
+  function swapItems(id, dir) {
+    const loc = locate(id);
+    if (!loc) return;
+    const items = layout.rows[loc.r].items;
+    const j = loc.i + dir;
+    if (j < 0 || j >= items.length) return;
+    [items[loc.i], items[j]] = [items[j], items[loc.i]];
+    commit();
+  }
+  // A member swaps with its neighbour inside its group.
+  function swapMember(id, dir) {
+    const loc = locate(id);
+    if (!loc || loc.m < 0) return;
+    const members = loc.item.members;
+    const j = loc.m + dir;
+    if (j < 0 || j >= members.length) return;
+    [members[loc.m], members[j]] = [members[j], members[loc.m]];
+    commit();
+  }
+  // The whole item (a card or a group) goes to the end of the other row.
+  function moveToRow(id, r) {
+    const loc = locate(id);
+    if (!loc || loc.r === r) return;
+    const [item] = layout.rows[loc.r].items.splice(loc.i, 1);
+    layout.rows[r].items.push(item);
+    commit();
+  }
+
+  // ---- Метки на карточках и меню ⋮ ----
+  const RULE_LABEL = Object.fromEntries(RULES);
+  // Each card gets a ⋮ button and a rule label. Both are shown in edit mode only (CSS); the player has no rule.
+  function setupCardControls() {
+    Object.keys(MOVABLE).forEach(id => {
+      const el = elOf(id);
+      if (!el) return;
+      if (!el.querySelector(":scope > .hw-more")) {
+        const more = document.createElement("span");
+        more.className = "hw-more";
+        more.textContent = "⋮";
+        more.setAttribute("role", "button");
+        more.setAttribute("aria-label", "Меню карточки");
+        el.appendChild(more);
+      }
+      if (id !== "player" && !el.querySelector(":scope > .hw-rule-tag")) {
+        const tag = document.createElement("span");
+        tag.className = "hw-rule-tag";
+        el.appendChild(tag);
+      }
+    });
+    renderTags();
+  }
+  function renderTags() {
+    Object.keys(MOVABLE).forEach(id => {
+      const el = elOf(id);
+      const tag = el ? el.querySelector(":scope > .hw-rule-tag") : null;
+      const c = cardOf(id);
+      if (tag && c) tag.textContent = RULE_LABEL[c.when] || "";
+    });
+  }
+
+  // The menu sits on the body, above the inspector: the card's rule, its group actions and hiding.
+  const menu = document.createElement("div");
+  menu.className = "hw-menu";
+  menu.hidden = true;
+  document.body.appendChild(menu);
+  let menuId = null;
+  function openMenu(id, anchor) {
+    menuId = id;
+    selectedId = id;
+    renderInspector();
+    renderMenu();
+    if (!menuId) return;
+    menu.hidden = false;
+    const box = anchor.getBoundingClientRect();
+    const w = menu.offsetWidth;
+    const h = menu.offsetHeight;
+    const below = box.bottom + 6;
+    menu.style.left = `${clamp(box.right - w, 8, window.innerWidth - w - 8)}px`;
+    menu.style.top = `${below + h > window.innerHeight - 8 ? Math.max(8, box.top - h - 6) : below}px`;
+  }
+  function closeMenu() {
+    menuId = null;
+    menu.hidden = true;
+  }
+  function renderMenu() {
+    const loc = menuId ? locate(menuId) : null;
+    if (!loc) { closeMenu(); return; }
+    const card = cardOf(menuId);
+    const row = layout.rows[loc.r];
+    const btn = (act, v, label, cls) => `<button type="button" data-menu="${act}" data-v="${v}"${cls ? ` class="${cls}"` : ""}>${label}</button>`;
+    const parts = [`<div class="hw-menu-title">${CARD_NAMES[menuId]}</div>`];
+    if (menuId !== "player") {
+      parts.push('<div class="hw-menu-sec">Показывать</div>');
+      parts.push(RULES.map(([v, label]) => (card.when === v ? btn("rule", v, `✓ ${label}`, "on") : btn("rule", v, label))).join(""));
+    }
+    const group = [];
+    if (loc.m >= 0) group.push(btn("out", "", "Вынести из группы"));
+    if (row.items[loc.i - 1]) group.push(btn("merge", -1, "В группу слева"));
+    if (row.items[loc.i + 1]) group.push(btn("merge", 1, "В группу справа"));
+    if (group.length) parts.push('<div class="hw-menu-sec">Группа</div>', group.join(""));
+    if (menuId !== "player") parts.push('<div class="hw-menu-sep"></div>', btn("hide", "", "Скрыть", "danger"));
+    menu.innerHTML = parts.join("");
+  }
+  menu.addEventListener("click", event => {
+    const b = event.target instanceof Element ? event.target.closest("button") : null;
+    if (!b || menuId === null) return;
+    const id = menuId;
+    const v = b.dataset.v;
+    const act = b.dataset.menu;
+    closeMenu();
+    if (act === "rule") { cardOf(id).when = v; commit(); }
+    else if (act === "merge") mergeInto(id, Number(v));
+    else if (act === "out") extract(id);
+    else if (act === "hide") setCardHidden(id, true);
+  });
+  // A tap anywhere else closes the menu; the ⋮ buttons toggle it themselves.
+  document.addEventListener("pointerdown", event => {
+    if (menu.hidden) return;
+    const t = event.target;
+    if (t instanceof Element && t.closest(".hw-menu, .hw-more")) return;
+    closeMenu();
+  });
+
   // ---- Вход, выход, перетаскивание и размер ----
   function enterEdit() {
     const body = document.body.classList;
@@ -850,6 +988,7 @@
     resize = null;
     press = null;
     selectedId = null;
+    closeMenu();
     resetArmed = false;
     clearTimeout(resetTimer);
     resetButton.textContent = "Сбросить";
@@ -968,7 +1107,7 @@
     const t = event.target;
     if (!(t instanceof Element)) return;
     if (editing && t.closest(".hw-resize")) { startResize(event, t.closest(".hw-resize")); return; }
-    if (t.closest(".hw-hide")) return;
+    if (t.closest(".hw-hide, .hw-more")) return;
     const el = t.closest("[data-hw]");
     if (!el) return;
     press = { id: el.dataset.hw, x: event.clientX, y: event.clientY, moved: false, longFired: false };
@@ -1022,7 +1161,7 @@
     if (Date.now() < suppressClickUntil) { event.stopPropagation(); event.preventDefault(); return; }
     if (!editing) return;
     const t = event.target;
-    if (!(t instanceof Element) || t.closest(".hw-hide, .hw-resize, .hw-inspector, .hw-edit-bar, .hw-panel")) return;
+    if (!(t instanceof Element) || t.closest(".hw-hide, .hw-more, .hw-resize, .hw-inspector, .hw-edit-bar, .hw-panel, .hw-menu")) return;
     if (t.closest("[data-hw], .hw-group")) { event.stopPropagation(); event.preventDefault(); }
   }, true);
   bottomBox.addEventListener("click", event => {
@@ -1031,6 +1170,17 @@
     event.stopPropagation();
     const el = hide.closest("[data-hw]");
     if (el) setCardHidden(el.dataset.hw, true);
+  });
+
+  // The ⋮ button opens the card's menu (a second tap closes it).
+  bottomBox.addEventListener("click", event => {
+    const more = event.target instanceof Element ? event.target.closest(".hw-more") : null;
+    if (!more || !editing) return;
+    event.stopPropagation();
+    const el = more.closest("[data-hw]");
+    if (!el) return;
+    if (!menu.hidden && menuId === el.dataset.hw) closeMenu();
+    else openMenu(el.dataset.hw, more);
   });
 
   // ---- Старт ----
@@ -1053,6 +1203,7 @@
       el.appendChild(hide);
     }
   });
+  setupCardControls();
   apply();
   renderPanel();
   renderInspector();
