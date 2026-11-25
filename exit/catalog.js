@@ -195,10 +195,31 @@ const CATALOG_FALLBACK_MS = 2500;
 
 function readHostLists() {
   state.actions = normalizeActionList(bridge.getRunEnum());
-  const apps = bridge.getUserApps();
-  state.apps = Array.isArray(apps) ? apps : [];
+  state.apps = appListFrom(bridge.getUserApps());
   const splits = bridge.getSavedSplitActions();
   state.splits = Array.isArray(splits) ? splits : [];
+}
+
+// The head unit may send the list itself, or an object that holds it (for example { apps: [...] }).
+function appListFrom(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return Object.values(value).find(Array.isArray) || [];
+  return [];
+}
+
+// JCarTools may not be ready when the launcher starts, and then the app list comes back empty.
+// Ask again when the list is needed (the Приложения page or its picker), at most once every few seconds.
+const APP_LIST_RETRY_MS = 3000;
+function refreshAppList() {
+  if (state.apps.length) return;
+  const now = Date.now();
+  if (now - (state.appListAskedAt || 0) < APP_LIST_RETRY_MS) return;
+  state.appListAskedAt = now;
+  if (bridge.has("requestLauncherCatalogAsync")) {
+    state.catalogAsync = bridge.requestLauncherCatalogAsync(nextRequestId("catalog"));
+  }
+  readHostLists();
+  scheduleCatalogRender();
 }
 
 function applyLauncherCatalog(raw) {

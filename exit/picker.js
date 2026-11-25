@@ -11,6 +11,7 @@ function openPicker(index) {
   document.getElementById("picker-search").value = "";
   document.getElementById("picker").hidden = false;
   document.getElementById("picker-remove").hidden = false;
+  if (state.page === "apps") refreshAppList();
   renderPicker();
   // No auto-focus: focusing the search field would bring up the on-screen keyboard.
 }
@@ -175,6 +176,14 @@ function renderPicker() {
     }
     fragment.appendChild(button);
   });
+  // The Приложения page lists the installed apps; until the head unit sends them, say so.
+  if (state.page === "apps" && !pickerApps().length && !query) {
+    const note = document.createElement("div");
+    note.className = "picker-empty";
+    note.style.gridColumn = "1 / -1";
+    note.textContent = "Список приложений от магнитолы пока пуст. Долгое нажатие на «Приложения» покажет, что она передала.";
+    fragment.appendChild(note);
+  }
   grid.appendChild(fragment);
 }
 
