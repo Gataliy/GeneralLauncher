@@ -21,8 +21,59 @@ function appTile(app) {
   button.type = "button";
   button.className = "app-tile";
   button.innerHTML = `<span class="app-tile-icon">${icon}</span><span class="app-tile-name">${escapeHtml(label)}</span>`;
-  button.addEventListener("click", () => launchApp(appPackage(app), button));
+  // A tap opens the app; a long press opens the same kind of menu as a slot (see openAppTileMenu).
+  let pressTimer = null;
+  let longPressed = false;
+  button.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    longPressed = false;
+    pressTimer = setTimeout(() => { longPressed = true; openAppTileMenu(app, button); }, 700);
+  });
+  ["pointerup", "pointerleave", "pointercancel"].forEach(type => button.addEventListener(type, () => clearTimeout(pressTimer)));
+  button.addEventListener("click", () => {
+    if (longPressed) { longPressed = false; return; }
+    launchApp(appPackage(app), button);
+  });
   return button;
+}
+
+// The menu of a slot, for an app tile. A tile is not a slot, so only the items that apply to an app are offered.
+function openAppTileMenu(app, element) {
+  document.querySelectorAll(".slot-menu-backdrop").forEach(node => node.remove());
+  const canAdd = state.slots.length < MAX_SLOTS;
+  const backdrop = document.createElement("div");
+  backdrop.className = "slot-menu-backdrop";
+  backdrop.innerHTML = `<div class="slot-menu" role="menu" aria-label="Приложение">` +
+    `<button type="button" role="menuitem" data-act="open">Открыть</button>` +
+    (canAdd ? `<button type="button" role="menuitem" data-act="add">Добавить слот</button>` : "") +
+    `</div>`;
+  document.body.appendChild(backdrop);
+  const menu = backdrop.querySelector(".slot-menu");
+  const rect = element.getBoundingClientRect();
+  const width = menu.offsetWidth || 200;
+  const height = menu.offsetHeight || 120;
+  menu.style.left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left + rect.width / 2 - width / 2)) + "px";
+  menu.style.top = (rect.bottom + 8 + height <= window.innerHeight ? rect.bottom + 8 : Math.max(8, rect.top - height - 8)) + "px";
+  backdrop.addEventListener("click", event => {
+    if (event.target === backdrop) { backdrop.remove(); return; }
+    const button = event.target.closest("[data-act]");
+    if (!button) return;
+    backdrop.remove();
+    if (button.dataset.act === "open") launchApp(appPackage(app), element);
+    else addAppSlot(app);
+  });
+}
+
+// Puts the app into a new slot at the end of this page, the same as adding an app from the picker.
+function addAppSlot(app) {
+  if (state.slots.length >= MAX_SLOTS) {
+    showToast(`Больше ${MAX_SLOTS} слотов не поместится`);
+    return;
+  }
+  state.slots.push({ type: "app", packageName: appPackage(app), label: app.label || app.name || appPackage(app), icon: app.icon || "" });
+  saveSlots();
+  renderSlots();
+  showToast("Приложение добавлено в слоты");
 }
 
 // Opens the head unit's own menu through the same command the old "Все приложения" slot used.
