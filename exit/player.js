@@ -112,6 +112,38 @@ function appNameFor(packageName) {
   return name;
 }
 
+// Two sources under the track: the Yandex Music and Yandex Radio apps. A tap opens the app.
+// The radio package name is not confirmed on the head unit yet; if it is wrong, the tap shows "Приложение временно недоступно".
+const SOURCE_APPS = [
+  { label: "Музыка", packageName: "ru.yandex.music" },
+  { label: "Радио", packageName: "ru.yandex.radio" }
+];
+
+function bindSourceButtons() {
+  const info = document.querySelector(".track-info");
+  if (!info || document.getElementById("source-switch")) return;
+  const row = document.createElement("div");
+  row.id = "source-switch";
+  row.className = "source-switch";
+  SOURCE_APPS.forEach(source => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "source-button";
+    button.textContent = source.label;
+    button.addEventListener("click", () => launchApp(source.packageName, button));
+    row.appendChild(button);
+  });
+  // The artist line and the buttons share one row, so the buttons take no height from the progress bar.
+  const head = document.createElement("div");
+  head.className = "source-head";
+  const artist = info.querySelector(".track-artist");
+  if (artist) info.insertBefore(head, artist);
+  else info.appendChild(head);
+  if (artist) head.appendChild(artist);
+  head.appendChild(row);
+}
+bindSourceButtons();
+
 function applySource(packageName) {
   const element = document.getElementById("track-source");
   if (!element) return;
