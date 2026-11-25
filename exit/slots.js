@@ -242,6 +242,7 @@ function setPage(name) {
 
 // Every page is a row of slots. On the Приложения page the apps the head unit reports follow the slots in the same row.
 function renderPage() {
+  if (state.page === "apps") refreshAppList();
   document.getElementById("action-slots").hidden = false;
   document.getElementById("app-drawer").hidden = !state.appsDebug;
   renderSlots();

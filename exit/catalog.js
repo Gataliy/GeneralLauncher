@@ -195,16 +195,44 @@ const CATALOG_FALLBACK_MS = 2500;
 
 function readHostLists() {
   state.actions = normalizeActionList(bridge.getRunEnum());
-  const apps = bridge.getUserApps();
-  state.apps = Array.isArray(apps) ? apps : [];
+  // Kept for the Приложения debug view: what the head unit actually returned for the app list.
+  const rawApps = bridge.call("getUserApps", TOKEN);
+  state.userAppsRaw = (typeof rawApps === "string" ? rawApps : String(JSON.stringify(rawApps ?? null))).slice(0, 300);
+  state.apps = appListFrom(parseJson(rawApps, []));
   const splits = bridge.getSavedSplitActions();
   state.splits = Array.isArray(splits) ? splits : [];
+}
+
+// The head unit may send the list itself, or an object that holds it (for example { apps: [...] }).
+function appListFrom(value) {
+  if (Array.isArray(value)) return value;
+  if (value && typeof value === "object") return Object.values(value).find(Array.isArray) || [];
+  return [];
+}
+
+// JCarTools may not be ready when the launcher starts, and then the app list comes back empty.
+// Ask again when the list is needed (the Приложения page or its picker), at most once every few seconds.
+const APP_LIST_RETRY_MS = 3000;
+function refreshAppList() {
+  if (state.apps.length) return;
+  const now = Date.now();
+  if (now - (state.appListAskedAt || 0) < APP_LIST_RETRY_MS) return;
+  state.appListAskedAt = now;
+  if (bridge.has("requestLauncherCatalogAsync")) {
+    state.catalogAsync = bridge.requestLauncherCatalogAsync(nextRequestId("catalog"));
+    state.catalogAcceptedAt = `${new Date().toTimeString().slice(0, 8)} accepted=${state.catalogAsync}`;
+  }
+  readHostLists();
+  scheduleCatalogRender();
 }
 
 function applyLauncherCatalog(raw) {
   const data = parseJson(raw, raw) || {};
   state.catalogReceived = true;
   const items = Array.isArray(data.items) ? data.items : [];
+  // Kept for the Приложения debug view: every catalog part, with its error if the head unit sent one.
+  state.catalogLog = [...(state.catalogLog || []), { section: data.section, items: items.length, append: !!data.append, complete: !!data.complete, error: data.error || "" }].slice(-20);
+  if (data.error) showToast(`Каталог «${data.section}»: ${data.error}`, 6000);
   if (data.section === "actions") {
     const commands = normalizeActionList(items);
     state.actions = data.append ? [...new Set([...state.actions, ...commands])] : commands;
