@@ -46,7 +46,8 @@
     }
     if (key === "lock") {
       if (moving()) return flash(tile, "blocked");
-      return sendCar("close_central_lock");
+      // Alternates lock / unlock, with the same remembered state as the slot button (config.js).
+      return sendCar(nextCentralCommand() === "CAR_OPEN_CENTRAL_LOCK" ? "open_central_lock" : "close_central_lock");
     }
     if (key === "wheel") {
       // Tyres have no command: the tap opens the full car-state list, same as the title.
