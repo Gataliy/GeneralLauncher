@@ -638,7 +638,7 @@ body.slots-order .action-slot.slot-dragging { outline: 3px solid #ffd84a; opacit
 /* Скрытие карточек в режиме редактирования и список карточек. */
 .hw-hide { display: none; position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: #14243ee8; color: #fff; font-size: 22px; line-height: 32px; text-align: center; z-index: 5; }
 body.hw-edit .hw-hide { display: block; }
-.hw-panel { display: none; position: absolute; top: 62px; right: 22px; z-index: 7; min-width: 300px; padding: 12px; border-radius: 20px; background: #0b1a26f2; border: 1px solid #ffffff30; box-shadow: 0 12px 30px #0008; }
+.hw-panel { display: none; position: absolute; top: 62px; right: 22px; z-index: 7; min-width: 300px; padding: 12px; border-radius: 20px; background: #0b1622; border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 24px 80px #000a; }
 .hw-panel.open { display: block; }
 .hw-panel button { display: flex; justify-content: space-between; align-items: center; width: 100%; margin: 6px 0; padding: 12px 14px; border-radius: 14px; border: 1px solid #ffffff20; background: #ffffff0d; color: #fff; font-size: 15px; }
 .hw-panel button b { color: #8aa0bd; font-weight: 500; font-size: 13px; }
@@ -690,7 +690,7 @@ body.hw-edit .hw-heat-btn { pointer-events: none; }
 :root[data-theme="light"] .hw-turn { background: rgba(47, 111, 209, .10); color: var(--accent); }
 :root[data-theme="light"] .hw-heat-btn { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
 :root[data-theme="light"] .hw-heat-btn:active { background: rgba(47, 111, 209, .14); }
-:root[data-theme="light"] .hw-panel { background: #ffffff; border-color: var(--line); }
+:root[data-theme="light"] .hw-panel { background: #f5f6f8; color: #1b2640; border-color: #d5dbe5; box-shadow: 0 16px 50px rgba(27, 38, 64, .18); }
 :root[data-theme="light"] .hw-panel button { background: var(--surface-soft); color: var(--text); border-color: var(--line); }
 
 /* Развёрнутый плеер: громкость и время начала / конца трека под обложкой и текстом. */
@@ -1858,7 +1858,7 @@ body.hw-edit [data-hw].hw-selected { outline: 3px solid #6fc3fa; }
 body.hw-edit [data-hw].hw-drop { outline: 3px solid #6fc3fa; }
 body.hw-edit [data-hw].hw-dragging { outline: 3px solid #ffd84a; box-shadow: 0 18px 50px rgba(0, 0, 0, .5); opacity: .9; }
 body.hw-edit .hw-resizing { outline: 3px solid #ffd84a; }
-.hw-inspector { position: fixed; left: 22px; right: 22px; bottom: 14px; z-index: 90; display: flex; flex-direction: column; gap: 10px; padding: 14px 18px; max-height: 40vh; overflow: auto; border-radius: 22px; background: #0b1a26f5; border: 1px solid #ffffff30; box-shadow: 0 12px 30px #0008; color: #fff; }
+.hw-inspector { position: fixed; left: 22px; right: 22px; bottom: 14px; z-index: 90; display: flex; flex-direction: column; gap: 10px; padding: 14px 18px; max-height: 40vh; overflow: auto; border-radius: 22px; background: #0b1622; border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 24px 80px #000a; color: #fff; }
 .hw-inspector[hidden] { display: none; }
 .hw-ins-title { font-size: 16px; font-weight: 700; }
 .hw-ins-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -1871,14 +1871,14 @@ body.hw-edit .hw-resizing { outline: 3px solid #ffd84a; }
 .hw-step-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; padding: 8px 14px; font-size: 15px; color: #fff; }
 .hw-step-row b { font-weight: 600; margin: 0 8px; }
 .hw-panel .hw-step { width: auto !important; display: inline-flex !important; justify-content: center; margin: 0 3px !important; padding: 6px 12px !important; }
-:root[data-theme="light"] .hw-inspector { background: #fffffff5; color: #13243a; border-color: var(--line); }
+:root[data-theme="light"] .hw-inspector { background: #f5f6f8; color: #1b2640; border-color: #d5dbe5; box-shadow: 0 16px 50px rgba(27, 38, 64, .18); }
 
 /* Редактор: кнопка ⋮ на карточке, подпись правила и меню карточки (показываются в режиме редактирования) */
 .hw-more { display: none; position: absolute; top: 8px; right: 48px; width: 34px; height: 34px; border-radius: 50%; background: #14243ee8; color: #fff; font-size: 20px; line-height: 32px; text-align: center; z-index: 5; cursor: pointer; }
 body.hw-edit .hw-more { display: block; }
 .hw-rule-tag { display: none; position: absolute; left: 10px; top: 10px; max-width: calc(100% - 100px); padding: 2px 10px; border-radius: 999px; background: #14243ee8; color: #fff; font-size: 12px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 5; pointer-events: none; }
 body.hw-edit .hw-rule-tag { display: block; }
-.hw-menu { position: fixed; z-index: 100; min-width: 230px; max-width: calc(100vw - 16px); max-height: 70vh; overflow: auto; padding: 8px; border-radius: 18px; background: #0b1a26f5; border: 1px solid #ffffff30; box-shadow: 0 12px 30px #0008; color: #fff; }
+.hw-menu { position: fixed; z-index: 100; min-width: 230px; max-width: calc(100vw - 16px); max-height: 70vh; overflow: auto; padding: 8px; border-radius: 18px; background: #0b1622; border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 24px 80px #000a; color: #fff; }
 .hw-menu[hidden] { display: none; }
 .hw-menu-title { padding: 6px 10px 4px; font-size: 15px; font-weight: 700; }
 .hw-menu-sec { padding: 8px 10px 2px; font-size: 12px; color: #9fb3c8; }
@@ -1887,6 +1887,6 @@ body.hw-edit .hw-rule-tag { display: block; }
 .hw-menu button:hover { background: #ffffff14; }
 .hw-menu button.on { background: #d9e9fd; color: #202e40; }
 .hw-menu button.danger { color: #ffb3b3; }
-:root[data-theme="light"] .hw-menu { background: #fffffff5; color: #13243a; border-color: var(--line); }
+:root[data-theme="light"] .hw-menu { background: #f5f6f8; color: #1b2640; border-color: #d5dbe5; box-shadow: 0 16px 50px rgba(27, 38, 64, .18); }
 :root[data-theme="light"] .hw-menu-sec { color: var(--muted); }
 :root[data-theme="light"] .hw-menu button:hover { background: var(--surface-soft); }
