@@ -35,6 +35,8 @@ function pickerGroup(item) {
   if (item.type === "split") return "splits";
   if (item.type !== "action") return "screen";
   const command = item.command || "";
+  // The head unit's own split screen opens with the saved combinations.
+  if (command === "SPLIT_RUN") return "splits";
   if (APP_ACTIONS.includes(command)) return "apps";
   if (CLIMATE_PATTERN.test(command)) return "seats";
   if (/window|trunk|shtork|sunroof|roof|parking|lock|fuel|glove|open_|close_/i.test(command)) return "car";
@@ -135,7 +137,8 @@ function pickerItems() {
   // Each page offers its own group. The apps page lists only the installed apps; the menu actions are the tile after the slots.
   const group = PAGE_GROUPS[state.page];
   const groupItems = [...shownLevels, ...fanItems, ...tempItems, ...actions].filter(item => pickerGroup(item) === group);
-  if (state.page === "combos") return splits;
+  // The combinations page starts with the head unit's split screen, then the saved pairs.
+  if (state.page === "combos") return [...actions.filter(item => pickerGroup(item) === "splits"), ...splits];
   if (state.page === "apps") return pickerApps();
   return groupItems;
 }
