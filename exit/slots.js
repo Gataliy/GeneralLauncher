@@ -264,11 +264,14 @@ function trimTrailingEmpties(slots, keepIndex = null) {
 
 function renderSlots() {
   if (trimTrailingEmpties(state.slots, state.pickerSlot)) saveSlots();
+  // The Приложения page has no app tiles now, so it always ends with one empty slot to add an app to (not saved until used).
+  if (state.page === "apps" && state.slots.length < MAX_SLOTS && (!state.slots.length || state.slots[state.slots.length - 1].type !== "empty")) {
+    state.slots.push({ type: "empty" });
+  }
   const container = document.getElementById("action-slots");
   container.classList.toggle("climate-page", state.page === "climate");
   const fragment = document.createDocumentFragment();
   state.slots.forEach((slot, index) => fragment.appendChild(renderSlot(slot, index)));
-  if (state.page === "apps") appendAppTiles(fragment);
   container.replaceChildren(fragment);
   fitSlotLabels(container);
 }

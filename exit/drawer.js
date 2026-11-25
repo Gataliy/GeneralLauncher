@@ -55,16 +55,6 @@ function toggleAppsDebug() {
   renderAppDrawer();
 }
 
-// On the Приложения page, after the slots: every app the head unit reports (installed first, then built-in), then the system menu.
-function appendAppTiles(fragment) {
-  // Apps already placed as slots on this page are not repeated.
-  const placed = new Set(state.slots.filter(slot => slot.type === "app").map(slot => slot.packageName));
-  const apps = (state.apps || []).filter(app => app && appPackage(app) && !placed.has(appPackage(app)));
-  apps.filter(app => !isBuiltInApp(app)).forEach(app => fragment.appendChild(appTile(app)));
-  apps.filter(isBuiltInApp).forEach(app => fragment.appendChild(appTile(app)));
-  fragment.appendChild(systemMenuTile());
-}
-
 function bindAppsDebug() {
   // The apps tab is gone (apps live on the screen page now); nothing to bind.
   const tab = document.querySelector('[data-page="apps"]');
