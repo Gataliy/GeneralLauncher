@@ -113,10 +113,10 @@ function appNameFor(packageName) {
 }
 
 // Two sources under the track: the Yandex Music and Yandex Radio apps. A tap opens the app.
-// The radio package name is not confirmed on the head unit yet; if it is wrong, the tap shows "Приложение временно недоступно".
+// The packages are the ones the head unit lists for these apps.
 const SOURCE_APPS = [
   { label: "Музыка", packageName: "ru.yandex.music" },
-  { label: "Радио", packageName: "ru.yandex.radio" }
+  { label: "Радио", packageName: "ru.yandex.mobile.fmradio" }
 ];
 
 // The buttons sit above the prev / play / next row. A wrapper keeps the row's place in every player layout.
