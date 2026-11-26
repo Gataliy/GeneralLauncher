@@ -3,8 +3,8 @@
 // Модель только предлагает действие. Команда уходит в очередь лаунчера (enqueueEnumCommand) после «Да».
 // Список команд повторяет серверный (assistant-proxy/worker.js). Окна, люк, багажник, двери и замки здесь не разрешены.
 (function () {
-  // Адрес прокси после развёртывания (assistant-proxy/README.md). Пока пусто, ассистент просит указать адрес.
-  const DEFAULT_PROXY_URL = "";
+  // Адрес прокси (assistant-proxy/README.md). Адрес не секретный: ключ Gemini лежит на сервере, в секрете GEMINI_API_KEY.
+  const DEFAULT_PROXY_URL = "https://jct-proxy.ahjcz1198.workers.dev/chat";
   const URL_KEY = "generic_launcher_assistant_url_v1";
   const TOKEN_KEY = "generic_launcher_assistant_token_v1";
   const HISTORY_TURNS = 6;
