@@ -118,6 +118,24 @@ function normalizeGoogleEvent(raw) {
   return { id: "g|" + date + "|" + start + "|" + title, date, start, end, title, source: "google" };
 }
 
+// A Google task with a due date is shown on that day as an all-day "Задача" (read-only). The day is taken as written:
+// "2026-11-26T00:00:00.000Z" is the 26th. A task without a due date has no day and stays in the hub's Задачи list.
+function normalizeGoogleTask(task) {
+  if (!task || typeof task !== "object") return null;
+  const dueText = String(task.due || "").trim();
+  let date = null;
+  const iso = dueText.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    date = iso[1] + "-" + iso[2] + "-" + iso[3];
+  } else {
+    const ru = ruDateTime(dueText);
+    if (ru && ru.hour === null) date = ru.year + "-" + String(ru.month).padStart(2, "0") + "-" + String(ru.day).padStart(2, "0");
+  }
+  if (!date) return null;
+  const title = "Задача: " + String(task.title || "(Без названия)").trim().slice(0, 110);
+  return { id: "t|" + date + "|" + String(task.id || title), date, start: "", end: "", title, source: "task" };
+}
+
 function readGoogleEvents() {
   let raw = "";
   try {
@@ -130,6 +148,7 @@ function readGoogleEvents() {
   try {
     const stored = raw ? JSON.parse(raw) : null;
     if (stored && Array.isArray(stored.events)) list = stored.events.map(normalizeGoogleEvent).filter(Boolean);
+    if (stored && Array.isArray(stored.tasks)) list = list.concat(stored.tasks.map(normalizeGoogleTask).filter(Boolean));
   } catch (error) {
     list = [];
   }
@@ -274,12 +293,12 @@ function renderEventsBlock() {
   if (!calSelected) return "";
   const list = eventsOn(calSelected);
   const rows = list.map(item => {
-    const fromGoogle = item.source === "google";
+    const readOnly = item.source === "google" || item.source === "task";
     const time = !item.start ? "весь день" : item.end ? `${item.start}–${item.end}` : item.start;
-    // Google events are read-only here: no delete button, and a small "Google" mark instead.
-    const mark = fromGoogle ? '<span class="calendar-event-source">Google</span>' : "";
-    const del = fromGoogle ? "" : `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button>`;
-    return `<div class="calendar-event${fromGoogle ? " google" : ""}"><span class="calendar-event-time">${escapeText(time)}</span>` +
+    // Google events and Google tasks are read-only here: no delete button, and a small mark ("Google" or "Задача").
+    const mark = readOnly ? `<span class="calendar-event-source">${item.source === "task" ? "Задача" : "Google"}</span>` : "";
+    const del = readOnly ? "" : `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button>`;
+    return `<div class="calendar-event${readOnly ? " " + item.source : ""}"><span class="calendar-event-time">${escapeText(time)}</span>` +
       `<span class="calendar-event-title">${escapeText(item.title)}</span>${mark}${del}</div>`;
   }).join("");
   const header = `<div class="calendar-selected">Выбрано: ${calSelected.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</div>`;

@@ -130,7 +130,7 @@
     data.mail = Array.isArray(body.mail) ? body.mail : [];
     const events = body.events || body.calendar;
     data.calendar = Array.isArray(events) ? events : [];
-    writeStored(EVENTS_KEY, JSON.stringify({ at: Date.now(), events: data.calendar }));
+    writeStored(EVENTS_KEY, JSON.stringify({ at: Date.now(), events: data.calendar, tasks: data.tasks }));
     synced = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   }
 
