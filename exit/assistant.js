@@ -1,12 +1,14 @@
-// Ассистент Gemini: чат в отдельном окне и одно действие климата с подтверждением.
+// Ассистент Gemini: единственный чат с Gemini в лаунчере и одно действие климата с подтверждением.
+// «задача: …» в модель не уходит: задачу добавляет Google-хаб (window.googleHubAddTask, google-hub.js).
 // Модель только предлагает действие. Команда уходит в очередь лаунчера (enqueueEnumCommand) после «Да».
 // Список команд повторяет серверный (assistant-proxy/worker.js). Окна, люк, багажник, двери и замки здесь не разрешены.
 (function () {
-  // Адрес прокси после развёртывания (assistant-proxy/README.md). Пока пусто, ассистент просит указать адрес.
-  const DEFAULT_PROXY_URL = "";
+  // Адрес прокси (assistant-proxy/README.md). Адрес не секретный: ключ Gemini лежит на сервере, в секрете GEMINI_API_KEY.
+  const DEFAULT_PROXY_URL = "https://jct-proxy.ahjcz1198.workers.dev/chat";
   const URL_KEY = "generic_launcher_assistant_url_v1";
   const TOKEN_KEY = "generic_launcher_assistant_token_v1";
   const HISTORY_TURNS = 6;
+  const TASK_COMMAND = /^задача[:\s]+/i;
   const ALLOWED = new Map([
     ["TOGGLE_HEAT_WHEEL", "Подогрев руля"],
     ["TOGGLE_HEAT_WINDSHIELD", "Обогрев лобового стекла"],
@@ -79,7 +81,7 @@
       '<div class="assistant-log" aria-live="polite"></div>' +
       '<div class="assistant-confirm" hidden><p class="assistant-confirm-text"></p>' +
       '<div class="assistant-confirm-actions"><button type="button" data-act="yes">Да</button><button type="button" data-act="no">Нет</button></div></div>' +
-      '<form class="assistant-form"><input type="text" class="assistant-input" placeholder="Спросите или попросите" autocomplete="off" maxlength="1000">' +
+      '<form class="assistant-form"><input type="text" class="assistant-input" placeholder="Спросите или «задача: …»" autocomplete="off" maxlength="1000">' +
       '<button type="submit" class="assistant-send">Отправить</button></form>' +
       '<details class="assistant-settings"><summary>Подключение</summary>' +
       '<label>Адрес прокси<input type="url" class="assistant-url" autocomplete="off" placeholder="https://…/chat"></label>' +
@@ -95,7 +97,8 @@
       const text = input.value.trim();
       if (!text || busy) return;
       input.value = "";
-      ask(text);
+      if (TASK_COMMAND.test(text)) addTaskFromChat(text);
+      else ask(text);
     });
     sheet.querySelector(".assistant-confirm").addEventListener("click", event => {
       const act = event.target.closest("[data-act]")?.dataset.act;
@@ -161,6 +164,17 @@
     }
     enqueueEnumCommand(action.command, action.label);
     addBubble("system", `Отправлено: ${action.label}`);
+  }
+
+  // «задача: …» добавляет задачу в Google, если хаб подключён; модель здесь не участвует.
+  async function addTaskFromChat(text) {
+    addBubble("user", text);
+    setPending(null);
+    const title = text.replace(TASK_COMMAND, "").trim();
+    if (!title) { addBubble("system", "Напишите текст задачи после слова «задача:»."); return; }
+    if (typeof window.googleHubAddTask !== "function") { addBubble("system", "Google в этой сборке не подключён."); return; }
+    const result = await window.googleHubAddTask(title);
+    addBubble("system", result.ok ? `Задача «${title}» добавлена в Google Tasks.` : (result.reason || "Не удалось добавить задачу."));
   }
 
   async function ask(text) {

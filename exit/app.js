@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applyWeather(localStorage.getItem(WEATHER_STORAGE_KEY), false);
   setInterval(updateClock, 30_000);
   setInterval(refreshWeather, WEATHER_REFRESH_MS);
+  refreshWeather();
   renderSlots();
   if (bridge.available()) {
     setInterval(pollCarState, CAR_STATE_POLL_MS);
