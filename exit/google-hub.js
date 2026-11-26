@@ -1,5 +1,5 @@
 // Google-хаб (Tomsk Hub, встроен в лаунчер): задачи, календарь и почта из Google через Apps Script,
-// чат Gemini и погода в Томске. Контракт бэкенда как у хаба: GET {адрес}?secret=…&_ts=…&action=… →
+// чат Gemini. Погода Томска живёт в карточке на главном экране (weather.js), в шторке её нет. Контракт бэкенда как у хаба: GET {адрес}?secret=…&_ts=…&action=… →
 // { ok, tasks[], mail[], events[] } (или calendar[]). Адрес, ключ бэкенда и ключ Gemini вводятся в шторке,
 // хранятся только на этом устройстве и в код не попадают. Ключ Gemini уходит в заголовке, не в ссылке.
 // На ходу задачи не добавляются и не отмечаются, как и раскладка главного экрана; чат с Gemini доступен.
@@ -10,7 +10,6 @@
   const NAV_PACKAGE = "ru.yandex.yandexnavi";
   const GEMINI_MODEL = "gemini-2.5-flash";
   const CHAT_TURNS = 6;
-  const WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=56.4972&longitude=85.0352&current=temperature_2m,weather_code&timezone=Asia%2FTomsk";
   const TABS = [
     { key: "tasks", label: "Задачи", list: true, empty: "Задач нет" },
     { key: "calendar", label: "Календарь", list: true, empty: "Предстоящих событий нет" },
@@ -25,9 +24,7 @@
   .gh-card { width: min(760px, 100%); max-height: min(680px, calc(100vh - 48px - var(--safe-bottom))); display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; padding: 20px; border: 1px solid var(--line); border-radius: 28px; background: #0b1622; color: var(--text); }
   :root[data-theme="light"] .gh-card { background: #f5f6f8; }
   .gh-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-  .gh-title { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-  .gh-title h3 { margin: 0; font-size: 24px; font-weight: 600; }
-  .gh-weather { font-size: 15px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gh-head h3 { margin: 0; font-size: 24px; font-weight: 600; }
   .gh-head-actions { display: flex; gap: 8px; }
   .gh-icon, .gh-close { width: 48px; height: 48px; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--text); font-size: 22px; cursor: pointer; }
   .gh-close { font-size: 26px; }
@@ -283,31 +280,6 @@
     note.classList.toggle("error", !!isError);
   }
 
-  // ---- Погода в Томске (open-meteo, без ключа) ----
-  function describeWeather(code) {
-    if (code === 0) return "ясно";
-    if ([1, 2, 3].includes(code)) return "облачно";
-    if (code === 45 || code === 48) return "туман";
-    if ([71, 73, 75, 77, 85, 86].includes(code)) return "снег";
-    if (code >= 95) return "гроза";
-    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "осадки";
-    return "пасмурно";
-  }
-
-  async function loadWeather() {
-    const line = sheet.querySelector(".gh-weather");
-    try {
-      const response = await fetch(WEATHER_URL, { cache: "no-store" });
-      const body = await response.json();
-      const current = body && body.current;
-      if (!current || typeof current.temperature_2m !== "number") throw new Error("no current");
-      const temp = Math.round(current.temperature_2m);
-      line.textContent = "Томск " + (temp > 0 ? "+" : "") + temp + "°C · " + describeWeather(current.weather_code);
-    } catch (error) {
-      line.textContent = "Томск · погода недоступна";
-    }
-  }
-
   // ---- Чат с Gemini и быстрые задачи ----
   function appendMsg(text, kind) {
     const log = sheet.querySelector(".gh-chat");
@@ -389,7 +361,7 @@
     const tabButtons = TABS.map(item => '<button type="button" class="gh-tab" data-tab="' + item.key + '"></button>').join("");
     sheet.innerHTML =
       '<div class="forecast-card gh-card" role="dialog" aria-label="Google">' +
-      '<div class="gh-head"><div class="gh-title"><h3>Google</h3><span class="gh-weather">Томск · загрузка…</span></div>' +
+      '<div class="gh-head"><h3>Google</h3>' +
       '<div class="gh-head-actions">' +
       '<button type="button" class="gh-icon gh-refresh" aria-label="Обновить">⟳</button>' +
       '<button type="button" class="gh-close" aria-label="Закрыть">×</button></div></div>' +
@@ -444,9 +416,8 @@
       input.value = "";
       sendChat(text);
     });
-    // While the sheet is open, keep the driving state in step with the car and the weather fresh.
+    // While the sheet is open, keep the driving state in step with the car.
     setInterval(() => { if (!sheet.hidden) syncDriving(); }, 1000);
-    setInterval(() => { if (!sheet.hidden) loadWeather(); }, 600000);
     document.body.appendChild(sheet);
     return sheet;
   }
@@ -458,7 +429,6 @@
     sheet.querySelector(".gh-gemini").value = geminiKey();
     sheet.hidden = false;
     render();
-    loadWeather();
     refresh();
   }
 
