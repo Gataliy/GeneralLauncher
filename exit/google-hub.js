@@ -7,7 +7,6 @@
 (function () {
   const URL_KEY = "generic_launcher_google_url_v1";
   const SECRET_KEY = "generic_launcher_google_secret_v1";
-  const OLD_GEMINI_KEY = "generic_launcher_google_gemini_key_v1";   // ключ старого чата в шторке; теперь не используется
   const NAV_PACKAGE = "ru.yandex.yandexnavi";
   const TABS = [
     { key: "tasks", label: "Задачи", empty: "Задач нет" },
@@ -62,8 +61,6 @@
   let busy = false;       // запрос к Apps Script идёт
   let synced = "";
   let lastError = "";
-
-  try { localStorage.removeItem(OLD_GEMINI_KEY); } catch (error) { /* best effort */ }
 
   function readStored(key, fallback) {
     try {
