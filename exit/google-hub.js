@@ -2,11 +2,15 @@
 // Чат с Gemini один — в «Ассистенте» (assistant.js, через прокси, ключ на сервере). Фраза «задача: …» в ассистенте
 // вызывает window.googleHubAddTask отсюда. Погода Томска — в карточке на главном экране (weather.js).
 // Контракт бэкенда как у хаба: GET {адрес}?secret=…&_ts=…&action=… → { ok, tasks[], mail[], events[] } (или calendar[]).
+// События из этого ответа попадают в календарь лаунчера (calendar.js) через кэш: при запуске и раз в 5 минут, не чаще раза в 15.
 // Адрес и ключ вводятся в шторке, хранятся только на этом устройстве и в код не попадают.
 // На ходу задачи не добавляются и не отмечаются, как и раскладка главного экрана.
 (function () {
   const URL_KEY = "generic_launcher_google_url_v1";
   const SECRET_KEY = "generic_launcher_google_secret_v1";
+  const EVENTS_KEY = "generic_launcher_google_events_v1";   // события для календаря лаунчера (читает calendar.js)
+  const CALENDAR_SYNC_MS = 15 * 60 * 1000;                  // событиям не чаще, чем раз в 15 минут
+  const CALENDAR_TICK_MS = 5 * 60 * 1000;                   // проверка раз в 5 минут
   const NAV_PACKAGE = "ru.yandex.yandexnavi";
   const TABS = [
     { key: "tasks", label: "Задачи", empty: "Задач нет" },
@@ -126,6 +130,7 @@
     data.mail = Array.isArray(body.mail) ? body.mail : [];
     const events = body.events || body.calendar;
     data.calendar = Array.isArray(events) ? events : [];
+    writeStored(EVENTS_KEY, JSON.stringify({ at: Date.now(), events: data.calendar }));
     synced = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   }
 
@@ -162,6 +167,27 @@
     return ok ? { ok: true } : { ok: false, reason: "Не удалось добавить задачу: " + lastError };
   };
 
+  // Events for the launcher's own calendar: a quiet request that does not change the sheet's status line.
+  // A failed request keeps the events that were stored before; the sheet shows its own errors on a manual refresh.
+  let lastCalendarSync = 0;
+  window.googleHubSyncCalendar = async function (force) {
+    if (!execUrl() || busy) return false;
+    if (!force && Date.now() - lastCalendarSync < CALENDAR_SYNC_MS) return false;
+    busy = true;
+    try {
+      apply(await callApi({}));
+      lastCalendarSync = Date.now();
+      if (sheet) setStatus("Обновлено в " + synced);
+      window.dispatchEvent(new Event("google-calendar-updated"));
+      return true;
+    } catch (error) {
+      return false;
+    } finally {
+      busy = false;
+      render();
+    }
+  };
+
   function refresh() {
     if (!execUrl()) {
       setStatus("Не подключено");
@@ -185,7 +211,9 @@
     if (!url) {
       data.tasks = [];
       data.calendar = [];
+      writeStored(EVENTS_KEY, "");
       data.mail = [];
+      window.dispatchEvent(new Event("google-calendar-updated"));
       setStatus("Не подключено");
       setNote("Подключение сброшено.");
       render();
@@ -372,6 +400,10 @@
     anchor.parentNode.insertBefore(button, anchor);
     return true;
   }
+
+  // Google events reach the launcher's calendar at start and then on a timer (see CALENDAR_SYNC_MS).
+  setTimeout(() => window.googleHubSyncCalendar(true), 3000);
+  setInterval(() => window.googleHubSyncCalendar(false), CALENDAR_TICK_MS);
 
   if (!bindButton()) {
     const timer = setInterval(() => { if (bindButton()) clearInterval(timer); }, 500);

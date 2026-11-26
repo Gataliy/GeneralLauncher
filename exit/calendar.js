@@ -1,9 +1,12 @@
 // Mini calendar: a tap on the date under the clock opens it (Monday first).
 // A tap on a day selects it and lists its events. A tap on the month name opens the month picker with year arrows.
 // Events (title, start and optional end time) are kept in this head unit's localStorage, like the other launcher settings.
+// Google events (google-hub.js, Apps Script) are shown here too, read-only: they have no delete button and are not saved here.
 // The tap on the clock itself still toggles night mode (nightmode.js).
 const CAL_MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const CAL_EVENTS_KEY = "generic_launcher_events_v1";
+const GOOGLE_EVENTS_KEY = "generic_launcher_google_events_v1"; // written by google-hub.js
+let googleCache = { raw: null, list: [] };                    // parsed Google events, redone only when the stored text changes
 let calView = "days";     // "days" or "months"
 let calMonth = null;      // a Date on the 1st of the month shown
 let calYear = null;       // year shown in the month picker
@@ -42,9 +45,52 @@ function writeEvents(list) {
   }
 }
 
+// Hours and minutes of a date as HH:MM, in the head unit's time.
+function timeOfDay(date) {
+  return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
+}
+
+// Apps Script gives { title, start, end }: start is an ISO date-time, or a plain YYYY-MM-DD for an all-day event.
+// An all-day event has an empty start, so it is listed first and shown as "весь день".
+function normalizeGoogleEvent(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const startText = String(raw.start || raw.time || "").trim();
+  if (!startText) return null;
+  const title = String(raw.title || raw.summary || "(Без названия)").trim().slice(0, 120);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startText)) {
+    return { id: "g|" + startText + "||" + title, date: startText, start: "", end: "", title, source: "google" };
+  }
+  const startAt = new Date(startText);
+  if (Number.isNaN(startAt.getTime())) return null;
+  const date = dateKey(startAt);
+  const start = timeOfDay(startAt);
+  const endAt = raw.end ? new Date(String(raw.end)) : null;
+  const end = endAt && !Number.isNaN(endAt.getTime()) && dateKey(endAt) === date ? timeOfDay(endAt) : "";
+  return { id: "g|" + date + "|" + start + "|" + title, date, start, end, title, source: "google" };
+}
+
+function readGoogleEvents() {
+  let raw = "";
+  try {
+    raw = localStorage.getItem(GOOGLE_EVENTS_KEY) || "";
+  } catch (error) {
+    return [];
+  }
+  if (raw === googleCache.raw) return googleCache.list;
+  let list = [];
+  try {
+    const stored = raw ? JSON.parse(raw) : null;
+    if (stored && Array.isArray(stored.events)) list = stored.events.map(normalizeGoogleEvent).filter(Boolean);
+  } catch (error) {
+    list = [];
+  }
+  googleCache = { raw, list };
+  return list;
+}
+
 function eventsOn(date) {
   const key = dateKey(date);
-  return readEvents()
+  return readEvents().concat(readGoogleEvents())
     .filter(item => item.date === key)
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
 }
@@ -179,10 +225,13 @@ function renderEventsBlock() {
   if (!calSelected) return "";
   const list = eventsOn(calSelected);
   const rows = list.map(item => {
-    const time = item.end ? `${item.start}–${item.end}` : item.start;
-    return `<div class="calendar-event"><span class="calendar-event-time">${escapeText(time)}</span>` +
-      `<span class="calendar-event-title">${escapeText(item.title)}</span>` +
-      `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button></div>`;
+    const fromGoogle = item.source === "google";
+    const time = !item.start ? "весь день" : item.end ? `${item.start}–${item.end}` : item.start;
+    // Google events are read-only here: no delete button, and a small "Google" mark instead.
+    const mark = fromGoogle ? '<span class="calendar-event-source">Google</span>' : "";
+    const del = fromGoogle ? "" : `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button>`;
+    return `<div class="calendar-event${fromGoogle ? " google" : ""}"><span class="calendar-event-time">${escapeText(time)}</span>` +
+      `<span class="calendar-event-title">${escapeText(item.title)}</span>${mark}${del}</div>`;
   }).join("");
   const header = `<div class="calendar-selected">Выбрано: ${calSelected.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</div>`;
   const empty = list.length ? "" : '<p class="calendar-empty">Событий нет</p>';
@@ -237,6 +286,8 @@ function openCalendar() {
   calForm = false;
   renderCalendar();
   sheet.hidden = false;
+  // Google events are refreshed in the background when the calendar opens (at most once every 15 minutes).
+  if (typeof window.googleHubSyncCalendar === "function") window.googleHubSyncCalendar(false);
 }
 
 // In cover mode a tap on the clock opens the calendar instead of the night screen.
@@ -302,7 +353,7 @@ function ensureHomeCalendar() {
 function dayEventsText(date) {
   const list = eventsOn(date);
   if (!list.length) return "событий нет";
-  const shown = list.slice(0, 2).map(item => `${escapeText(item.start)} ${escapeText(item.title)}`).join(" · ");
+  const shown = list.slice(0, 2).map(item => `${item.start ? escapeText(item.start) : "весь день"} ${escapeText(item.title)}`).join(" · ");
   return list.length > 2 ? `${shown} · ещё ${list.length - 2}` : shown;
 }
 
@@ -342,6 +393,13 @@ function placeHomeCalendar() {
 bindCalendar();
 setInterval(placeHomeCalendar, 500);
 window.addEventListener("resize", placeHomeCalendar);
+
+// New Google events arrive from google-hub.js: the home card and an open calendar show them at once.
+window.addEventListener("google-calendar-updated", () => {
+  const sheet = document.getElementById("calendar-sheet");
+  if (sheet && !sheet.hidden && !calForm) renderCalendar();
+  else renderHomeCalendar();
+});
 
 // Reminders: while the launcher is on screen, a toast shows CAL_REMIND_MINUTES before an event today.
 // Each event is reminded once per launcher session. Reminders need the launcher open (see the notes on system notifications).
