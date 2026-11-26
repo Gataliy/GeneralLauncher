@@ -41,7 +41,8 @@ function applyWeather(raw, persist = true) {
 }
 
 // Tomsk from open-meteo (no key): the fallback while there is no car bridge or no GPS fix yet.
-const ONLINE_WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=56.4972&longitude=85.0352&current=temperature_2m,weather_code&timezone=Asia%2FTomsk";
+// The coordinates are the Tomsk Hub's (56.4977, 84.9744).
+const ONLINE_WEATHER_URL = "https://api.open-meteo.com/v1/forecast?latitude=56.4977&longitude=84.9744&current=temperature_2m,weather_code&timezone=Asia%2FTomsk";
 let onlineWeatherBusy = false;
 
 // The condition words are the ones weatherSymbol() already knows.
