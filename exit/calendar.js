@@ -50,22 +50,71 @@ function timeOfDay(date) {
   return String(date.getHours()).padStart(2, "0") + ":" + String(date.getMinutes()).padStart(2, "0");
 }
 
-// Apps Script gives { title, start, end }: start is an ISO date-time, or a plain YYYY-MM-DD for an all-day event.
-// An all-day event has an empty start, so it is listed first and shown as "весь день".
+// The Russian form the hub shows: "DD.MM.YYYY HH:MM", or "DD.MM HH:MM" for this year; the time part is optional.
+function ruDateTime(text) {
+  const m = String(text).match(/^(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?(?:[ ,]+(\d{1,2}):(\d{2}))?$/);
+  if (!m) return null;
+  return {
+    year: m[3] ? Number(m[3]) : new Date().getFullYear(),
+    month: Number(m[2]),
+    day: Number(m[1]),
+    hour: m[4] === undefined ? null : Number(m[4]),
+    minute: m[5] === undefined ? 0 : Number(m[5])
+  };
+}
+
+// An ISO date-time, or the Russian form above; null when neither reads as a moment.
+function parseWhen(text) {
+  const ru = ruDateTime(text);
+  const at = ru ? new Date(ru.year, ru.month - 1, ru.day, ru.hour || 0, ru.minute) : new Date(String(text));
+  return Number.isNaN(at.getTime()) ? null : at;
+}
+
+// The day as "DD.MM.YYYY", from "YYYY-MM-DD" (or an ISO date-time) or the Russian "DD.MM[.YYYY]" form; null otherwise.
+function dayText(text) {
+  const iso = String(text).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return iso[3] + "." + iso[2] + "." + iso[1];
+  const ru = ruDateTime(text);
+  if (ru && ru.hour === null) return String(ru.day).padStart(2, "0") + "." + String(ru.month).padStart(2, "0") + "." + ru.year;
+  return null;
+}
+
+// Apps Script gives { title, start, end, location, date }. The start (or time) is an ISO date-time, a Russian date-time,
+// a plain YYYY-MM-DD for an all-day event, or only a time ("15:00", "15:00–16:00"): its day then comes from the date field.
+// "26.11.2026 15:00–16:00" gives the end too. The place is added to the title as "title · place".
+// An all-day event has an empty start, so it is listed first and shown as "весь день". A time with no day is skipped.
 function normalizeGoogleEvent(raw) {
   if (!raw || typeof raw !== "object") return null;
-  const startText = String(raw.start || raw.time || "").trim();
+  let startText = String(raw.start || raw.time || "").trim();
+  let endText = raw.end ? String(raw.end).trim() : "";
   if (!startText) return null;
-  const title = String(raw.title || raw.summary || "(Без названия)").trim().slice(0, 120);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(startText)) {
-    return { id: "g|" + startText + "||" + title, date: startText, start: "", end: "", title, source: "google" };
+  const place = String(raw.location || "").trim();
+  const title = [String(raw.title || raw.summary || "(Без названия)").trim(), place].filter(Boolean).join(" · ").slice(0, 120);
+  const onlyTime = startText.match(/^(\d{1,2}:\d{2})(?:\s*[–-]\s*(\d{1,2}:\d{2}))?$/);
+  if (onlyTime) {
+    const day = dayText(String(raw.date || raw.day || ""));
+    if (!day) return null;
+    startText = day + " " + onlyTime[1];
+    if (onlyTime[2]) endText = day + " " + onlyTime[2];
   }
-  const startAt = new Date(startText);
-  if (Number.isNaN(startAt.getTime())) return null;
+  const range = startText.match(/^(.*\d)\s+(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})$/);
+  if (range) {
+    startText = range[1] + " " + range[2];
+    endText = range[1] + " " + range[3];
+  }
+  const ru = ruDateTime(startText);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startText) || (ru && ru.hour === null)) {
+    const date = ru
+      ? ru.year + "-" + String(ru.month).padStart(2, "0") + "-" + String(ru.day).padStart(2, "0")
+      : startText;
+    return { id: "g|" + date + "||" + title, date, start: "", end: "", title, source: "google" };
+  }
+  const startAt = parseWhen(startText);
+  if (!startAt) return null;
   const date = dateKey(startAt);
   const start = timeOfDay(startAt);
-  const endAt = raw.end ? new Date(String(raw.end)) : null;
-  const end = endAt && !Number.isNaN(endAt.getTime()) && dateKey(endAt) === date ? timeOfDay(endAt) : "";
+  const endAt = endText ? parseWhen(endText) : null;
+  const end = endAt && dateKey(endAt) === date ? timeOfDay(endAt) : "";
   return { id: "g|" + date + "|" + start + "|" + title, date, start, end, title, source: "google" };
 }
 
