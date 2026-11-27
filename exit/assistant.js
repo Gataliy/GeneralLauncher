@@ -1,7 +1,8 @@
-// Ассистент Gemini: единственный чат с Gemini в лаунчере и одно действие климата с подтверждением.
+// Ассистент Gemini: единственный чат с Gemini в лаунчере. Модель предлагает одно действие:
+// команду климата, событие в Google-календаре или задачу в Google Tasks. Всё выполняется только после «Да».
 // «задача: …» в модель не уходит: задачу добавляет Google-хаб (window.googleHubAddTask, google-hub.js).
-// Модель только предлагает действие. Команда уходит в очередь лаунчера (enqueueEnumCommand) после «Да».
-// Список команд повторяет серверный (assistant-proxy/worker.js). Окна, люк, багажник, двери и замки здесь не разрешены.
+// Команда климата уходит в очередь лаунчера (enqueueEnumCommand). Список команд повторяет серверный (assistant-proxy/worker.js).
+// Окна, люк, багажник, двери и замки здесь не разрешены.
 (function () {
   // Адрес прокси (assistant-proxy/README.md). Адрес не секретный: ключ Gemini лежит на сервере, в секрете GEMINI_API_KEY.
   const DEFAULT_PROXY_URL = "https://jct-proxy.ahjcz1198.workers.dev/chat";
@@ -139,31 +140,68 @@
     if (history.length > HISTORY_TURNS * 2) history.splice(0, history.length - HISTORY_TURNS * 2);
   }
 
-  // Действие принимается только из списка и только с известной командой.
+  // «2026-11-28T15:00:00+07:00» → «28.11 15:00».
+  function dayTime(start) {
+    const m = String(start).match(/^\d{4}-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+    return m ? `${m[2]}.${m[1]} ${m[3]}` : String(start);
+  }
+
+  // Действие принимается только из списка и с проверкой полей. Всё, кроме климата, тоже ждёт «Да».
   function validAction(action) {
-    if (!action || action.name !== "climate_command") return null;
-    const command = String(action.command || "");
-    return ALLOWED.has(command) ? { command, label: ALLOWED.get(command) } : null;
+    if (!action || typeof action !== "object") return null;
+    if (action.name === "climate_command") {
+      const command = String(action.command || "");
+      if (!ALLOWED.has(command)) return null;
+      return { kind: "climate", command, label: ALLOWED.get(command), confirmText: `Выполнить: «${ALLOWED.get(command)}»?` };
+    }
+    if (action.name === "calendar_event") {
+      const title = String(action.title || "").trim().slice(0, 120);
+      const start = String(action.start || "").trim();
+      const location = String(action.location || "").trim().slice(0, 120);
+      if (!title || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(start)) return null;
+      const label = `${title}, ${dayTime(start)}${location ? ", " + location : ""}`;
+      return { kind: "event", title, start, location, label, confirmText: `Добавить в календарь: ${label}?` };
+    }
+    if (action.name === "task_add") {
+      const title = String(action.title || "").trim().slice(0, 200);
+      return title ? { kind: "task", title, label: title, confirmText: `Добавить задачу: «${title}»?` } : null;
+    }
+    return null;
   }
 
   function setPending(action) {
     pending = action;
     const box = sheet.querySelector(".assistant-confirm");
     box.hidden = !action;
-    if (action) sheet.querySelector(".assistant-confirm-text").textContent = `Выполнить: «${action.label}»?`;
+    if (action) sheet.querySelector(".assistant-confirm-text").textContent = action.confirmText;
   }
 
-  function confirmPending() {
+  // Выполняет подтверждённое действие. Проверка повторяется здесь, перед отправкой.
+  async function confirmPending() {
     const action = pending;
     setPending(null);
-    // Повторная проверка перед отправкой в очередь команд.
-    if (!action || !ALLOWED.has(action.command)) return;
-    if (!bridge.available()) {
-      addBubble("system", "Команду можно выполнить только на магнитоле.");
+    if (!action) return;
+    if (action.kind === "climate") {
+      if (!ALLOWED.has(action.command)) return;
+      if (!bridge.available()) {
+        addBubble("system", "Команду можно выполнить только на магнитоле.");
+        return;
+      }
+      enqueueEnumCommand(action.command, action.label);
+      addBubble("system", `Отправлено: ${action.label}`);
       return;
     }
-    enqueueEnumCommand(action.command, action.label);
-    addBubble("system", `Отправлено: ${action.label}`);
+    if (action.kind === "event") {
+      if (typeof window.googleHubAddEvent !== "function") { addBubble("system", "Google в этой сборке не подключён."); return; }
+      const result = await window.googleHubAddEvent(action.title, action.start, action.location);
+      addBubble("system", result.ok ? `Событие «${action.title}» добавлено в Google-календарь.` : (result.reason || "Не удалось добавить событие."));
+      return;
+    }
+    if (action.kind === "task") {
+      if (typeof window.googleHubAddTask !== "function") { addBubble("system", "Google в этой сборке не подключён."); return; }
+      const result = await window.googleHubAddTask(action.title);
+      addBubble("system", result.ok ? `Задача «${action.title}» добавлена в Google Tasks.` : (result.reason || "Не удалось добавить задачу."));
+    }
   }
 
   // «задача: …» добавляет задачу в Google, если хаб подключён; модель здесь не участвует.
