@@ -174,10 +174,29 @@
       .slice(0, 28);
   }
 
+  // One event can come back more than once (the same event from two calendars): one row per event.
+  // The key is the event's day, time, title and place; the calendar widget deduplicates by its own key as well.
+  function uniqueEvents(list) {
+    const seen = new Set();
+    return list.filter(event => {
+      if (!event || typeof event !== "object") return false;
+      const key = JSON.stringify([
+        String(event.date || "").trim(),
+        String(event.start || event.time || "").trim(),
+        String(event.end || "").trim(),
+        String(event.title || event.summary || "").trim().toLowerCase(),
+        String(event.location || "").trim().toLowerCase()
+      ]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   // Keeps the lists that the response does not carry (a quiet calendar sync does not always return news or contacts).
   function apply(body) {
     const cached = readCache();
-    data.calendar = Array.isArray(body.events) ? body.events : (Array.isArray(body.calendar) ? body.calendar : []);
+    data.calendar = uniqueEvents(Array.isArray(body.events) ? body.events : (Array.isArray(body.calendar) ? body.calendar : []));
     data.mail = Array.isArray(body.mail) ? body.mail : [];
     if (Array.isArray(body.contacts)) data.contacts = body.contacts;
     if (Array.isArray(body.news)) data.news = normalizeNews(body.news);
