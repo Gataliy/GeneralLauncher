@@ -3,7 +3,6 @@
 // Events (title, start and optional end time) are kept in this head unit's localStorage, like the other launcher settings.
 // Google events (google-hub.js, Apps Script) are shown here too, read-only: they have no delete button and are not saved here.
 // Google tasks are listed in a block under the events: add one, mark one done, choose the list (the actions are in google-hub.js).
-// The tap on the clock itself still toggles night mode (nightmode.js).
 const CAL_MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const CAL_EVENTS_KEY = "generic_launcher_events_v1";
 const GOOGLE_EVENTS_KEY = "generic_launcher_google_events_v1"; // written by google-hub.js
@@ -506,9 +505,8 @@ function openCalendar() {
   if (typeof window.googleHubSyncCalendar === "function") window.googleHubSyncCalendar(false);
 }
 
-// In cover mode a tap on the clock opens the calendar instead of the night screen.
-// It is caught on the document in the capture phase, so it runs before the clock's own listeners (nightmode.js),
-// whose order differs between WebView versions. On the main screen a tap still toggles night mode.
+// In cover mode a tap on the clock opens the calendar.
+// It is caught on the document in the capture phase, so it runs before the clock's own listeners.
 function bindClockInCover() {
   document.addEventListener("click", event => {
     if (!document.body.classList.contains("player-expanded")) return;
@@ -523,7 +521,7 @@ function bindCalendar() {
   const date = document.getElementById("date");
   if (date) {
     date.addEventListener("click", event => {
-      // The date sits inside .hero-clock, where a tap toggles night mode: keep it from reaching there.
+      // The date sits inside .hero-clock: keep the tap on the date from reaching the clock.
       event.stopPropagation();
       openCalendar();
     });
