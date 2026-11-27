@@ -162,7 +162,14 @@ function readGoogleEvents() {
   const store = readGoogleStore();
   if (store === googleCache.store) return googleCache.list;
   let list = [];
-  if (Array.isArray(store.events)) list = store.events.map(normalizeGoogleEvent).filter(Boolean);
+  if (Array.isArray(store.events)) {
+    const seen = new Set();   // a copy kept from an older sync is shown once
+    list = store.events.map(normalizeGoogleEvent).filter(item => {
+      if (!item || seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }
   if (Array.isArray(store.tasks)) list = list.concat(store.tasks.map(normalizeGoogleTask).filter(Boolean));
   googleCache = { store, list };
   return list;
