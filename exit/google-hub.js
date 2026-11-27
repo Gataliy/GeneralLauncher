@@ -58,6 +58,7 @@
   .gh-item-actions { display: flex; gap: 8px; }
   .gh-reply, .gh-delete, .gh-send { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0; }
   .gh-delete.danger { background: #c0392b; border-color: transparent; color: #fff; }
+  .gh-send.confirm { background: var(--accent); border-color: transparent; color: #0b1620; }
   .gh-reply-box { flex-basis: 100%; display: flex; gap: 8px; }
   .gh-reply-input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   .gh-mail-action:disabled, .gh-reply-input:disabled, .gh-filter:disabled { opacity: .45; cursor: not-allowed; }
@@ -84,6 +85,7 @@
   let newsSource = "all";
   let openReplyId = "";      // письмо, у которого открыт ответ
   let confirmDeleteId = "";  // письмо, которое ждёт второго нажатия «Точно удалить»
+  let confirmSendId = "";    // письмо, у которого ждём второго нажатия «Точно отправить»
   const replyDrafts = {};    // черновики ответов по письмам, чтобы не терялись при обновлении списка
 
   function readStored(key, fallback) {
@@ -407,7 +409,8 @@
         input.dataset.thread = threadId;
         input.value = replyDrafts[threadId] || "";
         box.appendChild(input);
-        box.appendChild(button("gh-send gh-mail-action", "Отправить", threadId));
+        const askSend = confirmSendId === threadId;
+        box.appendChild(button("gh-send gh-mail-action" + (askSend ? " confirm" : ""), askSend ? "Точно отправить" : "Отправить", threadId));
         row.appendChild(box);
       }
       return row;
@@ -512,6 +515,7 @@
     const body = String(text || "").trim();
     if (!threadId || !body) return;
     if (moving()) { setNote("На ходу письма не отправляем.", true); return; }
+    confirmSendId = "";
     const ok = await run("Отправляем ответ…", { action: "replyMail", threadId, body });
     if (ok) {
       delete replyDrafts[threadId];
@@ -584,6 +588,7 @@
       if (reply) {
         const id = reply.dataset.thread;
         openReplyId = openReplyId === id ? "" : id;
+        confirmSendId = "";
         render();
         return;
       }
@@ -596,9 +601,13 @@
       }
       const send = target.closest(".gh-send");
       if (send) {
+        const id = send.dataset.thread;
         const row = send.closest(".gh-mail-row");
         const input = row ? row.querySelector(".gh-reply-input") : null;
-        sendReply(send.dataset.thread, input ? input.value : "");
+        if (!input || !input.value.trim()) { setNote("Напишите текст ответа.", true); return; }
+        // Ответ нельзя отозвать: первое нажатие просит подтверждение, второе отправляет.
+        if (confirmSendId !== id) { confirmSendId = id; render(); return; }
+        sendReply(id, input.value);
         return;
       }
       if (target.closest(".gh-close")) { sheet.hidden = true; return; }
@@ -608,7 +617,16 @@
     });
     sheet.addEventListener("input", event => {
       const input = event.target;
-      if (input instanceof Element && input.classList.contains("gh-reply-input")) replyDrafts[input.dataset.thread] = input.value;
+      if (!(input instanceof Element) || !input.classList.contains("gh-reply-input")) return;
+      const id = input.dataset.thread;
+      replyDrafts[id] = input.value;
+      // The text changed after the confirmation: the confirmation no longer counts, the button goes back to «Отправить».
+      if (confirmSendId === id) {
+        confirmSendId = "";
+        const row = input.closest(".gh-mail-row");
+        const send = row ? row.querySelector(".gh-send") : null;
+        if (send) { send.textContent = "Отправить"; send.classList.remove("confirm"); }
+      }
     });
     // While the sheet is open, keep the driving state in step with the car.
     setInterval(() => { if (!sheet.hidden) syncDriving(); }, 1000);
