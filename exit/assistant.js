@@ -181,7 +181,7 @@
       '<label>Основная модель<input type="text" class="assistant-model" autocomplete="off" placeholder="' + DEFAULT_MODEL + '"></label>' +
       '<label>Запасная модель<input type="text" class="assistant-fallback" autocomplete="off" placeholder="' + DEFAULT_FALLBACK_MODEL + '"></label>' +
       '<label>Что ассистент помнит о вас (по одной записи в строке)<textarea class="assistant-memory" rows="4"></textarea></label>' +
-      '<p class="assistant-hint">Ключ и память хранятся на этом устройстве. С каждым вопросом в Groq уходят память, список приложений магнитолы и сводка поездок; ключ уходит только в Groq. Пароли и номера карт сюда не пишите.</p>' +
+      '<p class="assistant-hint">Ключ и память хранятся на этом устройстве. С каждым вопросом в Groq уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо); ключ уходит только в Groq. Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
     sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
