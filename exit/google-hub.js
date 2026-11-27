@@ -528,7 +528,7 @@
       '<label>Ключ NewsAPI (необязательно)<input type="password" class="gh-newsapi" autocomplete="off"></label>' +
       '<label>Лента новостей (RSS)<input type="url" class="gh-feed" autocomplete="off" placeholder="https://…"></label>' +
       '<button type="button" class="gh-save">Сохранить</button></details>' +
-      '<div class="gh-foot"><span class="gh-hint">Чат Gemini — в «Ассистенте»</span><button type="button" class="gh-nav">Открыть навигатор</button></div>' +
+      '<div class="gh-foot"><span class="gh-hint">Чат — в «Ассистенте»</span><button type="button" class="gh-nav">Открыть навигатор</button></div>' +
       '</div>';
     sheet.addEventListener("click", event => {
       const target = event.target;

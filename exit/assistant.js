@@ -1,10 +1,10 @@
-// Ассистент Gemini: единственный чат с Gemini в лаунчере. Модель предлагает одно действие:
+// Ассистент: единственный чат с языковой моделью в лаунчере (Groq, через прокси). Модель предлагает одно действие:
 // команду климата, событие в Google-календаре или задачу в Google Tasks. Всё выполняется только после «Да».
 // «задача: …» в модель не уходит: задачу добавляет Google-хаб (window.googleHubAddTask, google-hub.js).
 // Команда климата уходит в очередь лаунчера (enqueueEnumCommand). Список команд повторяет серверный (assistant-proxy/worker.js).
 // Окна, люк, багажник, двери и замки здесь не разрешены.
 (function () {
-  // Адрес прокси (assistant-proxy/README.md). Адрес не секретный: ключ Gemini лежит на сервере, в секрете GEMINI_API_KEY.
+  // Адрес прокси (assistant-proxy/README.md). Адрес не секретный: ключ Groq лежит на сервере, в секрете GROQ_API_KEY.
   const DEFAULT_PROXY_URL = "https://jct-proxy.ahjcz1198.workers.dev/chat";
   const URL_KEY = "generic_launcher_assistant_url_v1";
   const TOKEN_KEY = "generic_launcher_assistant_token_v1";
