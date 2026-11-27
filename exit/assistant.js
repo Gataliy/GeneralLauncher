@@ -392,6 +392,30 @@
     return "Ассистент недоступен. Проверьте подключение к интернету и ключ Groq.";
   }
 
+  // Модель попросила действие (не «none» и не null).
+  function actionRequested(action) {
+    return !!action && typeof action === "object" && !!action.name && action.name !== "none";
+  }
+
+  // Что сказать модели, если её действие не прошло проверку: какие бывают действия и поля.
+  function repairText() {
+    return "Действие не принято: проверьте название и поля. Допустимы только: climate_command с полем command из списка "
+      + [...ALLOWED.keys()].join(", ") + "; calendar_event с полями title и start в формате 2026-11-28T15:00:00 (location необязательно); task_add с полем title. "
+      + "Ответьте снова тем же JSON-объектом с верным action или с action = null.";
+  }
+
+  // Один повтор с текстом ошибки. Новый ответ берём только если его действие проходит проверку;
+  // иначе остаётся первый ответ без действия, чтобы не показывать кнопку, которую нельзя выполнить.
+  async function repairAction(key, messages, raw, reply) {
+    try {
+      const retry = parseReply(await askModel(key, [...messages, { role: "assistant", content: raw }, { role: "user", content: repairText() }]));
+      if (validAction(retry.action)) return retry;
+    } catch (error) {
+      console.error("[Generic Launcher] assistant repair", error);
+    }
+    return { reply, action: null };
+  }
+
   async function ask(text) {
     addBubble("user", text);
     setPending(null);
@@ -408,10 +432,15 @@
       { role: "user", content: text.slice(0, MAX_MESSAGE) }
     ];
     try {
-      const { reply, action } = parseReply(await askModel(key, messages));
-      remember(text, reply);
-      addBubble("assistant", reply);
-      const pendingAction = validAction(action);
+      const raw = await askModel(key, messages);
+      let parsed = parseReply(raw);
+      if (actionRequested(parsed.action) && !validAction(parsed.action)) {
+        setNote("Уточняю…");
+        parsed = await repairAction(key, messages, raw, parsed.reply);
+      }
+      remember(text, parsed.reply);
+      addBubble("assistant", parsed.reply);
+      const pendingAction = validAction(parsed.action);
       if (pendingAction) setPending(pendingAction);
     } catch (error) {
       console.error("[Generic Launcher] assistant", error);
