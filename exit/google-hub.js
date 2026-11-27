@@ -15,6 +15,7 @@
   const DEFAULT_FEED = "https://ria.ru/export/rss2/index.xml";
   const CALENDAR_SYNC_MS = 15 * 60 * 1000;                    // событиям не чаще, чем раз в 15 минут
   const CALENDAR_TICK_MS = 5 * 60 * 1000;                     // проверка раз в 5 минут
+  const REQUEST_TIMEOUT_MS = 15000;                           // запрос без ответа дольше этого считается неудачным
   const NAV_PACKAGE = "ru.yandex.yandexnavi";
   const NOT_CONNECTED = "Google не подключён: укажите адрес в кнопке «Google», раздел «Подключение».";
   const TABS = [
@@ -57,6 +58,7 @@
   .gh-item-actions { display: flex; gap: 8px; }
   .gh-reply, .gh-delete, .gh-send { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0; }
   .gh-delete.danger { background: #c0392b; border-color: transparent; color: #fff; }
+  .gh-send.confirm { background: var(--accent); border-color: transparent; color: #0b1620; }
   .gh-reply-box { flex-basis: 100%; display: flex; gap: 8px; }
   .gh-reply-input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   .gh-mail-action:disabled, .gh-reply-input:disabled, .gh-filter:disabled { opacity: .45; cursor: not-allowed; }
@@ -74,13 +76,16 @@
   const data = { calendar: [], mail: [], contacts: [], news: [] };
   let tab = "calendar";
   let sheet = null;
-  let busy = false;          // запрос к Apps Script идёт
+  let pendingActions = 0;    // действия пользователя (добавить, отметить, ответить, обновить): ждут или идут
+  let syncing = false;       // фоновая синхронизация календаря идёт; она не блокирует действия
+  let queue = Promise.resolve();   // действия идут по одному, чтобы не перемешивать ответы Apps Script
   let synced = "";
   let lastError = "";
   let mailFolder = "all";
   let newsSource = "all";
   let openReplyId = "";      // письмо, у которого открыт ответ
   let confirmDeleteId = "";  // письмо, которое ждёт второго нажатия «Точно удалить»
+  let confirmSendId = "";    // письмо, у которого ждём второго нажатия «Точно отправить»
   const replyDrafts = {};    // черновики ответов по письмам, чтобы не терялись при обновлении списка
 
   function readStored(key, fallback) {
@@ -108,6 +113,9 @@
       return {};
     }
   }
+
+  // The window starts with the events of the last sync: the same ones the calendar widget shows, even when the sync fails.
+  data.calendar = Array.isArray(readCache().events) ? readCache().events : [];
 
   function execUrl() { return readStored(URL_KEY, "").trim(); }
   function secret() { return readStored(SECRET_KEY, "").trim(); }
@@ -149,15 +157,26 @@
       const value = params[key];
       if (value !== undefined && value !== null && String(value) !== "") url.searchParams.set(key, String(value));
     });
-    const response = await fetch(url.toString(), { method: "GET", cache: "no-store" });
-    let body = null;
+    // Без таймаута запрос, который повис в сети, держал бы все действия до разрыва соединения.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      body = await response.json();
+      const response = await fetch(url.toString(), { method: "GET", cache: "no-store", signal: controller.signal });
+      let body = null;
+      try {
+        body = await response.json();
+      } catch (error) {
+        throw new Error("Сервер ответил не JSON (HTTP " + response.status + ").");
+      }
+      if (!response.ok || !body || body.ok === false) throw new Error((body && body.error) || "HTTP " + response.status);
+      return body;
     } catch (error) {
-      throw new Error("Сервер ответил не JSON (HTTP " + response.status + ").");
+      if (error && error.name === "AbortError") throw new Error("Google не ответил за " + REQUEST_TIMEOUT_MS / 1000 + " секунд.");
+      if (error && error.name === "TypeError") throw new Error("Нет связи с Google.");
+      throw error;
+    } finally {
+      clearTimeout(timer);
     }
-    if (!response.ok || !body || body.ok === false) throw new Error((body && body.error) || "HTTP " + response.status);
-    return body;
   }
 
   // News: only the Apps Script fetches the feed, so the feed address and the NewsAPI key stay out of the page's own requests.
@@ -208,25 +227,29 @@
   }
 
   // Runs one request and updates the lists; a failed request keeps the lists as they were and shows the reason.
-  async function run(status, params) {
-    if (busy) return false;
-    busy = true;
+  // Действия идут по очереди: нажатие не отклоняется из-за того, что другой запрос ещё идёт.
+  function run(status, params) {
+    pendingActions += 1;
     setStatus(status);
     setNote("");
     render();
-    try {
-      apply(await callApi(params));
-      setStatus("Обновлено в " + synced);
-      return true;
-    } catch (error) {
-      lastError = error.message || "Ошибка";
-      setStatus("Не получилось");
-      setNote(lastError, true);
-      return false;
-    } finally {
-      busy = false;
-      render();
-    }
+    const job = queue.then(async () => {
+      try {
+        apply(await callApi(params));
+        setStatus("Обновлено в " + synced);
+        return true;
+      } catch (error) {
+        lastError = error.message || "Ошибка";
+        setStatus("Не получилось");
+        setNote(lastError, true);
+        return false;
+      } finally {
+        pendingActions -= 1;
+        render();
+      }
+    });
+    queue = job;
+    return job;
   }
 
   // Used by the assistant («задача: …») and by the calendar's tasks block: adds a task to the chosen list.
@@ -234,7 +257,6 @@
     const text = String(title || "").trim();
     if (!text) return { ok: false, reason: "Напишите текст задачи." };
     if (moving()) return { ok: false, reason: "На ходу задачи не добавляем." };
-    if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
     if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
     const ok = await run("Добавляем…", { action: "addTask", title: text });
     return ok ? { ok: true } : { ok: false, reason: "Не удалось добавить задачу: " + lastError };
@@ -245,7 +267,6 @@
     const id = String(taskId || "").trim();
     if (!id) return { ok: false, reason: "Не найдена задача." };
     if (moving()) return { ok: false, reason: "На ходу задачи не отмечаем." };
-    if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
     if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
     const ok = await run("Отмечаем…", { action: "completeTask", taskId: id });
     return ok ? { ok: true } : { ok: false, reason: "Не удалось отметить задачу: " + lastError };
@@ -254,7 +275,7 @@
   // Used by the calendar's tasks block: switches the list the tasks come from.
   window.googleHubSetTaskList = async function (listId) {
     const id = String(listId || "").trim();
-    if (!id || !execUrl() || busy) return false;
+    if (!id || !execUrl()) return false;
     writeStored(LIST_KEY, id);
     return run("Список задач…", {});
   };
@@ -265,7 +286,6 @@
     if (!text) return { ok: false, reason: "Напишите название события." };
     if (moving()) return { ok: false, reason: "На ходу события не добавляем." };
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(start || ""))) return { ok: false, reason: "Не поняла время события." };
-    if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
     if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
     const ok = await run("Добавляем событие…", { action: "addEvent", title: text, start: String(start), location: String(location || "") });
     return ok ? { ok: true } : { ok: false, reason: "Не удалось добавить событие: " + lastError };
@@ -275,9 +295,9 @@
   // A failed request keeps the events that were stored before; the sheet shows its own errors on a manual refresh.
   let lastCalendarSync = 0;
   window.googleHubSyncCalendar = async function (force) {
-    if (!execUrl() || busy) return false;
+    if (!execUrl() || syncing) return false;
     if (!force && Date.now() - lastCalendarSync < CALENDAR_SYNC_MS) return false;
-    busy = true;
+    syncing = true;
     try {
       apply(await callApi({}));
       lastCalendarSync = Date.now();
@@ -286,14 +306,14 @@
     } catch (error) {
       return false;
     } finally {
-      busy = false;
+      syncing = false;
       render();
     }
   };
 
   // Mail, contacts and news in the window: the news come with their own action, so the sheet asks for them separately.
   async function loadNews() {
-    if (!execUrl() || busy) return;
+    if (!execUrl()) return;
     try {
       const body = await callApi({ action: "getNews", feedUrl: readStored(FEED_KEY, DEFAULT_FEED), newsApiKey: readStored(NEWS_KEY_KEY, "") });
       if (Array.isArray(body.news)) data.news = normalizeNews(body.news);
@@ -389,7 +409,8 @@
         input.dataset.thread = threadId;
         input.value = replyDrafts[threadId] || "";
         box.appendChild(input);
-        box.appendChild(button("gh-send gh-mail-action", "Отправить", threadId));
+        const askSend = confirmSendId === threadId;
+        box.appendChild(button("gh-send gh-mail-action" + (askSend ? " confirm" : ""), askSend ? "Точно отправить" : "Отправить", threadId));
         row.appendChild(box);
       }
       return row;
@@ -458,8 +479,8 @@
     if (!sheet) return;
     const driving = moving();
     sheet.querySelector(".gh-drive").classList.toggle("on", driving);
-    sheet.querySelectorAll(".gh-mail-action, .gh-reply-input").forEach(node => { node.disabled = driving || busy; });
-    sheet.querySelector(".gh-refresh").disabled = busy;
+    sheet.querySelectorAll(".gh-mail-action, .gh-reply-input").forEach(node => { node.disabled = driving || pendingActions > 0; });
+    sheet.querySelector(".gh-refresh").disabled = pendingActions > 0;
   }
 
   function render() {
@@ -494,6 +515,7 @@
     const body = String(text || "").trim();
     if (!threadId || !body) return;
     if (moving()) { setNote("На ходу письма не отправляем.", true); return; }
+    confirmSendId = "";
     const ok = await run("Отправляем ответ…", { action: "replyMail", threadId, body });
     if (ok) {
       delete replyDrafts[threadId];
@@ -566,6 +588,7 @@
       if (reply) {
         const id = reply.dataset.thread;
         openReplyId = openReplyId === id ? "" : id;
+        confirmSendId = "";
         render();
         return;
       }
@@ -578,9 +601,13 @@
       }
       const send = target.closest(".gh-send");
       if (send) {
+        const id = send.dataset.thread;
         const row = send.closest(".gh-mail-row");
         const input = row ? row.querySelector(".gh-reply-input") : null;
-        sendReply(send.dataset.thread, input ? input.value : "");
+        if (!input || !input.value.trim()) { setNote("Напишите текст ответа.", true); return; }
+        // Ответ нельзя отозвать: первое нажатие просит подтверждение, второе отправляет.
+        if (confirmSendId !== id) { confirmSendId = id; render(); return; }
+        sendReply(id, input.value);
         return;
       }
       if (target.closest(".gh-close")) { sheet.hidden = true; return; }
@@ -590,7 +617,16 @@
     });
     sheet.addEventListener("input", event => {
       const input = event.target;
-      if (input instanceof Element && input.classList.contains("gh-reply-input")) replyDrafts[input.dataset.thread] = input.value;
+      if (!(input instanceof Element) || !input.classList.contains("gh-reply-input")) return;
+      const id = input.dataset.thread;
+      replyDrafts[id] = input.value;
+      // The text changed after the confirmation: the confirmation no longer counts, the button goes back to «Отправить».
+      if (confirmSendId === id) {
+        confirmSendId = "";
+        const row = input.closest(".gh-mail-row");
+        const send = row ? row.querySelector(".gh-send") : null;
+        if (send) { send.textContent = "Отправить"; send.classList.remove("confirm"); }
+      }
     });
     // While the sheet is open, keep the driving state in step with the car.
     setInterval(() => { if (!sheet.hidden) syncDriving(); }, 1000);
