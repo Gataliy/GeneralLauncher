@@ -181,6 +181,20 @@ function eventsOn(date) {
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
 }
 
+// For the assistant (assistant.js), read-only: the items from fromKey to toKey (YYYY-MM-DD, both days included),
+// and the Google tasks without a due date. It is the same data the calendar shows.
+window.launcherSchedule = function (fromKey, toKey) {
+  const items = readEvents().concat(readGoogleEvents())
+    .filter(item => item && item.date >= fromKey && item.date <= toKey)
+    .sort((a, b) => (a.date + (a.start || "")).localeCompare(b.date + (b.start || "")));
+  const store = readGoogleStore();
+  const undated = (Array.isArray(store.tasks) ? store.tasks : [])
+    .filter(task => task && !normalizeGoogleTask(task))
+    .map(task => String(task.title || "").trim())
+    .filter(Boolean);
+  return { items, undated };
+};
+
 function ensureCalendarSheet() {
   let sheet = document.getElementById("calendar-sheet");
   if (sheet) return sheet;
