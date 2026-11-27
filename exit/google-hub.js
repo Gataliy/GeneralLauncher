@@ -1,22 +1,29 @@
-// Google-хаб (Tomsk Hub, встроен в лаунчер): задачи, календарь и почта из Google через Apps Script.
-// Чат с Gemini один — в «Ассистенте» (assistant.js, через прокси, ключ на сервере). Фраза «задача: …» в ассистенте
-// вызывает window.googleHubAddTask отсюда. Погода Томска — в карточке на главном экране (weather.js).
-// Контракт бэкенда как у хаба: GET {адрес}?secret=…&_ts=…&action=… → { ok, tasks[], mail[], events[] } (или calendar[]).
-// События из этого ответа попадают в календарь лаунчера (calendar.js) через кэш: при запуске и раз в 5 минут, не чаще раза в 15.
-// Адрес и ключ вводятся в шторке, хранятся только на этом устройстве и в код не попадают.
-// На ходу задачи не добавляются и не отмечаются, как и раскладка главного экрана.
+// Google-хаб (Tomsk Hub, встроен в лаунчер): окно «Google» с календарём, почтой, контактами и новостями.
+// Задачи живут в виджете календаря (calendar.js), там же их добавляют и отмечают.
+// Всё из Google идёт через Apps Script. Адрес, ключи и лента вводятся в «Подключение», хранятся на этом устройстве и в код не попадают.
+// Контракт (как у хаба): GET {адрес}?secret=…&_ts=…&listId=…&action=… → { ok, events[], tasks[], taskLists[], mail[], contacts[], news[] }.
+// Действия: addTask и completeTask (с listId), addEvent (title, start, location), replyMail и deleteMail (threadId), getNews (feedUrl, newsApiKey).
+// На ходу письма не отправляются и не удаляются; задачи и события добавляются и отмечаются из виджета и ассистента.
+// Погода Томска — в карточке на главном экране (weather.js).
 (function () {
   const URL_KEY = "generic_launcher_google_url_v1";
   const SECRET_KEY = "generic_launcher_google_secret_v1";
-  const EVENTS_KEY = "generic_launcher_google_events_v1";   // события для календаря лаунчера (читает calendar.js)
-  const CALENDAR_SYNC_MS = 15 * 60 * 1000;                  // событиям не чаще, чем раз в 15 минут
-  const CALENDAR_TICK_MS = 5 * 60 * 1000;                   // проверка раз в 5 минут
+  const EVENTS_KEY = "generic_launcher_google_events_v1";     // кэш для календаря и виджета задач (читает calendar.js)
+  const LIST_KEY = "generic_launcher_google_tasklist_v1";     // выбранный список задач
+  const NEWS_KEY_KEY = "generic_launcher_google_newsapi_v1";  // ключ NewsAPI (необязательно)
+  const FEED_KEY = "generic_launcher_google_newsfeed_v1";     // лента новостей (RSS)
+  const DEFAULT_FEED = "https://ria.ru/export/rss2/index.xml";
+  const CALENDAR_SYNC_MS = 15 * 60 * 1000;                    // событиям не чаще, чем раз в 15 минут
+  const CALENDAR_TICK_MS = 5 * 60 * 1000;                     // проверка раз в 5 минут
   const NAV_PACKAGE = "ru.yandex.yandexnavi";
+  const NOT_CONNECTED = "Google не подключён: укажите адрес в кнопке «Google», раздел «Подключение».";
   const TABS = [
-    { key: "tasks", label: "Задачи", empty: "Задач нет" },
     { key: "calendar", label: "Календарь", empty: "Предстоящих событий нет" },
-    { key: "mail", label: "Почта", empty: "Непрочитанных писем нет" }
+    { key: "mail", label: "Почта", empty: "Писем в выбранном разделе нет" },
+    { key: "contacts", label: "Контакты", empty: "Контактов нет" },
+    { key: "news", label: "Новости", empty: "Новостей нет" }
   ];
+  const MAIL_FOLDERS = [["all", "Все"], ["inbox", "Входящие"], ["sent", "Исходящие"]];
 
   const STYLE = `
   body:not(.player-expanded) #open-google-hub { transform: translateY(25px); }
@@ -31,23 +38,28 @@
   .gh-close { font-size: 26px; }
   .gh-icon:disabled { opacity: .45; cursor: default; }
   .gh-status { font-size: 14px; color: var(--muted); }
-  .gh-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .gh-tab { min-height: 44px; padding: 0 8px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface-soft); color: var(--text); font-size: 15px; cursor: pointer; }
+  .gh-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .gh-tab { min-height: 44px; padding: 0 6px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface-soft); color: var(--text); font-size: 15px; cursor: pointer; }
   .gh-tab.active { background: var(--accent); color: #0b1620; border-color: transparent; }
   .gh-drive { margin: 0; min-height: 18px; font-size: 14px; color: var(--muted); visibility: hidden; }
   .gh-drive.on { visibility: visible; }
   .gh-pane { display: none; flex-direction: column; gap: 10px; }
   .gh-pane.active { display: flex; }
-  .gh-add { display: flex; gap: 8px; }
-  .gh-add input { flex: 1; min-width: 0; min-height: 48px; padding: 0 16px; border: 1px solid var(--line); border-radius: 24px; background: var(--surface-soft); color: var(--text); font-size: 16px; }
-  .gh-add button { width: 48px; min-height: 48px; border: 0; border-radius: 50%; background: var(--accent); color: #0b1620; font-size: 26px; cursor: pointer; }
-  .gh-add input:disabled, .gh-add button:disabled, .gh-done:disabled { opacity: .45; cursor: not-allowed; }
+  .gh-subbar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .gh-subbar:empty { display: none; }
+  .gh-filter { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 18px; background: transparent; color: var(--text); font-size: 14px; cursor: pointer; }
+  .gh-filter.active { background: var(--accent); color: #0b1620; border-color: transparent; }
   .gh-list { height: min(320px, 42vh); overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px; }
-  .gh-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-soft); }
-  .gh-item-text { min-width: 0; }
+  .gh-item { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 12px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-soft); }
+  .gh-item-text { min-width: 0; flex: 1 1 200px; }
   .gh-item-title { font-size: 17px; word-break: break-word; }
   .gh-item-meta { margin-top: 2px; font-size: 14px; color: var(--muted); word-break: break-word; }
-  .gh-done { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+  .gh-item-actions { display: flex; gap: 8px; }
+  .gh-reply, .gh-delete, .gh-send { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 20px; background: transparent; color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0; }
+  .gh-delete.danger { background: #c0392b; border-color: transparent; color: #fff; }
+  .gh-reply-box { flex-basis: 100%; display: flex; gap: 8px; }
+  .gh-reply-input { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
+  .gh-mail-action:disabled, .gh-reply-input:disabled, .gh-filter:disabled { opacity: .45; cursor: not-allowed; }
   .gh-empty { padding: 8px 4px; font-size: 16px; color: var(--muted); }
   .gh-note { margin: 0; min-height: 18px; font-size: 14px; color: var(--muted); }
   .gh-note.error { color: #ff8a8a; }
@@ -59,12 +71,17 @@
   .gh-settings input { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   `;
 
-  const data = { tasks: [], calendar: [], mail: [] };
-  let tab = "tasks";
+  const data = { calendar: [], mail: [], contacts: [], news: [] };
+  let tab = "calendar";
   let sheet = null;
-  let busy = false;       // запрос к Apps Script идёт
+  let busy = false;          // запрос к Apps Script идёт
   let synced = "";
   let lastError = "";
+  let mailFolder = "all";
+  let newsSource = "all";
+  let openReplyId = "";      // письмо, у которого открыт ответ
+  let confirmDeleteId = "";  // письмо, которое ждёт второго нажатия «Точно удалить»
+  const replyDrafts = {};    // черновики ответов по письмам, чтобы не терялись при обновлении списка
 
   function readStored(key, fallback) {
     try {
@@ -83,14 +100,31 @@
     }
   }
 
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(EVENTS_KEY);
+      return raw ? JSON.parse(raw) || {} : {};
+    } catch (error) {
+      return {};
+    }
+  }
+
   function execUrl() { return readStored(URL_KEY, "").trim(); }
   function secret() { return readStored(SECRET_KEY, "").trim(); }
+  function activeList() { return readStored(LIST_KEY, "").trim() || "@default"; }
   function moving() { return typeof state !== "undefined" && !!state && typeof state.speedKmh === "number" && state.speedKmh > 0; }
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function button(className, text, threadId) {
+    const node = element("button", className, text);
+    node.type = "button";
+    node.dataset.thread = threadId;
     return node;
   }
 
@@ -110,6 +144,7 @@
     const url = new URL(base);
     url.searchParams.set("secret", secret());
     url.searchParams.set("_ts", String(Date.now()));
+    if (!("listId" in params)) url.searchParams.set("listId", activeList());
     Object.keys(params).forEach(key => {
       const value = params[key];
       if (value !== undefined && value !== null && String(value) !== "") url.searchParams.set(key, String(value));
@@ -125,13 +160,32 @@
     return body;
   }
 
+  // News: only the Apps Script fetches the feed, so the feed address and the NewsAPI key stay out of the page's own requests.
+  function normalizeNews(items) {
+    if (!Array.isArray(items)) return [];
+    return items
+      .map(item => {
+        if (!item) return null;
+        const title = String(item.title || "").trim();
+        if (!title) return null;
+        return { source: String(item.source || "Новости").trim() || "Новости", title, date: String(item.date || "").trim() };
+      })
+      .filter(Boolean)
+      .slice(0, 28);
+  }
+
+  // Keeps the lists that the response does not carry (a quiet calendar sync does not always return news or contacts).
   function apply(body) {
-    data.tasks = Array.isArray(body.tasks) ? body.tasks : [];
+    const cached = readCache();
+    data.calendar = Array.isArray(body.events) ? body.events : (Array.isArray(body.calendar) ? body.calendar : []);
     data.mail = Array.isArray(body.mail) ? body.mail : [];
-    const events = body.events || body.calendar;
-    data.calendar = Array.isArray(events) ? events : [];
-    writeStored(EVENTS_KEY, JSON.stringify({ at: Date.now(), events: data.calendar, tasks: data.tasks }));
+    if (Array.isArray(body.contacts)) data.contacts = body.contacts;
+    if (Array.isArray(body.news)) data.news = normalizeNews(body.news);
+    const tasks = Array.isArray(body.tasks) ? body.tasks : (Array.isArray(cached.tasks) ? cached.tasks : []);
+    const taskLists = Array.isArray(body.taskLists) ? body.taskLists : (Array.isArray(cached.taskLists) ? cached.taskLists : []);
+    writeStored(EVENTS_KEY, JSON.stringify({ at: Date.now(), events: data.calendar, tasks, taskLists, activeTaskListId: activeList() }));
     synced = new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    window.dispatchEvent(new Event("google-calendar-updated"));
   }
 
   // Runs one request and updates the lists; a failed request keeps the lists as they were and shows the reason.
@@ -156,15 +210,46 @@
     }
   }
 
-  // Used by the assistant («задача: …»): adds a task without opening the sheet.
+  // Used by the assistant («задача: …») and by the calendar's tasks block: adds a task to the chosen list.
   window.googleHubAddTask = async function (title) {
     const text = String(title || "").trim();
     if (!text) return { ok: false, reason: "Напишите текст задачи." };
     if (moving()) return { ok: false, reason: "На ходу задачи не добавляем." };
     if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
-    if (!execUrl()) return { ok: false, reason: "Google не подключён: укажите адрес в кнопке «Google», раздел «Подключение»." };
+    if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
     const ok = await run("Добавляем…", { action: "addTask", title: text });
     return ok ? { ok: true } : { ok: false, reason: "Не удалось добавить задачу: " + lastError };
+  };
+
+  // Used by the calendar's tasks block: marks a task done in the chosen list.
+  window.googleHubCompleteTask = async function (taskId) {
+    const id = String(taskId || "").trim();
+    if (!id) return { ok: false, reason: "Не найдена задача." };
+    if (moving()) return { ok: false, reason: "На ходу задачи не отмечаем." };
+    if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
+    if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
+    const ok = await run("Отмечаем…", { action: "completeTask", taskId: id });
+    return ok ? { ok: true } : { ok: false, reason: "Не удалось отметить задачу: " + lastError };
+  };
+
+  // Used by the calendar's tasks block: switches the list the tasks come from.
+  window.googleHubSetTaskList = async function (listId) {
+    const id = String(listId || "").trim();
+    if (!id || !execUrl() || busy) return false;
+    writeStored(LIST_KEY, id);
+    return run("Список задач…", {});
+  };
+
+  // Used by the assistant after the driver confirms: adds an event to the Google calendar. start is ISO with the offset (+07:00).
+  window.googleHubAddEvent = async function (title, start, location) {
+    const text = String(title || "").trim();
+    if (!text) return { ok: false, reason: "Напишите название события." };
+    if (moving()) return { ok: false, reason: "На ходу события не добавляем." };
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(start || ""))) return { ok: false, reason: "Не поняла время события." };
+    if (busy) return { ok: false, reason: "Подождите, идёт синхронизация Google." };
+    if (!execUrl()) return { ok: false, reason: NOT_CONNECTED };
+    const ok = await run("Добавляем событие…", { action: "addEvent", title: text, start: String(start), location: String(location || "") });
+    return ok ? { ok: true } : { ok: false, reason: "Не удалось добавить событие: " + lastError };
   };
 
   // Events for the launcher's own calendar: a quiet request that does not change the sheet's status line.
@@ -178,7 +263,6 @@
       apply(await callApi({}));
       lastCalendarSync = Date.now();
       if (sheet) setStatus("Обновлено в " + synced);
-      window.dispatchEvent(new Event("google-calendar-updated"));
       return true;
     } catch (error) {
       return false;
@@ -188,6 +272,18 @@
     }
   };
 
+  // Mail, contacts and news in the window: the news come with their own action, so the sheet asks for them separately.
+  async function loadNews() {
+    if (!execUrl() || busy) return;
+    try {
+      const body = await callApi({ action: "getNews", feedUrl: readStored(FEED_KEY, DEFAULT_FEED), newsApiKey: readStored(NEWS_KEY_KEY, "") });
+      if (Array.isArray(body.news)) data.news = normalizeNews(body.news);
+      render();
+    } catch (error) {
+      setNote("Новости: " + (error.message || "ошибка"), true);
+    }
+  }
+
   function refresh() {
     if (!execUrl()) {
       setStatus("Не подключено");
@@ -195,31 +291,36 @@
       sheet.querySelector(".gh-settings").open = true;
       return;
     }
-    run("Синхронизация…", {});
+    run("Синхронизация…", {}).then(ok => { if (ok) loadNews(); });
   }
 
   function save() {
     const url = sheet.querySelector(".gh-url").value.trim();
     const key = sheet.querySelector(".gh-secret").value.trim();
+    const newsKey = sheet.querySelector(".gh-newsapi").value.trim();
+    const feed = sheet.querySelector(".gh-feed").value.trim() || DEFAULT_FEED;
     if (url && !/^https:\/\//.test(url)) {
       setNote("Адрес должен начинаться с https://", true);
       return;
     }
     writeStored(URL_KEY, url);
     writeStored(SECRET_KEY, key);
+    writeStored(NEWS_KEY_KEY, newsKey);
+    writeStored(FEED_KEY, feed);
     sheet.querySelector(".gh-settings").open = false;
     if (!url) {
-      data.tasks = [];
       data.calendar = [];
-      writeStored(EVENTS_KEY, "");
       data.mail = [];
+      data.contacts = [];
+      data.news = [];
+      writeStored(EVENTS_KEY, "");
       window.dispatchEvent(new Event("google-calendar-updated"));
       setStatus("Не подключено");
       setNote("Подключение сброшено.");
       render();
       return;
     }
-    run("Синхронизация…", {});
+    run("Синхронизация…", {}).then(ok => { if (ok) loadNews(); });
   }
 
   // Dates from Apps Script arrive as ISO strings; show them in short form and keep anything unparsable as it is.
@@ -235,31 +336,60 @@
   }
 
   const rowBuilders = {
-    tasks(task) {
-      const row = element("div", "gh-item");
-      const text = element("div", "gh-item-text");
-      text.appendChild(element("div", "gh-item-title", task.title || "(Без названия)"));
-      row.appendChild(text);
-      const done = element("button", "gh-done", "Готово");
-      done.type = "button";
-      done.dataset.taskId = task.id ? String(task.id) : "";
-      row.appendChild(done);
-      return row;
-    },
     calendar(event) {
       const row = element("div", "gh-item");
       const text = element("div", "gh-item-text");
       text.appendChild(element("div", "gh-item-title", event.title || "(Без названия)"));
       const when = formatWhen(event.start || event.time);
-      if (when) text.appendChild(element("div", "gh-item-meta", when));
+      const place = event.location ? " • " + event.location : "";
+      if (when || place) text.appendChild(element("div", "gh-item-meta", (when || "") + place));
       row.appendChild(text);
       return row;
     },
     mail(message) {
-      const row = element("div", "gh-item");
+      const threadId = String(message.threadId || message.id || "");
+      const row = element("div", "gh-item gh-mail-row");
       const text = element("div", "gh-item-text");
       text.appendChild(element("div", "gh-item-title", message.subject || "(Без темы)"));
-      if (message.from) text.appendChild(element("div", "gh-item-meta", message.from));
+      const meta = [message.from, message.date].filter(Boolean).join(" • ");
+      if (meta) text.appendChild(element("div", "gh-item-meta", meta));
+      row.appendChild(text);
+      const actions = element("div", "gh-item-actions");
+      actions.appendChild(button("gh-reply gh-mail-action", "Ответить", threadId));
+      const askDelete = confirmDeleteId === threadId;
+      const del = button("gh-delete gh-mail-action" + (askDelete ? " danger" : ""), askDelete ? "Точно удалить" : "Удалить", threadId);
+      actions.appendChild(del);
+      row.appendChild(actions);
+      if (openReplyId === threadId) {
+        const box = element("div", "gh-reply-box");
+        const input = element("input", "gh-reply-input");
+        input.type = "text";
+        input.placeholder = "Текст ответа";
+        input.autocomplete = "off";
+        input.maxLength = 1000;
+        input.dataset.thread = threadId;
+        input.value = replyDrafts[threadId] || "";
+        box.appendChild(input);
+        box.appendChild(button("gh-send gh-mail-action", "Отправить", threadId));
+        row.appendChild(box);
+      }
+      return row;
+    },
+    contacts(contact) {
+      const row = element("div", "gh-item");
+      const text = element("div", "gh-item-text");
+      text.appendChild(element("div", "gh-item-title", contact.name || "(Без имени)"));
+      const meta = [contact.birthday ? "🎂 " + contact.birthday : "", contact.phone].filter(Boolean).join(" • ");
+      if (meta) text.appendChild(element("div", "gh-item-meta", meta));
+      row.appendChild(text);
+      return row;
+    },
+    news(item) {
+      const row = element("div", "gh-item");
+      const text = element("div", "gh-item-text");
+      text.appendChild(element("div", "gh-item-title", item.title));
+      const meta = [item.source, item.date].filter(Boolean).join(" • ");
+      if (meta) text.appendChild(element("div", "gh-item-meta", meta));
       row.appendChild(text);
       return row;
     }
@@ -274,26 +404,59 @@
     items.forEach(item => list.appendChild(build(item)));
   }
 
-  // Adding and finishing tasks are off while the car moves; the lists can still be read.
+  function mailItems() {
+    return mailFolder === "all" ? data.mail : data.mail.filter(item => item.folder === mailFolder);
+  }
+
+  function newsItems() {
+    return newsSource === "all" ? data.news : data.news.filter(item => item.source === newsSource);
+  }
+
+  // The filter rows: mail folders, and the news sources that the feed actually has.
+  function renderFilters() {
+    const mailBar = sheet.querySelector(".gh-mail-bar");
+    mailBar.textContent = "";
+    MAIL_FOLDERS.forEach(([key, label]) => {
+      const node = element("button", "gh-filter" + (mailFolder === key ? " active" : ""), label);
+      node.type = "button";
+      node.dataset.folder = key;
+      mailBar.appendChild(node);
+    });
+    const newsBar = sheet.querySelector(".gh-news-bar");
+    newsBar.textContent = "";
+    const sources = ["all", ...Array.from(new Set(data.news.map(item => item.source)))];
+    if (!sources.includes(newsSource)) newsSource = "all";
+    sources.forEach(source => {
+      const node = element("button", "gh-filter" + (newsSource === source ? " active" : ""), source === "all" ? "Все" : source);
+      node.type = "button";
+      node.dataset.source = source;
+      newsBar.appendChild(node);
+    });
+  }
+
+  // While the car moves, replies and deletions are off; the lists can still be read.
   function syncDriving() {
     if (!sheet) return;
     const driving = moving();
     sheet.querySelector(".gh-drive").classList.toggle("on", driving);
-    sheet.querySelectorAll(".gh-add input, .gh-add button").forEach(node => { node.disabled = driving || busy; });
-    sheet.querySelectorAll(".gh-done").forEach(node => { node.disabled = driving || busy || !node.dataset.taskId; });
+    sheet.querySelectorAll(".gh-mail-action, .gh-reply-input").forEach(node => { node.disabled = driving || busy; });
     sheet.querySelector(".gh-refresh").disabled = busy;
   }
 
   function render() {
     if (!sheet) return;
+    const counts = { calendar: data.calendar, mail: data.mail, contacts: data.contacts, news: data.news };
     TABS.forEach(item => {
-      const button = sheet.querySelector('.gh-tab[data-tab="' + item.key + '"]');
-      button.textContent = item.label + " (" + data[item.key].length + ")";
-      button.classList.toggle("active", tab === item.key);
-      const pane = sheet.querySelector('.gh-pane[data-pane="' + item.key + '"]');
-      pane.classList.toggle("active", tab === item.key);
-      fillList(pane.querySelector(".gh-list"), data[item.key], item.empty, rowBuilders[item.key]);
+      const node = sheet.querySelector('.gh-tab[data-tab="' + item.key + '"]');
+      node.textContent = item.label + " (" + counts[item.key].length + ")";
+      node.classList.toggle("active", tab === item.key);
+      sheet.querySelector('.gh-pane[data-pane="' + item.key + '"]').classList.toggle("active", tab === item.key);
     });
+    renderFilters();
+    fillList(sheet.querySelector('.gh-pane[data-pane="calendar"] .gh-list'), data.calendar, TABS[0].empty, rowBuilders.calendar);
+    fillList(sheet.querySelector('.gh-pane[data-pane="mail"] .gh-list'), mailItems(), TABS[1].empty, rowBuilders.mail);
+    fillList(sheet.querySelector('.gh-pane[data-pane="contacts"] .gh-list'), data.contacts, TABS[2].empty, rowBuilders.contacts);
+    fillList(sheet.querySelector('.gh-pane[data-pane="news"] .gh-list'), newsItems(), TABS[3].empty, rowBuilders.news);
     syncDriving();
   }
 
@@ -306,6 +469,26 @@
     const note = sheet.querySelector(".gh-note");
     note.textContent = text || "";
     note.classList.toggle("error", !!isError);
+  }
+
+  async function sendReply(threadId, text) {
+    const body = String(text || "").trim();
+    if (!threadId || !body) return;
+    if (moving()) { setNote("На ходу письма не отправляем.", true); return; }
+    const ok = await run("Отправляем ответ…", { action: "replyMail", threadId, body });
+    if (ok) {
+      delete replyDrafts[threadId];
+      openReplyId = "";
+      render();
+    }
+  }
+
+  async function deleteMail(threadId) {
+    if (!threadId) return;
+    if (moving()) { setNote("На ходу письма не удаляем.", true); return; }
+    confirmDeleteId = "";
+    if (openReplyId === threadId) openReplyId = "";
+    await run("Удаляем письмо…", { action: "deleteMail", threadId });
   }
 
   // The navigator is opened as an app: its own saved home and work places are used there.
@@ -333,15 +516,17 @@
       '<button type="button" class="gh-close" aria-label="Закрыть">×</button></div></div>' +
       '<div class="gh-status"></div>' +
       '<div class="gh-tabs">' + tabButtons + '</div>' +
-      '<p class="gh-drive" hidden>На ходу задачи не добавляем и не отмечаем.</p>' +
-      '<div class="gh-pane" data-pane="tasks"><form class="gh-add"><input type="text" placeholder="Новая задача" autocomplete="off" maxlength="200">' +
-      '<button type="submit" aria-label="Добавить задачу">+</button></form><div class="gh-list"></div></div>' +
+      '<p class="gh-drive">На ходу письма не отправляем и не удаляем.</p>' +
       '<div class="gh-pane" data-pane="calendar"><div class="gh-list"></div></div>' +
-      '<div class="gh-pane" data-pane="mail"><div class="gh-list"></div></div>' +
+      '<div class="gh-pane" data-pane="mail"><div class="gh-subbar gh-mail-bar"></div><div class="gh-list"></div></div>' +
+      '<div class="gh-pane" data-pane="contacts"><div class="gh-list"></div></div>' +
+      '<div class="gh-pane" data-pane="news"><div class="gh-subbar gh-news-bar"></div><div class="gh-list"></div></div>' +
       '<p class="gh-note" aria-live="polite"></p>' +
       '<details class="gh-settings"><summary>Подключение</summary>' +
       '<label>Адрес веб-приложения (/exec)<input type="url" class="gh-url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>' +
       '<label>Ключ (SECRET)<input type="password" class="gh-secret" autocomplete="off"></label>' +
+      '<label>Ключ NewsAPI (необязательно)<input type="password" class="gh-newsapi" autocomplete="off"></label>' +
+      '<label>Лента новостей (RSS)<input type="url" class="gh-feed" autocomplete="off" placeholder="https://…"></label>' +
       '<button type="button" class="gh-save">Сохранить</button></details>' +
       '<div class="gh-foot"><span class="gh-hint">Чат Gemini — в «Ассистенте»</span><button type="button" class="gh-nav">Открыть навигатор</button></div>' +
       '</div>';
@@ -351,9 +536,32 @@
       if (!(target instanceof Element)) return;
       const tabButton = target.closest(".gh-tab");
       if (tabButton) { tab = tabButton.dataset.tab; render(); return; }
-      const done = target.closest(".gh-done");
-      if (done) {
-        if (!done.disabled) run("Отмечаем…", { action: "completeTask", taskId: done.dataset.taskId });
+      const filter = target.closest(".gh-filter");
+      if (filter) {
+        if (filter.dataset.folder) mailFolder = filter.dataset.folder;
+        else newsSource = filter.dataset.source;
+        render();
+        return;
+      }
+      const reply = target.closest(".gh-reply");
+      if (reply) {
+        const id = reply.dataset.thread;
+        openReplyId = openReplyId === id ? "" : id;
+        render();
+        return;
+      }
+      const del = target.closest(".gh-delete");
+      if (del) {
+        const id = del.dataset.thread;
+        if (confirmDeleteId !== id) { confirmDeleteId = id; render(); return; }
+        deleteMail(id);
+        return;
+      }
+      const send = target.closest(".gh-send");
+      if (send) {
+        const row = send.closest(".gh-mail-row");
+        const input = row ? row.querySelector(".gh-reply-input") : null;
+        sendReply(send.dataset.thread, input ? input.value : "");
         return;
       }
       if (target.closest(".gh-close")) { sheet.hidden = true; return; }
@@ -361,13 +569,9 @@
       if (target.closest(".gh-nav")) { openNavigator(); return; }
       if (target.closest(".gh-save")) save();
     });
-    sheet.querySelector(".gh-add").addEventListener("submit", async event => {
-      event.preventDefault();
-      if (moving()) return;
-      const input = sheet.querySelector(".gh-add input");
-      const title = input.value.trim();
-      if (!title) return;
-      if (await run("Добавляем…", { action: "addTask", title: title })) input.value = "";
+    sheet.addEventListener("input", event => {
+      const input = event.target;
+      if (input instanceof Element && input.classList.contains("gh-reply-input")) replyDrafts[input.dataset.thread] = input.value;
     });
     // While the sheet is open, keep the driving state in step with the car.
     setInterval(() => { if (!sheet.hidden) syncDriving(); }, 1000);
@@ -379,6 +583,8 @@
     ensureSheet();
     sheet.querySelector(".gh-url").value = execUrl();
     sheet.querySelector(".gh-secret").value = secret();
+    sheet.querySelector(".gh-newsapi").value = readStored(NEWS_KEY_KEY, "");
+    sheet.querySelector(".gh-feed").value = readStored(FEED_KEY, DEFAULT_FEED);
     sheet.hidden = false;
     render();
     refresh();
@@ -401,7 +607,7 @@
     return true;
   }
 
-  // Google events reach the launcher's calendar at start and then on a timer (see CALENDAR_SYNC_MS).
+  // Google events and tasks reach the launcher's calendar at start and then on a timer (see CALENDAR_SYNC_MS).
   setTimeout(() => window.googleHubSyncCalendar(true), 3000);
   setInterval(() => window.googleHubSyncCalendar(false), CALENDAR_TICK_MS);
 

@@ -1524,7 +1524,7 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .forecast-card.queue-card > .queue-head { flex: 0 0 auto; }
 
 /* Mini calendar opened by a tap on the date under the clock (calendar.js). */
-.calendar-card { width: min(420px, 100%); }
+.calendar-card { width: min(420px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; }
 .calendar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .calendar-head h3 { margin: 0; text-transform: capitalize; }
 .calendar-nav { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: inherit; font-size: 22px; }
@@ -1558,6 +1558,21 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .calendar-error { margin: 0; min-height: 18px; color: #ff8a8a; font-size: 13px; }
 .calendar-form-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .calendar-form-buttons button[data-save] { border-color: #6fb8ff; color: #cfe6ff; }
+.calendar-tasks { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .12); display: grid; gap: 8px; }
+.calendar-tasks-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.calendar-tasks-title { font-size: 16px; font-weight: 600; }
+.calendar-task-list { max-width: 60%; height: 40px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: inherit; font: inherit; font-size: 14px; padding: 0 8px; }
+.calendar-task-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.calendar-task-form input { height: 44px; min-width: 0; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .04); color: inherit; font: inherit; font-size: 16px; padding: 0 12px; }
+.calendar-task-add { height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: inherit; font: inherit; font-size: 15px; }
+.calendar-task-rows { display: grid; gap: 6px; max-height: 180px; overflow-y: auto; }
+.calendar-task-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border-radius: 12px; background: rgba(255, 255, 255, .05); }
+.calendar-task-title { min-width: 0; font-size: 15px; word-break: break-word; }
+.calendar-task-due { color: #8aa0b8; font-size: 13px; white-space: nowrap; }
+.calendar-task-done { flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .16); background: transparent; color: inherit; font: inherit; font-size: 14px; }
+.calendar-task-drive { display: none; margin: 0; font-size: 13px; color: #ffb4a8; }
+.calendar-tasks.locked .calendar-task-drive { display: block; }
+.calendar-tasks button:disabled, .calendar-tasks input:disabled, .calendar-tasks select:disabled { opacity: .45; }
 /* Settings: accent colour dots and the glass card style. */
 .set-sheet .set-row .accent-dot { flex: 0 0 34px; width: 34px !important; height: 34px !important; min-width: 0 !important; min-height: 34px !important; border-radius: 50% !important; border: 2px solid transparent; padding: 0; background: var(--dot) !important; }
 .set-sheet .set-row .accent-dot.on { border-color: #fff; box-shadow: 0 0 0 2px rgba(111, 195, 250, .5); }
@@ -1787,6 +1802,8 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 .calendar-today, .calendar-add, .calendar-form-buttons button { border-radius: 12px !important; border: 1px solid #243247 !important; background: #0d131c !important; color: #e8edf3 !important; font-size: 15px !important; min-height: 44px; }
 .calendar-form-buttons button[data-save] { background: #2f6fb4 !important; border-color: #2f6fb4 !important; color: #ffffff !important; font-weight: 600; }
 .calendar-form input[type="text"], .calendar-times input { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 12px !important; color: #e8edf3 !important; }
+.calendar-task-form input, .calendar-task-list, .calendar-task-add, .calendar-task-done { background: #0d131c !important; border: 1px solid #243247 !important; border-radius: 12px !important; color: #e8edf3 !important; }
+.calendar-task-row { background: rgba(255, 255, 255, .05) !important; }
 .calendar-event { background: #0d131c; border: 1px solid #243247 !important; border-radius: 14px !important; }
 .calendar-event-time { color: #6fc3fa !important; }
 .calendar-event-del { color: #ff8a9a !important; border-radius: 10px !important; }
@@ -1794,6 +1811,9 @@ body:not(.player-expanded) .hero { padding-top: 26px !important; }
 :root[data-theme="light"] .forecast-card.calendar-card { background: rgba(255, 255, 255, .92) !important; border-color: #d5dce6 !important; }
 :root[data-theme="light"] .calendar-title, :root[data-theme="light"] .calendar-cell, :root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-event { color: #1c2736 !important; }
 :root[data-theme="light"] .calendar-nav, :root[data-theme="light"] .calendar-today, :root[data-theme="light"] .calendar-add, :root[data-theme="light"] .calendar-month, :root[data-theme="light"] .calendar-day, :root[data-theme="light"] .calendar-event, :root[data-theme="light"] .calendar-form input[type="text"], :root[data-theme="light"] .calendar-times input { background: #ffffff !important; border-color: #d5dce6 !important; }
+:root[data-theme="light"] .calendar-task-form input, :root[data-theme="light"] .calendar-task-list, :root[data-theme="light"] .calendar-task-add, :root[data-theme="light"] .calendar-task-done { background: #ffffff !important; border-color: #d5dce6 !important; color: #1c2736 !important; }
+:root[data-theme="light"] .calendar-task-row { background: rgba(0, 0, 0, .04) !important; }
+:root[data-theme="light"] .calendar-task-drive { color: #b03a2e; }
 :root[data-theme="light"] .calendar-cell.today { background: rgba(47, 111, 180, .12) !important; border-color: #2f6fb4 !important; color: #1c2736 !important; }
 :root[data-theme="light"] .calendar-day.selected, :root[data-theme="light"] .calendar-month.selected { background: #2f6fb4 !important; color: #ffffff !important; }
 /* Visualizer under the music card (viz.js). */
