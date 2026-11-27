@@ -418,6 +418,7 @@
       if (!response.ok) {
         const error = new Error("HTTP " + response.status);
         error.status = response.status;
+        error.detail = await groqErrorDetail(response);
         throw error;
       }
       const data = await response.json();
@@ -430,6 +431,8 @@
         timeout.timeout = true;
         throw timeout;
       }
+      // fetch падает с TypeError, когда связи нет или запрос заблокирован (например, CORS).
+      if (error instanceof TypeError) error.network = true;
       throw error;
     } finally {
       clearTimeout(timer);
@@ -667,7 +670,21 @@
     if (error && error.status === 401) return "Groq не принял ключ. Проверьте его в разделе «Подключение».";
     if (error && error.status === 429) return "Лимит Groq исчерпан. Попробуйте позже.";
     if (error && error.timeout) return "Groq не ответил вовремя. Попробуйте ещё раз.";
-    return "Ассистент недоступен. Проверьте подключение к интернету и ключ Groq.";
+    if (error && error.status) return "Groq ответил ошибкой " + error.status + (error.detail ? ": " + error.detail : ".");
+    if (error && error.network) return "Нет связи с Groq. Проверьте интернет на магнитоле" + (error.message ? " (" + error.message + ")." : ".");
+    return "Ассистент недоступен" + (error && error.message ? ": " + error.message : ".");
+  }
+
+  // Короткий текст ошибки из ответа Groq (поле error.message), чтобы на экране было видно причину.
+  async function groqErrorDetail(response) {
+    try {
+      const body = await response.text();
+      let message = body;
+      try { message = JSON.parse(body)?.error?.message || ""; } catch (error) { message = body; }
+      return String(message || "").replace(/\s+/g, " ").trim().slice(0, 160);
+    } catch (error) {
+      return "";
+    }
   }
 
   // Модель попросила действие (не «none» и не null).
