@@ -2,11 +2,14 @@
 // A tap on a day selects it and lists its events. A tap on the month name opens the month picker with year arrows.
 // Events (title, start and optional end time) are kept in this head unit's localStorage, like the other launcher settings.
 // Google events (google-hub.js, Apps Script) are shown here too, read-only: they have no delete button and are not saved here.
+// Google tasks are listed in a block under the events: add one, mark one done, choose the list (the actions are in google-hub.js).
 // The tap on the clock itself still toggles night mode (nightmode.js).
 const CAL_MONTHS = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const CAL_EVENTS_KEY = "generic_launcher_events_v1";
 const GOOGLE_EVENTS_KEY = "generic_launcher_google_events_v1"; // written by google-hub.js
-let googleCache = { raw: null, list: [] };                    // parsed Google events, redone only when the stored text changes
+let googleStoreCache = { raw: null, store: {} };              // the parsed Google store, redone only when the stored text changes
+let googleCache = { store: null, list: [] };                  // Google events and tasks as calendar items, redone when the store changes
+let taskBusy = false;                                         // a task is being added or marked done
 let calView = "days";     // "days" or "months"
 let calMonth = null;      // a Date on the 1st of the month shown
 let calYear = null;       // year shown in the month picker
@@ -118,22 +121,50 @@ function normalizeGoogleEvent(raw) {
   return { id: "g|" + date + "|" + start + "|" + title, date, start, end, title, source: "google" };
 }
 
-function readGoogleEvents() {
+// A Google task with a due date is shown on that day as an all-day "Задача" (read-only). The day is taken as written:
+// "2026-11-26T00:00:00.000Z" is the 26th. A task without a due date has no day: it is only in the Задачи block under the events.
+function normalizeGoogleTask(task) {
+  if (!task || typeof task !== "object") return null;
+  const dueText = String(task.due || "").trim();
+  let date = null;
+  const iso = dueText.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    date = iso[1] + "-" + iso[2] + "-" + iso[3];
+  } else {
+    const ru = ruDateTime(dueText);
+    if (ru && ru.hour === null) date = ru.year + "-" + String(ru.month).padStart(2, "0") + "-" + String(ru.day).padStart(2, "0");
+  }
+  if (!date) return null;
+  const title = "Задача: " + String(task.title || "(Без названия)").trim().slice(0, 110);
+  return { id: "t|" + date + "|" + String(task.id || title), date, start: "", end: "", title, source: "task" };
+}
+
+// The Google store written by google-hub.js: events, tasks, task lists and the active list. {} when there is none.
+function readGoogleStore() {
   let raw = "";
   try {
     raw = localStorage.getItem(GOOGLE_EVENTS_KEY) || "";
   } catch (error) {
-    return [];
+    return {};
   }
-  if (raw === googleCache.raw) return googleCache.list;
-  let list = [];
+  if (raw === googleStoreCache.raw) return googleStoreCache.store;
+  let store = {};
   try {
-    const stored = raw ? JSON.parse(raw) : null;
-    if (stored && Array.isArray(stored.events)) list = stored.events.map(normalizeGoogleEvent).filter(Boolean);
+    store = raw ? JSON.parse(raw) || {} : {};
   } catch (error) {
-    list = [];
+    store = {};
   }
-  googleCache = { raw, list };
+  googleStoreCache = { raw, store };
+  return store;
+}
+
+function readGoogleEvents() {
+  const store = readGoogleStore();
+  if (store === googleCache.store) return googleCache.list;
+  let list = [];
+  if (Array.isArray(store.events)) list = store.events.map(normalizeGoogleEvent).filter(Boolean);
+  if (Array.isArray(store.tasks)) list = list.concat(store.tasks.map(normalizeGoogleTask).filter(Boolean));
+  googleCache = { store, list };
   return list;
 }
 
@@ -157,6 +188,15 @@ function ensureCalendarSheet() {
     '<button type="button" class="calendar-nav" data-step="1" aria-label="Вперёд">›</button></div>' +
     '<div id="calendar-body"></div>' +
     '<div id="calendar-events"></div>' +
+    '<section class="calendar-tasks" id="calendar-tasks" aria-label="Задачи">' +
+    '<div class="calendar-tasks-head"><span class="calendar-tasks-title">Задачи</span>' +
+    '<select id="calendar-task-list" class="calendar-task-list" aria-label="Список задач"></select></div>' +
+    '<form class="calendar-task-form" id="calendar-task-form">' +
+    '<input id="calendar-task-input" type="text" maxlength="200" placeholder="Новая задача" autocomplete="off">' +
+    '<button type="submit" class="calendar-task-add" id="calendar-task-add">Добавить</button></form>' +
+    '<p class="calendar-error" id="calendar-task-error" aria-live="polite"></p>' +
+    '<p class="calendar-task-drive">На ходу задачи не добавляем и не отмечаем.</p>' +
+    '<div class="calendar-task-rows" id="calendar-task-rows"></div></section>' +
     '<button type="button" class="calendar-today" id="calendar-today">Сегодня</button></div>';
   sheet.addEventListener("click", event => {
     // The click that ends a long press can land on this overlay just as it opens: ignore it for a moment.
@@ -217,11 +257,22 @@ function ensureCalendarSheet() {
       saveEventFromForm();
       return;
     }
+    const done = target.closest("[data-task-done]");
+    if (done && done.dataset.taskDone) {
+      completeTaskFromList(done.dataset.taskDone);
+      return;
+    }
     const del = target.closest("[data-del]");
     if (del) {
       writeEvents(readEvents().filter(item => item.id !== del.dataset.del));
       renderCalendar();
     }
+  });
+  sheet.addEventListener("submit", event => {
+    if (event.target && event.target.id === "calendar-task-form") addTaskFromForm(event);
+  });
+  sheet.addEventListener("change", event => {
+    if (event.target && event.target.id === "calendar-task-list") chooseTaskList(event.target.value);
   });
   document.body.appendChild(sheet);
   return sheet;
@@ -274,12 +325,12 @@ function renderEventsBlock() {
   if (!calSelected) return "";
   const list = eventsOn(calSelected);
   const rows = list.map(item => {
-    const fromGoogle = item.source === "google";
+    const readOnly = item.source === "google" || item.source === "task";
     const time = !item.start ? "весь день" : item.end ? `${item.start}–${item.end}` : item.start;
-    // Google events are read-only here: no delete button, and a small "Google" mark instead.
-    const mark = fromGoogle ? '<span class="calendar-event-source">Google</span>' : "";
-    const del = fromGoogle ? "" : `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button>`;
-    return `<div class="calendar-event${fromGoogle ? " google" : ""}"><span class="calendar-event-time">${escapeText(time)}</span>` +
+    // Google events and Google tasks are read-only here: no delete button, and a small mark ("Google" or "Задача").
+    const mark = readOnly ? `<span class="calendar-event-source">${item.source === "task" ? "Задача" : "Google"}</span>` : "";
+    const del = readOnly ? "" : `<button type="button" class="calendar-event-del" data-del="${escapeText(item.id)}" aria-label="Удалить">×</button>`;
+    return `<div class="calendar-event${readOnly ? " " + item.source : ""}"><span class="calendar-event-time">${escapeText(time)}</span>` +
       `<span class="calendar-event-title">${escapeText(item.title)}</span>${mark}${del}</div>`;
   }).join("");
   const header = `<div class="calendar-selected">Выбрано: ${calSelected.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}</div>`;
@@ -295,6 +346,114 @@ function renderEventsBlock() {
       '</div>';
   }
   return header + rows + empty + '<button type="button" class="calendar-add" data-add>+ Событие</button>';
+}
+
+// The Google tasks block under the day's events: open tasks with "Готово", the list they come from, and a box to add one.
+// The box is never re-rendered, so what is typed stays while the lists update.
+function taskLocked() {
+  return typeof state !== "undefined" && !!state && typeof state.speedKmh === "number" && state.speedKmh > 0;
+}
+
+function googleConnected() {
+  try {
+    return !!(localStorage.getItem("generic_launcher_google_url_v1") || "").trim();
+  } catch (error) {
+    return false;
+  }
+}
+
+function renderTasksBlock() {
+  const select = document.getElementById("calendar-task-list");
+  const rows = document.getElementById("calendar-task-rows");
+  if (!select || !rows) return;
+  const store = readGoogleStore();
+  const lists = Array.isArray(store.taskLists) && store.taskLists.length ? store.taskLists : [{ id: "@default", title: "Мои задачи" }];
+  const listKey = JSON.stringify(lists.map(item => [item.id, item.title]));
+  if (select.dataset.key !== listKey) {
+    select.innerHTML = lists.map(item => `<option value="${escapeText(item.id)}">${escapeText(item.title || "Список")}</option>`).join("");
+    select.dataset.key = listKey;
+  }
+  select.value = store.activeTaskListId || "@default";
+  const tasks = Array.isArray(store.tasks) ? store.tasks : null;
+  if (!tasks) {
+    rows.innerHTML = `<p class="calendar-empty">${googleConnected() ? "Открытых задач нет" : "Задачи появятся после подключения Google (кнопка «Google»)"}</p>`;
+  } else if (!tasks.length) {
+    rows.innerHTML = '<p class="calendar-empty">Открытых задач нет</p>';
+  } else {
+    // A task with a due date also shows on its day in the calendar; the "до" mark gives that day here.
+    rows.innerHTML = tasks.map(task => {
+      const title = String(task.title || "(Без названия)").trim().slice(0, 120);
+      const due = task.due ? dayText(String(task.due)) : null;
+      const id = String(task.id || "");
+      return `<div class="calendar-task-row"><span class="calendar-task-title">${escapeText(title)}` +
+        (due ? ` <span class="calendar-task-due">до ${escapeText(due)}</span>` : "") + "</span>" +
+        `<button type="button" class="calendar-task-done" data-task-done="${escapeText(id)}">Готово</button></div>`;
+    }).join("");
+  }
+  syncTaskLock();
+}
+
+// Adding, marking done and changing the list are off while the car moves and while a task request runs.
+function syncTaskLock() {
+  const box = document.getElementById("calendar-tasks");
+  if (!box) return;
+  const locked = taskLocked();
+  box.classList.toggle("locked", locked);
+  const input = document.getElementById("calendar-task-input");
+  const add = document.getElementById("calendar-task-add");
+  const select = document.getElementById("calendar-task-list");
+  if (input) input.disabled = locked;
+  if (add) add.disabled = locked || taskBusy;
+  if (select) select.disabled = locked || taskBusy;
+  box.querySelectorAll("[data-task-done]").forEach(node => {
+    node.disabled = locked || taskBusy || !node.dataset.taskDone;
+  });
+}
+
+async function addTaskFromForm(event) {
+  event.preventDefault();
+  const input = document.getElementById("calendar-task-input");
+  const note = document.getElementById("calendar-task-error");
+  const text = (input?.value || "").trim();
+  if (!text) { if (note) note.textContent = "Введите текст задачи"; return; }
+  if (typeof window.googleHubAddTask !== "function") { if (note) note.textContent = "Google не подключён"; return; }
+  taskBusy = true;
+  if (note) note.textContent = "";
+  syncTaskLock();
+  let result = null;
+  try {
+    result = await window.googleHubAddTask(text);
+  } catch (error) {
+    result = { ok: false, reason: "Не получилось добавить задачу" };
+  }
+  taskBusy = false;
+  if (result && result.ok) {
+    if (input && input.value.trim() === text) input.value = "";
+    if (note) note.textContent = "";
+  } else if (note) {
+    note.textContent = (result && result.reason) || "Не получилось добавить задачу";
+  }
+  syncTaskLock();
+}
+
+async function completeTaskFromList(id) {
+  const note = document.getElementById("calendar-task-error");
+  if (typeof window.googleHubCompleteTask !== "function") return;
+  taskBusy = true;
+  syncTaskLock();
+  let result = null;
+  try {
+    result = await window.googleHubCompleteTask(id);
+  } catch (error) {
+    result = { ok: false, reason: "Не получилось отметить задачу" };
+  }
+  taskBusy = false;
+  if (note) note.textContent = result && result.ok ? "" : ((result && result.reason) || "Не получилось отметить задачу");
+  syncTaskLock();
+}
+
+function chooseTaskList(id) {
+  if (typeof window.googleHubSetTaskList === "function") window.googleHubSetTaskList(id);
 }
 
 function renderMonths() {
@@ -323,6 +482,7 @@ function renderCalendar() {
     body.innerHTML = renderMonths();
     events.innerHTML = "";
   }
+  renderTasksBlock();
 }
 
 function openCalendar() {
@@ -447,7 +607,10 @@ window.addEventListener("resize", placeHomeCalendar);
 window.addEventListener("google-calendar-updated", () => {
   const sheet = document.getElementById("calendar-sheet");
   if (sheet && !sheet.hidden && !calForm) renderCalendar();
-  else renderHomeCalendar();
+  else {
+    renderHomeCalendar();
+    renderTasksBlock();
+  }
 });
 
 // Reminders: while the launcher is on screen, a toast shows CAL_REMIND_MINUTES before an event today.
@@ -474,4 +637,10 @@ function checkReminders() {
 
 setTimeout(checkReminders, 2000);
 setInterval(checkReminders, 20000);
+
+// The tasks block follows the car: while it moves, adding and marking done are off (see syncTaskLock).
+setInterval(() => {
+  const sheet = document.getElementById("calendar-sheet");
+  if (sheet && !sheet.hidden) syncTaskLock();
+}, 1000);
 
