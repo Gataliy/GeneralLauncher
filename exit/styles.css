@@ -762,27 +762,6 @@ body.player-expanded .hero-bottom.in-stage { height: auto; }
 /* Развёрнутый плеер: часы и погода той же высоты, что и плеер. */
 body.player-expanded .hero-bottom.in-stage > .hero-clock, body.player-expanded .hero-bottom.in-stage > #weather-widget { align-self: stretch; height: auto !important; min-height: 0 !important; }
 
-/* Night mode: only the big clock on a black screen. Entered by a tap on the classic clock, left by any tap. */
-body.night-mode { background: #05070c !important; }
-body.night-mode::before, body.night-mode::after,
-body.night-mode #hero::before, body.night-mode #hero::after,
-body.night-mode .dashboard::before, body.night-mode .dashboard::after,
-body.night-mode .hero-shade { display: none !important; }
-body.night-mode .dashboard { background: #05070c !important; background-image: none !important; }
-body.night-mode #hero { position: fixed !important; inset: 0 !important; background: #05070c !important; background-image: none !important; }
-body.night-mode #hero > *:not(.hero-bottom) { display: none !important; }
-body.night-mode .dashboard > *:not(#hero) { display: none !important; }
-body.night-mode .hero-bottom { position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: auto !important; }
-body.night-mode .hero-bottom > *:not(.hero-clock) { display: none !important; }
-body.night-mode .hero-clock { background: transparent !important; border: 0 !important; box-shadow: none !important; min-height: 0 !important; height: auto !important; width: auto !important; flex: none !important; padding: 0 !important; animation: nightIn .6s ease-out both; }
-body.night-mode .hero-clock .clock { font-size: clamp(120px, 26vw, 260px) !important; font-weight: 200 !important; color: rgba(200, 210, 225, .78) !important; text-shadow: 0 0 40px rgba(200, 210, 225, .25); line-height: 1 !important; font-variant-numeric: tabular-nums; }
-body.night-mode .toast, body.night-mode .car-anim { display: none !important; }
-@keyframes nightIn { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: scale(1); } }
-.night-hint { position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%) translateY(8px); z-index: 101; padding: 9px 20px; border-radius: 999px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); color: rgba(220, 225, 235, .6); font-size: 13px; letter-spacing: .04em; white-space: nowrap; pointer-events: none; opacity: 0; display: none; }
-body.night-mode .night-hint { display: block; }
-.night-hint.show { animation: nightHint 6s ease forwards; }
-@keyframes nightHint { 0% { opacity: 0; transform: translateX(-50%) translateY(8px); } 12% { opacity: 1; transform: translateX(-50%) translateY(0); } 80% { opacity: 1; transform: translateX(-50%) translateY(0); } 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); } }
-
 /* Speed gauge moved to the navigation card: bottom right corner of the card. */
 /* Map behind the navigation card: the left side is darkened so the turn text and the pill stay readable. */
 .hw-nav.has-map { background-image: linear-gradient(90deg, rgba(4, 8, 14, .9) 0%, rgba(4, 8, 14, .6) 42%, rgba(4, 8, 14, .15) 100%), var(--nav-map); background-size: cover; background-position: center; }
