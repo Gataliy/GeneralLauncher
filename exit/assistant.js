@@ -20,6 +20,9 @@
   const MODE_KEY = "generic_launcher_assistant_mode_v1";     // режим работы: каскад (по умолчанию) или гибрид
   const MODE_CASCADE = "cascade";
   const MODE_HYBRID = "hybrid";
+  const SEARCH_KEY = "generic_launcher_assistant_search_v1";   // поиск в интернете: "off" или "gemini"
+  const GEMINI_HOST = "https://generativelanguage.googleapis.com/";
+  const SEARCH_TIMEOUT_MS = 25000;                             // поиск и ответ по его результатам дольше обычного запроса
   const MEMORY_KEY = "generic_launcher_assistant_memory_v1";
   const MEMORY_MAX = 20;              // записей о пользователе
   const MEMORY_FACT_MAX = 200;        // символов в одной записи
@@ -138,6 +141,7 @@
   let pending = null;   // действие, ожидающее подтверждения
   let busy = false;
   let sheet = null;
+  let lastSources = [];   // источники последнего ответа с поиском (названия сайтов); пусто, если поиска не было
 
   // Прежний прокси больше не используется: его адрес и ключ доступа удаляются с устройства.
   try {
@@ -211,8 +215,9 @@
       '<label>Резервный провайдер: ключ<input type="password" class="assistant-backup-key" autocomplete="off"></label>' +
       '<label>Резервный провайдер: модель<input type="text" class="assistant-backup-model" autocomplete="off"></label>' +
       '<label>Режим работы<select class="assistant-mode"><option value="cascade">Каскад: Groq → резерв</option><option value="hybrid">Гибрид: команды Groq, разговор — резерв</option></select></label>' +
+      '<label>Поиск в интернете<select class="assistant-search-mode"><option value="off">Выключен</option><option value="gemini">Gemini с поиском Google</option></select></label>' +
       '<label>Что ассистент помнит о вас (по одной записи в строке)<textarea class="assistant-memory" rows="4"></textarea></label>' +
-      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. Пароли и номера карт сюда не пишите.</p>' +
+      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. С поиском в интернете разговор идёт в Gemini, который ищет в Google; текст вопроса и ключ Gemini уходят в Google. Поиск работает, только если резервный провайдер — Gemini. Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
     sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
@@ -240,10 +245,12 @@
       writeStored(BACKUP_KEY_KEY, sheet.querySelector(".assistant-backup-key").value.trim());
       writeStored(BACKUP_MODEL_KEY, sheet.querySelector(".assistant-backup-model").value.trim());
       writeStored(MODE_KEY, sheet.querySelector(".assistant-mode").value === MODE_HYBRID ? MODE_HYBRID : MODE_CASCADE);
+      writeStored(SEARCH_KEY, sheet.querySelector(".assistant-search-mode").value === "gemini" ? "gemini" : "off");
       setMemory(sheet.querySelector(".assistant-memory").value.split("\n"));
       if (!readStored(KEY_KEY, "") && !readBackup()) setNote("Ключ удалён: ассистент не будет отвечать, пока ключ не задан.");
       else if (readStored(BACKUP_URL_KEY, "") && !readBackup()) setNote("Сохранено. Резервный провайдер не включён: нужны адрес https://, ключ и модель.");
       else if (readStored(MODE_KEY, MODE_CASCADE) === MODE_HYBRID && !readBackup()) setNote("Гибрид включён, но резервный провайдер не задан: отвечает только Groq.");
+      else if (readStored(SEARCH_KEY, "off") === "gemini" && !searchOn()) setNote("Поиск включён, но резервный провайдер — не Gemini: поиск не работает.");
       else setNote("Сохранено");
     });
     document.body.appendChild(sheet);
@@ -258,6 +265,7 @@
     sheet.querySelector(".assistant-backup-key").value = readStored(BACKUP_KEY_KEY, "");
     sheet.querySelector(".assistant-backup-model").value = readStored(BACKUP_MODEL_KEY, "");
     sheet.querySelector(".assistant-mode").value = readStored(MODE_KEY, MODE_CASCADE);
+    sheet.querySelector(".assistant-search-mode").value = readStored(SEARCH_KEY, "off");
     sheet.querySelector(".assistant-memory").value = readMemory().join("\n");
     setNote(readStored(KEY_KEY, "") ? "" : "Ключ Groq ещё не задан. Укажите его в разделе «Подключение».");
   }
@@ -489,6 +497,63 @@
     return { url, key, model };
   }
 
+  // Поиск включён, если выбран Gemini и резервный провайдер — адрес Gemini: ключ Gemini уходит только в Google.
+  function searchOn() {
+    const backup = readBackup();
+    return readStored(SEARCH_KEY, "off") === "gemini" && !!backup && backup.url.startsWith(GEMINI_HOST);
+  }
+
+  // Названия источников из ответа Gemini (обычно сайт), без повторов, не больше трёх.
+  function sourcesOf(meta) {
+    const titles = (meta?.groundingChunks || []).map(chunk => chunk?.web?.title || "").filter(Boolean);
+    return [...new Set(titles)].slice(0, 3);
+  }
+
+  // Gemini с поиском Google: ответ опирается на свежие результаты. Ключ передаётся заголовком, не в адресе.
+  // Ошибки те же, что у callModel: status (если сервер ответил), timeout, network.
+  async function callGeminiSearch(model, key, messages) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), SEARCH_TIMEOUT_MS);
+    const name = String(model || "").trim().replace(/^models\//, "");
+    const system = messages.filter(item => item.role === "system").map(item => item.content).join("\n");
+    const contents = messages.filter(item => item.role !== "system")
+      .map(item => ({ role: item.role === "assistant" ? "model" : "user", parts: [{ text: item.content }] }));
+    try {
+      const response = await fetch(GEMINI_HOST + "v1beta/models/" + encodeURIComponent(name) + ":generateContent", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents,
+          tools: [{ google_search: {} }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 1024 }
+        }),
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const error = new Error("HTTP " + response.status);
+        error.status = response.status;
+        error.detail = await groqErrorDetail(response);
+        throw error;
+      }
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      const text = (candidate?.content?.parts || []).map(part => part.text || "").join("").trim();
+      if (!text) throw new Error("Пустой ответ от модели");
+      return { text, sources: sourcesOf(candidate?.groundingMetadata) };
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        const timeout = new Error("Модель не ответила вовремя");
+        timeout.timeout = true;
+        throw timeout;
+      }
+      if (error instanceof TypeError) error.network = true;
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // Признак команды для режима «Гибрид».
   function isCommandText(text) {
     return COMMAND_HINT.test(String(text || "").toLowerCase());
@@ -499,7 +564,8 @@
   // Провайдер без ключа или без настроенного адреса в список не попадает; пустой список — ни одного ключа.
   function providerOrder(text) {
     const hybrid = readStored(MODE_KEY, MODE_CASCADE) === MODE_HYBRID;
-    const names = !hybrid || isCommandText(text) ? ["groq", "backup"] : ["backup", "groq"];
+    // Разговор идёт в резерв первым в гибриде и когда включён поиск: ответ опирается на результаты Gemini.
+    const names = isCommandText(text) || !(hybrid || searchOn()) ? ["groq", "backup"] : ["backup", "groq"];
     return names.filter(name => (name === "groq" ? !!readStored(KEY_KEY, "").trim() : !!readBackup()));
   }
 
@@ -507,6 +573,7 @@
   // Одна попытка: ошибка помечается полем backup (true, если это резервный провайдер). Две: поля both, groqError и backupError.
   async function askAnyModel(order, messages) {
     const errors = {};
+    lastSources = [];
     for (let i = 0; i < order.length; i++) {
       const name = order[i];
       if (i > 0) setNote("Пробую запасной провайдер…");
@@ -514,6 +581,11 @@
         if (name === "groq") return await askModel(readStored(KEY_KEY, "").trim(), messages);
         const backup = readBackup();
         if (!backup) throw new Error("Резервный провайдер не задан");
+        if (searchOn()) {
+          const result = await callGeminiSearch(backup.model, backup.key, messages);
+          lastSources = result.sources;
+          return result.text;
+        }
         return await callModel(backup.url, backup.model, backup.key, messages);
       } catch (error) {
         errors[name] = error;
@@ -817,13 +889,17 @@
     ];
     try {
       const raw = await askAnyModel(order, messages);
+      const firstSources = lastSources;
       let parsed = parseReply(raw);
       if (actionRequested(parsed.action) && !validAction(parsed.action)) {
         setNote("Уточняю…");
         parsed = await repairAction(order, messages, raw, parsed.reply);
+        // Если повтор не прошёл проверку, остаётся первый ответ, и его источники тоже.
+        if (!validAction(parsed.action)) lastSources = firstSources;
       }
       remember(text, parsed.reply);
-      addBubble("assistant", parsed.reply);
+      const shown = lastSources.length ? parsed.reply + "\n\nИсточники: " + lastSources.join(", ") : parsed.reply;
+      addBubble("assistant", shown);
       const pendingAction = validAction(parsed.action);
       if (pendingAction) setPending(pendingAction);
     } catch (error) {
