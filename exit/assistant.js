@@ -1,5 +1,6 @@
 // Ассистент: единственный чат с языковой моделью в лаунчере. Модель (Groq) вызывается прямо с магнитолы, как в дашборде (Tomsk Hub).
-// Ключ Groq хранится на этом устройстве и уходит только в Groq. Модель предлагает одно действие:
+// Ключ Groq хранится на этом устройстве и уходит только в Groq. Если Groq не отвечает (например, без VPN),
+// запрос уходит на резервный OpenAI-совместимый адрес, который задаёт пользователь (BACKUP_URL_KEY). Модель предлагает одно действие:
 // команду климата, событие в Google-календаре, задачу в Google Tasks, факт для памяти, забытый факт или открытое приложение.
 // Всё выполняется только после «Да». Память хранится на этом устройстве (MEMORY_KEY) и вставляется в системный промпт
 // вместе со списком приложений магнитолы и сводкой привычек из журнала поездок (trips.js).
@@ -13,6 +14,9 @@
   const KEY_KEY = "generic_launcher_assistant_groq_key_v1";
   const MODEL_KEY = "generic_launcher_assistant_groq_model_v1";
   const FALLBACK_KEY = "generic_launcher_assistant_groq_fallback_v1";
+  const BACKUP_URL_KEY = "generic_launcher_assistant_backup_url_v1";     // резервный провайдер: адрес (только https)
+  const BACKUP_KEY_KEY = "generic_launcher_assistant_backup_key_v1";     // ключ резервного провайдера: уходит только на его адрес
+  const BACKUP_MODEL_KEY = "generic_launcher_assistant_backup_model_v1";
   const MEMORY_KEY = "generic_launcher_assistant_memory_v1";
   const MEMORY_MAX = 20;              // записей о пользователе
   const MEMORY_FACT_MAX = 200;        // символов в одной записи
@@ -197,8 +201,11 @@
       '<label>Ключ Groq (gsk_…)<input type="password" class="assistant-key" autocomplete="off"></label>' +
       '<label>Основная модель<input type="text" class="assistant-model" autocomplete="off" placeholder="' + DEFAULT_MODEL + '"></label>' +
       '<label>Запасная модель<input type="text" class="assistant-fallback" autocomplete="off" placeholder="' + DEFAULT_FALLBACK_MODEL + '"></label>' +
+      '<label>Резервный провайдер: адрес (https://…/chat/completions)<input type="text" class="assistant-backup-url" autocomplete="off"></label>' +
+      '<label>Резервный провайдер: ключ<input type="password" class="assistant-backup-key" autocomplete="off"></label>' +
+      '<label>Резервный провайдер: модель<input type="text" class="assistant-backup-model" autocomplete="off"></label>' +
       '<label>Что ассистент помнит о вас (по одной записи в строке)<textarea class="assistant-memory" rows="4"></textarea></label>' +
-      '<p class="assistant-hint">Ключ и память хранятся на этом устройстве. С каждым вопросом в Groq уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо); ключ уходит только в Groq. Пароли и номера карт сюда не пишите.</p>' +
+      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
     sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
@@ -222,8 +229,13 @@
       writeStored(KEY_KEY, sheet.querySelector(".assistant-key").value.trim());
       writeStored(MODEL_KEY, sheet.querySelector(".assistant-model").value.trim());
       writeStored(FALLBACK_KEY, sheet.querySelector(".assistant-fallback").value.trim());
+      writeStored(BACKUP_URL_KEY, sheet.querySelector(".assistant-backup-url").value.trim());
+      writeStored(BACKUP_KEY_KEY, sheet.querySelector(".assistant-backup-key").value.trim());
+      writeStored(BACKUP_MODEL_KEY, sheet.querySelector(".assistant-backup-model").value.trim());
       setMemory(sheet.querySelector(".assistant-memory").value.split("\n"));
-      setNote(readStored(KEY_KEY, "") ? "Сохранено" : "Ключ удалён: ассистент не будет отвечать, пока ключ не задан.");
+      if (!readStored(KEY_KEY, "") && !readBackup()) setNote("Ключ удалён: ассистент не будет отвечать, пока ключ не задан.");
+      else if (readStored(BACKUP_URL_KEY, "") && !readBackup()) setNote("Сохранено. Резервный провайдер не включён: нужны адрес https://, ключ и модель.");
+      else setNote("Сохранено");
     });
     document.body.appendChild(sheet);
     return sheet;
@@ -233,6 +245,9 @@
     sheet.querySelector(".assistant-key").value = readStored(KEY_KEY, "");
     sheet.querySelector(".assistant-model").value = readStored(MODEL_KEY, DEFAULT_MODEL);
     sheet.querySelector(".assistant-fallback").value = readStored(FALLBACK_KEY, DEFAULT_FALLBACK_MODEL);
+    sheet.querySelector(".assistant-backup-url").value = readStored(BACKUP_URL_KEY, "");
+    sheet.querySelector(".assistant-backup-key").value = readStored(BACKUP_KEY_KEY, "");
+    sheet.querySelector(".assistant-backup-model").value = readStored(BACKUP_MODEL_KEY, "");
     sheet.querySelector(".assistant-memory").value = readMemory().join("\n");
     setNote(readStored(KEY_KEY, "") ? "" : "Ключ Groq ещё не задан. Укажите его в разделе «Подключение».");
   }
@@ -403,13 +418,13 @@
     ].filter(Boolean).join("\n");
   }
 
-  // Один запрос к Groq. При ошибке бросает исключение с полем status (если сервер ответил),
-  // а если ответа нет дольше REQUEST_TIMEOUT_MS — с полем timeout.
-  async function callGroq(model, key, messages) {
+  // Один запрос к OpenAI-совместимому адресу: Groq или резервный провайдер. При ошибке бросает исключение с полем status
+  // (если сервер ответил), а если ответа нет дольше REQUEST_TIMEOUT_MS — с полем timeout.
+  async function callModel(url, model, key, messages) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch(GROQ_URL, {
+      const response = await fetch(url, {
         method: "POST",
         headers: { "content-type": "application/json", authorization: "Bearer " + key },
         body: JSON.stringify({ model, messages, temperature: 0.3, max_tokens: 1024, response_format: { type: "json_object" } }),
@@ -423,7 +438,7 @@
       }
       const data = await response.json();
       const text = data?.choices?.[0]?.message?.content;
-      if (typeof text !== "string" || !text.trim()) throw new Error("Пустой ответ от Groq");
+      if (typeof text !== "string" || !text.trim()) throw new Error("Пустой ответ от модели");
       return text.trim();
     } catch (error) {
       if (error && error.name === "AbortError") {
@@ -446,13 +461,52 @@
     let lastError = null;
     for (const model of models) {
       try {
-        return await callGroq(model, key, messages);
+        return await callModel(GROQ_URL, model, key, messages);
       } catch (error) {
         lastError = error;
         if (error && error.status === 401) break;
       }
     }
     throw lastError || new Error("Нет модели");
+  }
+
+  // Резервный провайдер включён, если заданы адрес (только https), ключ и модель. Иначе null: его не пробуем.
+  function readBackup() {
+    const url = readStored(BACKUP_URL_KEY, "").trim();
+    const key = readStored(BACKUP_KEY_KEY, "").trim();
+    const model = readStored(BACKUP_MODEL_KEY, "").trim();
+    if (!/^https:\/\/\S+$/i.test(url) || !key || !model) return null;
+    return { url, key, model };
+  }
+
+  // Сначала Groq (основная и запасная модель). Если Groq не ответил и резервный провайдер включён, спрашиваем его.
+  // Ошибка резервного провайдера помечается полем backup. Если не ответили оба — ошибка с полями both, primary и backup.
+  async function askAnyModel(groqKey, messages) {
+    const backup = readBackup();
+    let primaryError = null;
+    if (groqKey) {
+      try {
+        return await askModel(groqKey, messages);
+      } catch (error) {
+        primaryError = error;
+        if (!backup) throw error;
+      }
+    }
+    if (!backup) throw new Error("Ключ не задан");
+    setNote("Пробую резервный провайдер…");
+    try {
+      return await callModel(backup.url, backup.model, backup.key, messages);
+    } catch (error) {
+      if (primaryError) {
+        const both = new Error("Groq и резервный провайдер не ответили");
+        both.both = true;
+        both.primary = primaryError;
+        both.backup = error;
+        throw both;
+      }
+      error.backup = true;
+      throw error;
+    }
   }
 
   // Длинный ответ режем по последнему целому предложению, если оно оставляет хотя бы половину лимита;
@@ -665,14 +719,26 @@
     addBubble("system", result.ok ? `Задача «${title}» добавлена в Google Tasks.` : (result.reason || "Не удалось добавить задачу."));
   }
 
-  // Что показать, если Groq не ответил: ключ, лимит или связь.
+  // Что показать, если модель не ответила: ключ, лимит или связь. Ошибка резервного провайдера называет его.
   function failureText(error) {
-    if (error && error.status === 401) return "Groq не принял ключ. Проверьте его в разделе «Подключение».";
-    if (error && error.status === 429) return "Лимит Groq исчерпан. Попробуйте позже.";
-    if (error && error.timeout) return "Groq не ответил вовремя. Попробуйте ещё раз.";
-    if (error && error.status) return "Groq ответил ошибкой " + error.status + (error.detail ? ": " + error.detail : ".");
-    if (error && error.network) return "Нет связи с Groq. Проверьте интернет на магнитоле" + (error.message ? " (" + error.message + ")." : ".");
+    if (error && error.both) return "Ассистент недоступен. Groq: " + reasonOf(error.primary) + ". Резервный провайдер: " + reasonOf(error.backup) + ".";
+    const who = error && error.backup ? "Резервный провайдер" : "Groq";
+    const whom = error && error.backup ? "резервного провайдера" : "Groq";
+    const withWho = error && error.backup ? "резервным провайдером" : "Groq";
+    if (error && error.status === 401) return who + " не принял ключ. Проверьте его в разделе «Подключение».";
+    if (error && error.status === 429) return "Лимит " + whom + " исчерпан. Попробуйте позже.";
+    if (error && error.timeout) return who + " не ответил вовремя. Попробуйте ещё раз.";
+    if (error && error.status) return who + " ответил ошибкой " + error.status + (error.detail ? ": " + error.detail : ".");
+    if (error && error.network) return "Нет связи с " + withWho + ". Проверьте интернет на магнитоле" + (error.message ? " (" + error.message + ")." : ".");
     return "Ассистент недоступен" + (error && error.message ? ": " + error.message : ".");
+  }
+
+  // Причина коротко, для сообщения, где названы оба провайдера.
+  function reasonOf(error) {
+    if (error && error.timeout) return "не ответил вовремя";
+    if (error && error.status) return "ошибка " + error.status + (error.detail ? " (" + error.detail + ")" : "");
+    if (error && error.network) return "нет связи";
+    return error && error.message ? error.message : "ошибка";
   }
 
   // Короткий текст ошибки из ответа Groq (поле error.message), чтобы на экране было видно причину.
@@ -703,7 +769,7 @@
   // иначе остаётся первый ответ без действия, чтобы не показывать кнопку, которую нельзя выполнить.
   async function repairAction(key, messages, raw, reply) {
     try {
-      const retry = parseReply(await askModel(key, [...messages, { role: "assistant", content: raw }, { role: "user", content: repairText() }]));
+      const retry = parseReply(await askAnyModel(key, [...messages, { role: "assistant", content: raw }, { role: "user", content: repairText() }]));
       if (validAction(retry.action)) return retry;
     } catch (error) {
       console.error("[Generic Launcher] assistant repair", error);
@@ -715,7 +781,7 @@
     addBubble("user", text);
     setPending(null);
     const key = readStored(KEY_KEY, "").trim();
-    if (!key) {
+    if (!key && !readBackup()) {
       addBubble("system", "Ключ Groq не задан: укажите его в разделе «Подключение».");
       return;
     }
@@ -727,7 +793,7 @@
       { role: "user", content: text.slice(0, MAX_MESSAGE) }
     ];
     try {
-      const raw = await askModel(key, messages);
+      const raw = await askAnyModel(key, messages);
       let parsed = parseReply(raw);
       if (actionRequested(parsed.action) && !validAction(parsed.action)) {
         setNote("Уточняю…");
