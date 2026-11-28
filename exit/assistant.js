@@ -11,6 +11,8 @@
   const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
   const DEFAULT_MODEL = "openai/gpt-oss-120b";
   const DEFAULT_FALLBACK_MODEL = "llama-3.3-70b-versatile";
+  const DEFAULT_BACKUP_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";   // Gemini, OpenAI-совместимый адрес
+  const DEFAULT_BACKUP_MODEL = "gemini-2.5-flash";
   const KEY_KEY = "generic_launcher_assistant_groq_key_v1";
   const MODEL_KEY = "generic_launcher_assistant_groq_model_v1";
   const FALLBACK_KEY = "generic_launcher_assistant_groq_fallback_v1";
@@ -217,7 +219,7 @@
       '<label>Режим работы<select class="assistant-mode"><option value="cascade">Каскад: Groq → резерв</option><option value="hybrid">Гибрид: команды Groq, разговор — резерв</option></select></label>' +
       '<label>Поиск в интернете<select class="assistant-search-mode"><option value="off">Выключен</option><option value="gemini">Gemini с поиском Google</option></select></label>' +
       '<label>Что ассистент помнит о вас (по одной записи в строке)<textarea class="assistant-memory" rows="4"></textarea></label>' +
-      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. С поиском в интернете разговор идёт в Gemini, который ищет в Google; текст вопроса и ключ Gemini уходят в Google. Поиск работает, только если резервный провайдер — Gemini. Пароли и номера карт сюда не пишите.</p>' +
+      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. С поиском в интернете разговор идёт в Gemini, который ищет в Google; текст вопроса и ключ Gemini уходят в Google. Поиск работает, только если резервный провайдер — Gemini. Адрес и модель резервного провайдера уже заполнены (Gemini), достаточно вставить ключ; чтобы выключить резерв, очистите его ключ. Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
     sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
@@ -248,8 +250,8 @@
       writeStored(SEARCH_KEY, sheet.querySelector(".assistant-search-mode").value === "gemini" ? "gemini" : "off");
       setMemory(sheet.querySelector(".assistant-memory").value.split("\n"));
       if (!readStored(KEY_KEY, "") && !readBackup()) setNote("Ключ удалён: ассистент не будет отвечать, пока ключ не задан.");
-      else if (readStored(BACKUP_URL_KEY, "") && !readBackup()) setNote("Сохранено. Резервный провайдер не включён: нужны адрес https://, ключ и модель.");
       else if (readStored(MODE_KEY, MODE_CASCADE) === MODE_HYBRID && !readBackup()) setNote("Гибрид включён, но резервный провайдер не задан: отвечает только Groq.");
+      else if (readStored(BACKUP_KEY_KEY, "") && !readBackup()) setNote("Сохранено. Резервный провайдер не включён: адрес должен начинаться с https://.");
       else if (readStored(SEARCH_KEY, "off") === "gemini" && !searchOn()) setNote("Поиск включён, но резервный провайдер — не Gemini: поиск не работает.");
       else setNote("Сохранено");
     });
@@ -261,9 +263,9 @@
     sheet.querySelector(".assistant-key").value = readStored(KEY_KEY, "");
     sheet.querySelector(".assistant-model").value = readStored(MODEL_KEY, DEFAULT_MODEL);
     sheet.querySelector(".assistant-fallback").value = readStored(FALLBACK_KEY, DEFAULT_FALLBACK_MODEL);
-    sheet.querySelector(".assistant-backup-url").value = readStored(BACKUP_URL_KEY, "");
+    sheet.querySelector(".assistant-backup-url").value = readStored(BACKUP_URL_KEY, DEFAULT_BACKUP_URL);
     sheet.querySelector(".assistant-backup-key").value = readStored(BACKUP_KEY_KEY, "");
-    sheet.querySelector(".assistant-backup-model").value = readStored(BACKUP_MODEL_KEY, "");
+    sheet.querySelector(".assistant-backup-model").value = readStored(BACKUP_MODEL_KEY, DEFAULT_BACKUP_MODEL);
     sheet.querySelector(".assistant-mode").value = readStored(MODE_KEY, MODE_CASCADE);
     sheet.querySelector(".assistant-search-mode").value = readStored(SEARCH_KEY, "off");
     sheet.querySelector(".assistant-memory").value = readMemory().join("\n");
@@ -488,11 +490,11 @@
     throw lastError || new Error("Нет модели");
   }
 
-  // Резервный провайдер включён, если заданы адрес (только https), ключ и модель. Иначе null: его не пробуем.
+  // Резервный провайдер включён, если есть ключ, а адрес (только https) и модель заданы или взяты по умолчанию (Gemini). Иначе null.
   function readBackup() {
-    const url = readStored(BACKUP_URL_KEY, "").trim();
+    const url = readStored(BACKUP_URL_KEY, DEFAULT_BACKUP_URL).trim();
     const key = readStored(BACKUP_KEY_KEY, "").trim();
-    const model = readStored(BACKUP_MODEL_KEY, "").trim();
+    const model = readStored(BACKUP_MODEL_KEY, DEFAULT_BACKUP_MODEL).trim();
     if (!/^https:\/\/\S+$/i.test(url) || !key || !model) return null;
     return { url, key, model };
   }
