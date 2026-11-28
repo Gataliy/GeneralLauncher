@@ -130,6 +130,7 @@
   .assistant-input { flex: 1; min-width: 0; min-height: 52px; padding: 0 16px; border: 1px solid var(--line); border-radius: 26px; background: var(--surface-soft); color: var(--text); font-size: 17px; }
   .assistant-send { min-height: 52px; padding: 0 22px; border: 0; border-radius: 26px; background: var(--accent); color: #0b1620; font-size: 17px; cursor: pointer; }
   .assistant-settings { font-size: 15px; color: var(--muted); }
+  .assistant-settings summary { min-height: 44px; line-height: 44px; cursor: pointer; }
   .assistant-settings label { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .assistant-settings input { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   .assistant-settings textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font: inherit; font-size: 15px; resize: vertical; }
@@ -222,9 +223,11 @@
       '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. С поиском в интернете разговор идёт в Gemini, который ищет в Google; текст вопроса и ключ Gemini уходят в Google. Поиск работает, только если резервный провайдер — Gemini. Адрес и модель резервного провайдера уже заполнены (Gemini), достаточно вставить ключ; чтобы выключить резерв, очистите его ключ. Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
-    sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
+    // Закрытие возвращает фокус на кнопку «Ассистент», с которой лист открыли.
+    const closeSheet = () => { sheet.hidden = true; const opener = document.getElementById("open-assistant"); if (opener) opener.focus(); };
+    sheet.querySelector(".assistant-close").addEventListener("click", closeSheet);
     // Закрытие по подложке, как у плейлиста.
-    sheet.addEventListener("click", event => { if (event.target === sheet) sheet.hidden = true; });
+    sheet.addEventListener("click", event => { if (event.target === sheet) closeSheet(); });
     sheet.querySelector(".assistant-form").addEventListener("submit", event => {
       event.preventDefault();
       const input = sheet.querySelector(".assistant-input");
