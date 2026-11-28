@@ -17,6 +17,9 @@
   const BACKUP_URL_KEY = "generic_launcher_assistant_backup_url_v1";     // резервный провайдер: адрес (только https)
   const BACKUP_KEY_KEY = "generic_launcher_assistant_backup_key_v1";     // ключ резервного провайдера: уходит только на его адрес
   const BACKUP_MODEL_KEY = "generic_launcher_assistant_backup_model_v1";
+  const MODE_KEY = "generic_launcher_assistant_mode_v1";     // режим работы: каскад (по умолчанию) или гибрид
+  const MODE_CASCADE = "cascade";
+  const MODE_HYBRID = "hybrid";
   const MEMORY_KEY = "generic_launcher_assistant_memory_v1";
   const MEMORY_MAX = 20;              // записей о пользователе
   const MEMORY_FACT_MAX = 200;        // символов в одной записи
@@ -33,6 +36,8 @@
   const CONTEXT_MAX_UNDATED = 15;
   const WEEKDAYS = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
   const TASK_COMMAND = /^задача[:\s]+/i;
+  // Признаки команды для режима «Гибрид»: климат, музыка, приложения, календарь, память. Остальное — разговор.
+  const COMMAND_HINT = /кондиционер|климат|температур|градус|обогрев|подогрев|обдув|вентилятор|рециркуляц|сиден|руль|включи|выключи|поставь|громче|тише|громкост|трек|следующ|предыдущ|пауз|воспроизв|музык|открой|запусти|приложени|навигатор|календар|встреч|событ|напомни|задач|добавь|запомни|забудь/;
   // Команды из README манифеста JCarTools (раздел «Команды runEnum»): климат, сиденья, обогревы, рециркуляция, медиа, громкость.
   // Окна, люк, шторка, багажник, двери и замки сюда не входят и не выполняются.
   const ALLOWED = new Map([
@@ -123,6 +128,7 @@
   .assistant-settings label { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
   .assistant-settings input { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   .assistant-settings textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font: inherit; font-size: 15px; resize: vertical; }
+  .assistant-settings select { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); color: var(--text); font-size: 15px; }
   .assistant-hint { margin: 4px 0 8px; font-size: 14px; color: var(--muted); }
   .assistant-save { min-height: 44px; padding: 0 18px; border: 1px solid var(--line); border-radius: 22px; background: transparent; color: var(--text); cursor: pointer; }
   .assistant-note { margin: 0; min-height: 18px; color: var(--muted); font-size: 14px; }
@@ -204,8 +210,9 @@
       '<label>Резервный провайдер: адрес (https://…/chat/completions)<input type="text" class="assistant-backup-url" autocomplete="off"></label>' +
       '<label>Резервный провайдер: ключ<input type="password" class="assistant-backup-key" autocomplete="off"></label>' +
       '<label>Резервный провайдер: модель<input type="text" class="assistant-backup-model" autocomplete="off"></label>' +
+      '<label>Режим работы<select class="assistant-mode"><option value="cascade">Каскад: Groq → резерв</option><option value="hybrid">Гибрид: команды Groq, разговор — резерв</option></select></label>' +
       '<label>Что ассистент помнит о вас (по одной записи в строке)<textarea class="assistant-memory" rows="4"></textarea></label>' +
-      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). Пароли и номера карт сюда не пишите.</p>' +
+      '<p class="assistant-hint">Ключи и память хранятся на этом устройстве. С каждым вопросом к модели уходят память, список приложений магнитолы, сводка поездок и показания автомобиля (наружная температура, топливо). Ключ Groq уходит только в Groq, ключ резервного провайдера — только на его адрес. Резервный провайдер нужен, если Groq не отвечает (например, без VPN). В режиме «Гибрид» команды сначала идут в Groq, разговор — сначала в резервный провайдер; если первый не ответил, отвечает второй. Пароли и номера карт сюда не пишите.</p>' +
       '<button type="button" class="assistant-save">Сохранить</button></details>' +
       '<p class="assistant-note"></p></div>';
     sheet.querySelector(".assistant-close").addEventListener("click", () => { sheet.hidden = true; });
@@ -232,9 +239,11 @@
       writeStored(BACKUP_URL_KEY, sheet.querySelector(".assistant-backup-url").value.trim());
       writeStored(BACKUP_KEY_KEY, sheet.querySelector(".assistant-backup-key").value.trim());
       writeStored(BACKUP_MODEL_KEY, sheet.querySelector(".assistant-backup-model").value.trim());
+      writeStored(MODE_KEY, sheet.querySelector(".assistant-mode").value === MODE_HYBRID ? MODE_HYBRID : MODE_CASCADE);
       setMemory(sheet.querySelector(".assistant-memory").value.split("\n"));
       if (!readStored(KEY_KEY, "") && !readBackup()) setNote("Ключ удалён: ассистент не будет отвечать, пока ключ не задан.");
       else if (readStored(BACKUP_URL_KEY, "") && !readBackup()) setNote("Сохранено. Резервный провайдер не включён: нужны адрес https://, ключ и модель.");
+      else if (readStored(MODE_KEY, MODE_CASCADE) === MODE_HYBRID && !readBackup()) setNote("Гибрид включён, но резервный провайдер не задан: отвечает только Groq.");
       else setNote("Сохранено");
     });
     document.body.appendChild(sheet);
@@ -248,6 +257,7 @@
     sheet.querySelector(".assistant-backup-url").value = readStored(BACKUP_URL_KEY, "");
     sheet.querySelector(".assistant-backup-key").value = readStored(BACKUP_KEY_KEY, "");
     sheet.querySelector(".assistant-backup-model").value = readStored(BACKUP_MODEL_KEY, "");
+    sheet.querySelector(".assistant-mode").value = readStored(MODE_KEY, MODE_CASCADE);
     sheet.querySelector(".assistant-memory").value = readMemory().join("\n");
     setNote(readStored(KEY_KEY, "") ? "" : "Ключ Groq ещё не задан. Укажите его в разделе «Подключение».");
   }
@@ -479,34 +489,47 @@
     return { url, key, model };
   }
 
-  // Сначала Groq (основная и запасная модель). Если Groq не ответил и резервный провайдер включён, спрашиваем его.
-  // Ошибка резервного провайдера помечается полем backup. Если не ответили оба — ошибка с полями both, primary и backup.
-  async function askAnyModel(groqKey, messages) {
-    const backup = readBackup();
-    let primaryError = null;
-    if (groqKey) {
+  // Признак команды для режима «Гибрид».
+  function isCommandText(text) {
+    return COMMAND_HINT.test(String(text || "").toLowerCase());
+  }
+
+  // Порядок провайдеров для одного запроса: первым спрашиваем основного, при сбое — второго.
+  // В режиме «Каскад» всегда сначала Groq. В «Гибриде» команды идут сначала в Groq, разговор — в резервный провайдер.
+  // Провайдер без ключа или без настроенного адреса в список не попадает; пустой список — ни одного ключа.
+  function providerOrder(text) {
+    const hybrid = readStored(MODE_KEY, MODE_CASCADE) === MODE_HYBRID;
+    const names = !hybrid || isCommandText(text) ? ["groq", "backup"] : ["backup", "groq"];
+    return names.filter(name => (name === "groq" ? !!readStored(KEY_KEY, "").trim() : !!readBackup()));
+  }
+
+  // Пробует провайдеров по порядку из order: первый ответ побеждает. Если никто не ответил, ошибка называет каждого.
+  // Одна попытка: ошибка помечается полем backup (true, если это резервный провайдер). Две: поля both, groqError и backupError.
+  async function askAnyModel(order, messages) {
+    const errors = {};
+    for (let i = 0; i < order.length; i++) {
+      const name = order[i];
+      if (i > 0) setNote("Пробую запасной провайдер…");
       try {
-        return await askModel(groqKey, messages);
+        if (name === "groq") return await askModel(readStored(KEY_KEY, "").trim(), messages);
+        const backup = readBackup();
+        if (!backup) throw new Error("Резервный провайдер не задан");
+        return await callModel(backup.url, backup.model, backup.key, messages);
       } catch (error) {
-        primaryError = error;
-        if (!backup) throw error;
+        errors[name] = error;
       }
     }
-    if (!backup) throw new Error("Ключ не задан");
-    setNote("Пробую резервный провайдер…");
-    try {
-      return await callModel(backup.url, backup.model, backup.key, messages);
-    } catch (error) {
-      if (primaryError) {
-        const both = new Error("Groq и резервный провайдер не ответили");
-        both.both = true;
-        both.primary = primaryError;
-        both.backup = error;
-        throw both;
-      }
-      error.backup = true;
+    const failed = Object.keys(errors);
+    if (failed.length === 1) {
+      const error = errors[failed[0]];
+      error.backup = failed[0] === "backup";
       throw error;
     }
+    const both = new Error("Groq и резервный провайдер не ответили");
+    both.both = true;
+    both.groqError = errors.groq;
+    both.backupError = errors.backup;
+    throw both;
   }
 
   // Длинный ответ режем по последнему целому предложению, если оно оставляет хотя бы половину лимита;
@@ -721,7 +744,7 @@
 
   // Что показать, если модель не ответила: ключ, лимит или связь. Ошибка резервного провайдера называет его.
   function failureText(error) {
-    if (error && error.both) return "Ассистент недоступен. Groq: " + reasonOf(error.primary) + ". Резервный провайдер: " + reasonOf(error.backup) + ".";
+    if (error && error.both) return "Ассистент недоступен. Groq: " + reasonOf(error.groqError) + ". Резервный провайдер: " + reasonOf(error.backupError) + ".";
     const who = error && error.backup ? "Резервный провайдер" : "Groq";
     const whom = error && error.backup ? "резервного провайдера" : "Groq";
     const withWho = error && error.backup ? "резервным провайдером" : "Groq";
@@ -767,9 +790,9 @@
 
   // Один повтор с текстом ошибки. Новый ответ берём только если его действие проходит проверку;
   // иначе остаётся первый ответ без действия, чтобы не показывать кнопку, которую нельзя выполнить.
-  async function repairAction(key, messages, raw, reply) {
+  async function repairAction(order, messages, raw, reply) {
     try {
-      const retry = parseReply(await askAnyModel(key, [...messages, { role: "assistant", content: raw }, { role: "user", content: repairText() }]));
+      const retry = parseReply(await askAnyModel(order, [...messages, { role: "assistant", content: raw }, { role: "user", content: repairText() }]));
       if (validAction(retry.action)) return retry;
     } catch (error) {
       console.error("[Generic Launcher] assistant repair", error);
@@ -780,8 +803,8 @@
   async function ask(text) {
     addBubble("user", text);
     setPending(null);
-    const key = readStored(KEY_KEY, "").trim();
-    if (!key && !readBackup()) {
+    const order = providerOrder(text);
+    if (!order.length) {
       addBubble("system", "Ключ Groq не задан: укажите его в разделе «Подключение».");
       return;
     }
@@ -793,11 +816,11 @@
       { role: "user", content: text.slice(0, MAX_MESSAGE) }
     ];
     try {
-      const raw = await askAnyModel(key, messages);
+      const raw = await askAnyModel(order, messages);
       let parsed = parseReply(raw);
       if (actionRequested(parsed.action) && !validAction(parsed.action)) {
         setNote("Уточняю…");
-        parsed = await repairAction(key, messages, raw, parsed.reply);
+        parsed = await repairAction(order, messages, raw, parsed.reply);
       }
       remember(text, parsed.reply);
       addBubble("assistant", parsed.reply);
